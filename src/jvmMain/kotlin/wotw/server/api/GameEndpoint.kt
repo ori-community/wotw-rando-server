@@ -118,7 +118,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         TeamMemberships.playerId eq playerId
                     }.sortedByDescending { it.id.value }.firstOrNull()?.team
 
-                    team?.game?.teamStates?.get(team)?.id?.value then team?.game?.id?.value then team?.name then team?.members
+                    team?.game?.teamStates?.get(team)?.id?.value then team?.game?.id?.value then team?.name then team?.members?.map { it.name }
                 }
 
                 if (gameId == null || gameStateId == null) {
@@ -150,7 +150,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 var greeting = "$user - Connected to game $gameId"
 
                 if (teamName != null) {
-                    greeting += "\nTeam: $teamName\n" + teamMembers?.map { "- " + it.name }?.joinToString("\n")
+                    greeting += "\nTeam: $teamName\n" + teamMembers?.map { "- " + it }?.joinToString("\n")
                 }
 
                 outgoing.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 3f))
