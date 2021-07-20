@@ -24,6 +24,7 @@ import wotw.server.io.protocol
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.rezero
+import wotw.server.util.then
 import wotw.server.util.zerore
 import kotlin.to
 
@@ -112,14 +113,19 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session active!")
                 )
 
-                val (gameStateId, gameId) = newSuspendedTransaction {
+                val (gameStateId, gameId, teamName, teamMembers) = newSuspendedTransaction {
                     val team = TeamMembership.find {
                         TeamMemberships.playerId eq playerId
                     }.sortedByDescending { it.id.value }.firstOrNull()?.team
-                    team?.game?.teamStates?.get(team)?.id?.value?.let { it to team.game.id.value }
-                } ?: return@webSocket this.close(
-                    CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active game")
-                )
+
+                    team?.game?.teamStates?.get(team)?.id?.value then team?.game?.id?.value then team?.name then team?.members
+                }
+
+                if (gameId == null || gameStateId == null) {
+                    return@webSocket this.close(
+                        CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active game")
+                    )
+                }
 
                 server.connections.registerGameConn(this, playerId, gameId)
 
@@ -140,13 +146,20 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 outgoing.sendMessage(InitGameSyncMessage(states.map {
                     UberId(zerore(it.group), zerore(it.state))
                 }))
-                outgoing.sendMessage(PrintTextMessage(text = "$user - Connected", frames = 240, ypos = 3f))
+
+                var greeting = "$user - Connected to game $gameId"
+
+                if (teamName !== null) {
+                    greeting += "\nTeam: $teamName\n" + teamMembers?.map { "- " + it.name }?.joinToString("\n")
+                }
+
+                outgoing.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 3f))
 
                 protocol {
-                    onMessage(UberStateUpdateMessage::class){
+                    onMessage(UberStateUpdateMessage::class) {
                         updateUberState(gameStateId, playerId)
                     }
-                    onMessage(UberStateBatchUpdateMessage::class){
+                    onMessage(UberStateBatchUpdateMessage::class) {
                         updateUberStates(gameStateId, playerId)
                     }
                 }
@@ -197,6 +210,4 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
         server.sync.syncGameProgress(game)
         server.sync.syncStates(game, playerId, results)
     }
-
-
 }
