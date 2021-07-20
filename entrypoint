@@ -1,0 +1,8 @@
+#!/bin/sh
+
+while ! nc -z "$WOTW_DB_HOST" "$WOTW_DB_PORT"; do
+  echo "Waiting for database..."
+  sleep 1
+done
+
+exec java -jar /app/server/wotw-server.jar

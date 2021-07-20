@@ -90,8 +90,10 @@ class WotwBackendServer {
                 install(WebSockets) {
                     maxFrameSize = Long.MAX_VALUE
                 }
-                if(System.getenv("DEV").isNullOrEmpty())
+
+                if(!System.getenv("ENABLE_HTTPS").isNullOrBlank())
                     install(HttpsRedirect)
+
                 install(CallLogging) {
                     level = Level.INFO
                 }

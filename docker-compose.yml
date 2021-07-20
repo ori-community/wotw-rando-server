@@ -1,0 +1,19 @@
+volumes:
+  seeds: { }
+  db: { }
+
+services:
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_PASSWORD: ${WOTW_DB_PW}
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - 5432:5432 # for debugging purposes
+  app:
+    build:
+      context: .
+    env_file: .env
+    ports:
+      - 8081:8081

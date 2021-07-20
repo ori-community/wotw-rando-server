@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 buildscript {
     repositories {
         jcenter()
@@ -6,7 +8,7 @@ buildscript {
 }
 
 val kotlin_version = "1.5.10"
-val ktor_version = "1.6.0"
+val ktor_version = "1.6.1"
 val logback_version = "1.2.3"
 val exposed_version = "0.31.1"
 val kotlinx_html_version = "0.7.1"
@@ -14,6 +16,7 @@ val serialization_version = "1.2.1"
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform") version "1.5.10"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
     kotlin("plugin.serialization") version "1.5.10"
 }
 
@@ -137,6 +140,14 @@ val jvmJar = tasks.named<Jar>("jvmJar") {
 
     dependsOn(jsWebpack)
     from(jsWebpack.entry, jsWebpack.destinationDirectory)
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    manifest {
+        attributes(mapOf(
+            "Main-Class" to "wotw.server.main.WotwBackendServer"
+        ))
+    }
+    from(configurations["jvmRuntimeClasspath"].map { if (it.isDirectory) it else zipTree(it) })
 }
 
 //Generates self-signed test certificate
