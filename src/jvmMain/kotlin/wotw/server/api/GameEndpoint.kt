@@ -150,7 +150,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 var greeting = "$user - Connected to game $gameId"
 
                 if (teamName != null) {
-                    greeting += "\nTeam: $teamName\n" + teamMembers?.map { "- " + it }?.joinToString("\n")
+                    greeting += "\nTeam: $teamName\n" + teamMembers?.joinToString()
                 }
 
                 outgoing.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 3f))
