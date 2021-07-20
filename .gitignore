@@ -198,6 +198,5 @@ dist
 .pnp.*
 
 dbconfig.properties
-/gradle
 /gradlew
 /gradlew.bat

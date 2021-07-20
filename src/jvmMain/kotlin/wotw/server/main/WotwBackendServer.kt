@@ -221,9 +221,13 @@ class WotwBackendServer {
 
 
     private fun ApplicationCall.redirectUrl(path: String): String {
-        val defaultPort = if (request.origin.scheme == "http") 80 else 443
-        val hostPort = request.host() + request.port().let { port -> if (port == defaultPort) "" else ":$port" }
-        val protocol = request.origin.scheme
-        return "$protocol://$hostPort$path"
+        return if (!System.getenv("PUBLIC_URL").isNullOrBlank()) {
+            System.getenv("PUBLIC_URL") + path
+        } else {
+            val defaultPort = if (request.origin.scheme == "http") 80 else 443
+            val hostPort = request.host() + request.port().let { port -> if (port == defaultPort) "" else ":$port" }
+            val protocol = request.origin.scheme
+            "$protocol://$hostPort$path"
+        }
     }
 }
