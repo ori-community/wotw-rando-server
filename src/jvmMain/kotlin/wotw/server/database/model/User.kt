@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.select
 object Users : LongIdTable("users") {
     val name = text("nickname")
     val isCustomName = bool("is_custom_name").default(false)
+    val avatarId = text("avatar_id").nullable()
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -17,6 +18,7 @@ class User(id: EntityID<Long>) : LongEntity(id) {
 
     var name by Users.name
     var isCustomName by Users.isCustomName
+    var avatarId by Users.avatarId
     val games by Game via GameStates
 
     val latestBingoGame: Game?
@@ -25,5 +27,4 @@ class User(id: EntityID<Long>) : LongEntity(id) {
         }.sortedByDescending {
             it[Teams.id]
         }.firstOrNull()?.get(Games.id)?.let { Game.findById(it) }
-
 }

@@ -77,19 +77,24 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
     }
 
     private suspend fun handleOAuthToken(accessToken: String): User {
-        val jsonResponse = HttpClient().get<String>("https://discord.com/api//users/@me") {
+        val jsonResponse = HttpClient().get<String>("https://discord.com/api/users/@me") {
             header("Authorization", "Bearer $accessToken")
         }
         val json = json.parseToJsonElement(jsonResponse).jsonObject
+        println(jsonResponse)
         val userId = json["id"]?.jsonPrimitive?.longOrNull ?: -1L
         val discordUserName = json["username"]?.jsonPrimitive?.contentOrNull
+        val avatarId = json["avatar"]?.jsonPrimitive?.contentOrNull
+
         return newSuspendedTransaction {
             User.findById(userId)?.also {
                 if(!it.isCustomName && discordUserName != null && it.name != discordUserName)
                     it.name = discordUserName
+                it.avatarId = avatarId
             } ?: User.new(userId) {
-                    name = discordUserName ?: "unknown"
-                }
+                this.name = discordUserName ?: "unknown"
+                this.avatarId = avatarId
+            }
         }
     }
 
