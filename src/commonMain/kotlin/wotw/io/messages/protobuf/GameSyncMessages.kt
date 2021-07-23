@@ -5,10 +5,14 @@ import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 data class UserInfo(
-    val id: Long,
+    val id: String,
     val name: String,
     val avatarId: String?,
-)
+) {
+    constructor(id: Long, name: String, avatarId: String?) : this(id.toULong().toString(), name, avatarId)
+}
+
+
 @Serializable
 data class TeamInfo(
     val id: Long,

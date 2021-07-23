@@ -58,7 +58,7 @@ class PlayersComponent : RComponent<GameIdProps, TeamListState>() {
             GlobalScope.launch {
                 val maybeInfo = Application.user.await()
                 if (maybeInfo != null) {
-                    setState { user = maybeInfo.id }
+                    setState { user = maybeInfo.id.toLong() }
                 }
             }
     }
@@ -91,7 +91,7 @@ class PlayersComponent : RComponent<GameIdProps, TeamListState>() {
                         else
                             +"${it.name} (${it.leader.name}, ${it.members.joinToString(", ", transform = { it.name })})"
 
-                        if (state.user != it.leader.id)
+                        if (state.user != it.leader.id.toLong())
                             child(JoinTeamComponent::class) {
                                 attrs {
                                     gameId = props.gameId
@@ -127,9 +127,9 @@ class BingoPlayersComponent : RComponent<BingoListProps, BingoListState>() {
             GlobalScope.launch {
                 val maybeInfo = Application.user.await()
                 if (maybeInfo != null) {
-                    setState { highlighted = maybeInfo.id }
-                    props.highlightCallback?.invoke(maybeInfo.id)
-                    Application.eventBus.send(Packet.from(RequestUpdatesMessage(maybeInfo.id)))
+                    setState { highlighted = maybeInfo.id.toLong() }
+                    props.highlightCallback?.invoke(maybeInfo.id.toLong())
+                    Application.eventBus.send(Packet.from(RequestUpdatesMessage(maybeInfo.id.toLong())))
                 }
             }
 
