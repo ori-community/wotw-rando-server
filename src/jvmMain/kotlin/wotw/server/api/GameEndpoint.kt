@@ -76,7 +76,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val (team, members) = newSuspendedTransaction {
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
                     val team = game.teams.firstOrNull { it.id.value == teamId } ?: throw NotFoundException("Team does not exist!")
-                    team to team.members.map { UserInfo(it.id.value, it.name) }
+                    team to team.members.map { UserInfo(it.id.value, it.name, it.avatarId) }
                 }
                 println(members)
                 call.respond(TeamInfo(teamId, team.name, members.first(), members.drop(1)))
@@ -86,7 +86,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val teams = newSuspendedTransaction {
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
                     game.teams.map {
-                        val members = it.members.map { m -> UserInfo(m.id.value, m.name) }
+                        val members = it.members.map { m -> UserInfo(m.id.value, m.name, m.avatarId) }
                         TeamInfo(it.id.value, it.name, members.first(), members.drop(1))
                     }
                 }
