@@ -16,7 +16,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
             route("users") {
                 get("/me/info") {
                     val user = newSuspendedTransaction { sessionInfo() }
-                    call.respond(UserInfo(user.id.value, user.name))
+                    call.respond(UserInfo(user.id.value, user.name, user.avatarId))
                 }
             }
         }

@@ -6,7 +6,8 @@ import kotlinx.serialization.protobuf.ProtoNumber
 @Serializable
 data class UserInfo(
     val id: Long,
-    val name: String
+    val name: String,
+    val avatarId: String?,
 )
 @Serializable
 data class TeamInfo(
