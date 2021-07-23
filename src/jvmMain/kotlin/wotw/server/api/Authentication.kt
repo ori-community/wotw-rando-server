@@ -81,7 +81,6 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
             header("Authorization", "Bearer $accessToken")
         }
         val json = json.parseToJsonElement(jsonResponse).jsonObject
-        println(jsonResponse)
         val userId = json["id"]?.jsonPrimitive?.longOrNull ?: -1L
         val discordUserName = json["username"]?.jsonPrimitive?.contentOrNull
         val avatarId = json["avatar"]?.jsonPrimitive?.contentOrNull
