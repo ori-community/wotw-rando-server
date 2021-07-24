@@ -25,7 +25,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         val commandString = buildSeedGenCommand(fileName, config)
         
         println("Generating seed using command:")
-        println(commandString.join(" "))
+        println(commandString.joinToString(" "))
         
         val processBuilder = ProcessBuilder(*commandString)
             .directory(File(seedgenExec.substringBeforeLast(File.separator)))
