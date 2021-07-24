@@ -23,6 +23,10 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
     suspend fun generate(fileName: String, config: SeedGenConfig): Result<String> {
         validate(config)
         val commandString = buildSeedGenCommand(fileName, config)
+        
+        println("Generating seed using command:")
+        println(commandString.join(" "))
+        
         val processBuilder = ProcessBuilder(*commandString)
             .directory(File(seedgenExec.substringBeforeLast(File.separator)))
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
