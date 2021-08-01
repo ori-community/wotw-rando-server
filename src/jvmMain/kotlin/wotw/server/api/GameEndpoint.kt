@@ -153,7 +153,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     greeting += "\nTeam: $teamName\n" + teamMembers?.joinToString()
                 }
 
-                outgoing.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 10f))
+                outgoing.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 3f))
 
                 protocol {
                     onMessage(UberStateUpdateMessage::class) {
