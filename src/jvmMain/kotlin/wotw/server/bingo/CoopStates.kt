@@ -467,6 +467,14 @@ val pickupIds = mapOf(
     "OpherShop.SpiritStar" to UberId(1, 106),
     "OpherShop.Blaze" to UberId(1, 115),
     "OpherShop.Sentry" to UberId(1, 116),
+    "OpherShop.ExplodingSpike" to UberId(1, 1074),
+    "OpherShop.ShockSmash" to UberId(1, 1098),
+    "OpherShop.StaticStar" to UberId(1, 1106),
+    "OpherShop.ChargeBlaze" to UberId(1, 1115),
+    "OpherShop.RapidSentry" to UberId(1, 1116),
+    "LupoShop.HCMapIcon" to UberId(48248, 41666),
+    "LupoShop.ECMapIcon" to UberId(48248, 19396),
+    "LupoShop.ShardMapIcon" to UberId(48248, 57987),
 )
 
 val safeMaxLevers = listOf(
@@ -485,12 +493,11 @@ val safeMaxLevers = listOf(
     UberId(20120, 12902),  // windsweptWastesGroupDescriptor.leverStateA
     UberId(10289, 41277),  // windtornRuinsGroup.lever
     UberId(937, 6778),  // kwolokGroupDescriptor.mokiGateOpened
+    UberId(24922, 16603),  // howlsOriginGroup.portalsLifted
+    UberId(21786, 55881),  // swampStateGroup.elevatorDown
 )
 
 val unsortedCoop = listOf(
-    UberId(48248, 41666), // 4000 hint
-    UberId(48248, 19396), // Glades hint
-    UberId(48248, 57987), // Woods hint
 
     UberId(10289, 3804),      // windtornRuinsGroup.openedDesertRuins
     UberId(10289, 43103),      // windtornRuinsGroup.rootBreakPillarFall
@@ -520,6 +527,7 @@ val unsortedCoop = listOf(
     UberId(20120, 55388),      // windsweptWastesGroupDescriptor.bombableWallE
     UberId(20120, 60960),      // windsweptWastesGroupDescriptor.bombableWallD
     UberId(20120, 9095),      // windsweptWastesGroupDescriptor.breakableWall
+    UberId(21786, 59922),      // swampStateGroup.breakableBridgeBroken
     UberId(21786, 10467),      // swampStateGroup.attackableSwitchA
     UberId(21786, 11343),      // swampStateGroup.breakableWallA
     UberId(21786, 22091),      // swampStateGroup.pushBlockState
