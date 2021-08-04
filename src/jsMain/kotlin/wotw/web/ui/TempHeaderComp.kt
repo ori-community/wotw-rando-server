@@ -110,7 +110,7 @@ class TempHeaderComp: RComponent<RProps, UserInfoState>(){
                     }
                     button {
                         attrs.onClickFunction = {
-                            document.location?.href = "/api/logout?redir=${window.location.pathname}"
+                            document.location?.href = "/api/logout/?redir=${window.location.pathname}"
                         }
                         +"logout"
                     }
