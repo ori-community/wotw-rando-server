@@ -13,6 +13,7 @@ import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.BingoGenProperties
+import wotw.io.messages.GameProperties
 import wotw.io.messages.protobuf.BingoData
 import wotw.io.messages.protobuf.RequestUpdatesMessage
 import wotw.io.messages.protobuf.SyncBoardMessage
@@ -55,6 +56,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val game = newSuspendedTransaction {
                 Game.new {
                     board = BingoBoardGenerator().generateBoard(props)
+                    this.props = GameProperties(isCoop = true)
                 }
             }
             call.respondText("${game.id.value}", status = HttpStatusCode.Created)

@@ -7,6 +7,7 @@ import wotw.server.main.WotwBackendServer
 import wotw.server.util.CompletableFuture
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class SeedGeneratorService(private val server: WotwBackendServer) {
     private val numThreads = System.getenv("SEEDGEN_TRHEADS")?.toIntOrNull() ?: 4
@@ -23,28 +24,37 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
     suspend fun generate(fileName: String, config: SeedGenConfig): Result<String> {
         validate(config)
         val commandString = buildSeedGenCommand(fileName, config)
-        
+
         println("Generating seed using command:")
         println(commandString.joinToString(" "))
-        
+        val timeout = System.getenv("SEEDGEN_TIMEOUT")?.toLongOrNull() ?: 30000
+
         val processBuilder = ProcessBuilder(*commandString)
             .directory(File(seedgenExec.substringBeforeLast(File.separator)))
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.INHERIT)
 
+        var handle: Process? = null
+
         val future = CompletableFuture.supplyAsync(threadPool) {
             val process = processBuilder.start()
+            handle = process
             process.outputStream.close()
             process.inputStream.readAllBytes()
+
             val err = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
-            process.waitFor()
             if (process.exitValue() != 0)
                 Result.failure(Exception(err))
             else
                 Result.success("yay")
         }
 
-        return future.await() as Result<String>
+        return try {
+            future.orTimeout(timeout, TimeUnit.MILLISECONDS).await() as Result<String>
+        } catch (e: Exception) {
+            handle?.destroyForcibly()
+            Result.failure(Exception("seedgen timed out!"))
+        }
     }
 
     private fun buildSeedGenCommand(fileName: String, config: SeedGenConfig): Array<String> {
