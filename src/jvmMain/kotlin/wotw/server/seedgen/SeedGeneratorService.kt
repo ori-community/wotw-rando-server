@@ -8,6 +8,7 @@ import wotw.server.util.CompletableFuture
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 class SeedGeneratorService(private val server: WotwBackendServer) {
     private val numThreads = System.getenv("SEEDGEN_TRHEADS")?.toIntOrNull() ?: 4
@@ -51,7 +52,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
 
         return try {
             future.orTimeout(timeout, TimeUnit.MILLISECONDS).await() as Result<String>
-        } catch (e: Exception) {
+        } catch (e: TimeoutException) {
             handle?.destroyForcibly()
             Result.failure(Exception("seedgen timed out!"))
         }
