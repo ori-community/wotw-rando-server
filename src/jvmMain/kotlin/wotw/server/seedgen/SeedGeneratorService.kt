@@ -44,7 +44,8 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             process.inputStream.readAllBytes()
 
             val err = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
-            if (process.exitValue() != 0)
+
+            if (process.waitFor() != 0)
                 Result.failure(Exception(err))
             else
                 Result.success("yay")
