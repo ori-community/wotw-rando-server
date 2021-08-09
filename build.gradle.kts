@@ -8,7 +8,7 @@ buildscript {
 }
 
 val kotlin_version = "1.5.10"
-val ktor_version = "1.6.1"
+val ktor_version = "1.6.2"
 val logback_version = "1.2.3"
 val exposed_version = "0.31.1"
 val kotlinx_html_version = "0.7.1"

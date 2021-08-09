@@ -63,8 +63,14 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
 
                     val existingTeam = Team.find(gameId, player.id.value)
-                    if(existingTeam != null)
-                        throw AlreadyExistsException("You are already in a Team!")
+                    if (existingTeam != null) {
+                        existingTeam.members = SizedCollection(existingTeam.members.minus(player))
+
+                        if (existingTeam.members.count() == 0L) {
+                            GameState.find(existingTeam.game.id.value, existingTeam.id.value)?.delete()
+                            existingTeam.delete()
+                        }
+                    }
 
                     Team.new(game, player)
                 }
@@ -79,7 +85,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     team to team.members.map { UserInfo(it.id.value, it.name, it.avatarId) }
                 }
                 println(members)
-                call.respond(TeamInfo(teamId, team.name, members.first(), members.drop(1)))
+                call.respond(TeamInfo(teamId, team.name, members))
             }
             get("games/{game_id}/teams"){
                 val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
@@ -87,7 +93,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
                     game.teams.map {
                         val members = it.members.map { m -> UserInfo(m.id.value, m.name, m.avatarId) }
-                        TeamInfo(it.id.value, it.name, members.first(), members.drop(1))
+                        TeamInfo(it.id.value, it.name, members)
                     }
                 }
                 println(teams)
@@ -100,6 +106,17 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 newSuspendedTransaction {
                     val player = sessionInfo()
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
+
+                    val existingTeam = Team.find(gameId, player.id.value)
+                    if (existingTeam != null) {
+                        existingTeam.members = SizedCollection(existingTeam.members.minus(player))
+
+                        if (existingTeam.members.count() == 0L) {
+                            GameState.find(existingTeam.game.id.value, existingTeam.id.value)?.delete()
+                            existingTeam.delete()
+                        }
+                    }
+
                     val team = game.teams.firstOrNull { it.id.value == teamId } ?: throw NotFoundException("Team does not exist!")
                     team.members = SizedCollection(team.members + player)
                 }

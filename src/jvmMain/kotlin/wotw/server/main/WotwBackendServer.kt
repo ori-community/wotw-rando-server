@@ -169,10 +169,7 @@ class WotwBackendServer {
                                 User.findById(session.user)?.id?.value
                             }?.let { UserIdPrincipal(it.toString()) }
                         }
-
                     }
-
-
                 }
 
                 install(Sessions) {
@@ -180,6 +177,7 @@ class WotwBackendServer {
                         cookie.path = "/"
                     }
                 }
+
                 routing {
                     route("api") {
                         bingoEndpoint.init(this)

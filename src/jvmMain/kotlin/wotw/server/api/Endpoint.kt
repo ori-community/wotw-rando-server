@@ -13,7 +13,7 @@ abstract class Endpoint(val server: WotwBackendServer){
     fun init(routing: Route) = routing.initRouting()
     protected abstract fun Route.initRouting()
 
-    fun PipelineContext<Unit, ApplicationCall>.sessionInfoOrNull(): User?{
+    fun PipelineContext<Unit, ApplicationCall>.sessionInfoOrNull(): User? {
         val id = call.sessions.get<UserSession>()?.user ?: return null
         return User.findById(id)
     }

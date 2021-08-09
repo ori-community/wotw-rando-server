@@ -17,7 +17,6 @@ data class UserInfo(
 data class TeamInfo(
     val id: Long,
     val name: String,
-    val leader: UserInfo,
     val members: List<UserInfo>
 )
 

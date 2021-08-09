@@ -86,12 +86,9 @@ class PlayersComponent : RComponent<GameIdProps, TeamListState>() {
                             color = Color.black
                         }
 
-                        if (it.members.isEmpty())
-                            +it.leader.name
-                        else
-                            +"${it.name} (${it.leader.name}, ${it.members.joinToString(", ", transform = { it.name })})"
+                        +"${it.name} (${it.members.joinToString(", ", transform = { it.name })})"
 
-                        if (state.user != it.leader.id.toLong())
+                        if (!it.members.any { it.id == state.user.toString() })
                             child(JoinTeamComponent::class) {
                                 attrs {
                                     gameId = props.gameId
