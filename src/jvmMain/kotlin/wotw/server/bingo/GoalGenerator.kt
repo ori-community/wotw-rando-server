@@ -536,6 +536,7 @@ fun generatePool() = mutableListOf(
         bool("OuterWellspring.SwimEX", 53632, 62356),
         bool("InnerWellspring.WaterSwitchEX", 37858, 45656),
         bool("InnerWellspring.SwimOre", 37858, 32932),
+        bool("UpperReach.SwimEX", 28895, 40242),
         countGoal = { it.nextTriangular(2, 20, 12)},
         subsetGoal = false,
         ),
