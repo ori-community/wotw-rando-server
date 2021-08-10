@@ -40,6 +40,16 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         val future = CompletableFuture.supplyAsync(threadPool) {
             val process = processBuilder.start()
             handle = process
+
+            if (config.custom_headers != null) {
+                process.outputStream.writer().use { writer ->
+                    config.custom_headers.flatMap { it.split("\n") }.flatMap { it.split("\r") }
+                        .filter { it.isNotBlank() }.forEach {
+                            writer.write(it)
+                            writer.write("\r\n")
+                        }
+                }
+            }
             process.outputStream.close()
             process.inputStream.readAllBytes()
 
