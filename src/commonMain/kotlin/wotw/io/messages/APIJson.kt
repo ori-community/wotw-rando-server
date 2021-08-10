@@ -183,7 +183,7 @@ data class SeedGenConfig(
     val isCoop: Boolean = false,
     val seed: String? = null,
     val spawn: String? = null,
-    val custom_headers: List<String>? = null,
+    val customHeaders: List<String>? = null,
 )
 
 @Serializable

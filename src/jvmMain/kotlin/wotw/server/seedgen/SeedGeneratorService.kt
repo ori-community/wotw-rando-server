@@ -41,9 +41,9 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             val process = processBuilder.start()
             handle = process
 
-            if (config.custom_headers != null) {
+            if (config.customHeaders != null) {
                 process.outputStream.writer().use { writer ->
-                    config.custom_headers.flatMap { it.split("\n") }.flatMap { it.split("\r") }
+                    config.customHeaders.flatMap { it.split("\n") }.flatMap { it.split("\r") }
                         .filter { it.isNotBlank() }.forEach {
                             writer.write(it)
                             writer.write("\r\n")
