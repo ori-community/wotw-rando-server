@@ -10,7 +10,6 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
 import io.ktor.websocket.*
-import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.BingoGenProperties
 import wotw.io.messages.GameProperties
@@ -19,10 +18,8 @@ import wotw.io.messages.protobuf.RequestUpdatesMessage
 import wotw.io.messages.protobuf.SyncBoardMessage
 import wotw.io.messages.sendMessage
 import wotw.server.bingo.BingoBoardGenerator
-import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.exception.AlreadyExistsException
-import wotw.server.exception.UnauthorizedException
 import wotw.server.io.protocol
 import wotw.server.main.WotwBackendServer
 
@@ -93,29 +90,29 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
             call.respond(HttpStatusCode.OK)
         }
-        bingoSyncWebsocket()
+        observerWebsocket()
     }
 
     private fun Route.userboardWebsocket() {
-        webSocket(path = "/bingosync/latest/{playerId?}") {
+        webSocket(path = "/observers/latest/{playerId?}") {
             val playerId = call.parameters["playerId"]?.toLongOrNull() ?: call.sessions.get<UserSession>()?.user
             ?: return@webSocket this.close(
                 CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No playerId!")
             )
-            server.connections.registerBingoBoardConn(this@webSocket, null, playerId)
+            server.connections.registerObserverConnection(this@webSocket, null, playerId)
             protocol {
                 onClose {
-                    server.connections.unregisterBingoBoardConn(this@webSocket, null, playerId)
+                    server.connections.unregisterObserverConnection(this@webSocket, null, playerId)
                 }
                 onError {
-                    server.connections.unregisterBingoBoardConn(this@webSocket, null, playerId)
+                    server.connections.unregisterObserverConnection(this@webSocket, null, playerId)
                 }
             }
         }
     }
 
-    private fun Route.bingoSyncWebsocket() {
-        webSocket(path = "/bingosync/{game_id}") {
+    private fun Route.observerWebsocket() {
+        webSocket(path = "/observers/{game_id}") {
             val gameId = call.parameters["game_id"]?.toLongOrNull() ?: return@webSocket this.close(
                 CloseReason(
                     CloseReason.Codes.VIOLATED_POLICY,
@@ -136,7 +133,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 )
 
             var playerId = -1L
-            server.connections.registerBingoBoardConn(this@webSocket, gameId, spectator = spectate)
+            server.connections.registerObserverConnection(this@webSocket, gameId, spectator = spectate)
             protocol {
                 onMessage(RequestUpdatesMessage::class) {
                     if(spectate)
@@ -145,9 +142,9 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             "Cannot track individual player progress on a spectating connection"
                         ))
                     if (this.playerId != playerId) {
-                        server.connections.unregisterBingoBoardConn(this@webSocket, gameId, playerId)
+                        server.connections.unregisterObserverConnection(this@webSocket, gameId, playerId)
                         playerId = this.playerId
-                        server.connections.registerBingoBoardConn(this@webSocket, gameId, playerId)
+                        server.connections.registerObserverConnection(this@webSocket, gameId, playerId)
 
                         val syncBoard = newSuspendedTransaction {
                             game.createSyncableBoard(Team.find(gameId, playerId))
@@ -156,10 +153,10 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                 }
                 onClose {
-                    server.connections.unregisterAllBingoBoardConns(this@webSocket, gameId)
+                    server.connections.unregisterAllObserverConnections(this@webSocket, gameId)
                 }
                 onError {
-                    server.connections.unregisterAllBingoBoardConns(this@webSocket, gameId)
+                    server.connections.unregisterAllObserverConnections(this@webSocket, gameId)
                 }
                 onMessage(Any::class) {
                     println("Incoming Message: $this")

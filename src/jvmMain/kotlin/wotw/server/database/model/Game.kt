@@ -36,6 +36,11 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         get() = states.map { it.team to it }.toMap()
     val players
         get() = teams.flatMap { it.members }
+    val gameInfo
+        get() = GameInfo(teams.map {
+            val members = it.members.map { m -> UserInfo(m.id.value, m.name, m.avatarId) }
+            TeamInfo(it.id.value, it.name, members)
+        })
 
     fun updateCompletions(team: Team) {
         val board = board ?: return
@@ -87,7 +92,7 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
 
         }
 
-        return BingoBoard(goals.toMap(), board.size)
+        return BingoBoard(goals.map{ PositionedBingoSquare(it.first, it.second) }, board.size)
     }
 
     fun fillCompletionData(syncedBoard: BingoBoard): BingoBoard {

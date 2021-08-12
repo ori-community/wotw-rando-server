@@ -14,34 +14,35 @@ class ConnectionRegistry {
 
     data class PlayerConn(val socket: WebSocketSession, val gameId: Long?)
 
-    private val bingoGameConns = MultiMap<Long, Pair<WebSocketSession, Boolean>>(Collections.synchronizedMap(hashMapOf()))
+    private val gameObserverConnections = MultiMap<Long, Pair<WebSocketSession, Boolean>>(Collections.synchronizedMap(hashMapOf()))
     /*
     * A Map (GameId?, PlayerId) -> WebSocketSession
     * If GameId == null then Socket listens to newest
     * */
-    private val bingoPlayerConns =
+    private val playerObserverConnections =
         MultiMap<Pair<Long?, Long>, WebSocketSession>(Collections.synchronizedMap(hashMapOf()))
-    val playerConns = Collections.synchronizedMap(hashMapOf<Long, PlayerConn>())
 
-    fun registerBingoBoardConn(socket: WebSocketSession, gameId: Long? = null, playerId: Long? = null, spectator: Boolean = false) {
+    val playerGameConnections = Collections.synchronizedMap(hashMapOf<Long, PlayerConn>())
+
+    fun registerObserverConnection(socket: WebSocketSession, gameId: Long? = null, playerId: Long? = null, spectator: Boolean = false) {
         if(gameId != null)
-            bingoGameConns[gameId] += socket to spectator
+            gameObserverConnections[gameId] += socket to spectator
         if (playerId != null)
-            bingoPlayerConns[gameId to playerId] += socket
+            playerObserverConnections[gameId to playerId] += socket
     }
 
     fun registerGameConn(socket: WebSocketSession, playerId: Long, gameId: Long? = null) =
-        run { playerConns[playerId] = PlayerConn(socket, gameId) }
+        run { playerGameConnections[playerId] = PlayerConn(socket, gameId) }
 
-    fun unregisterGameConn(playerId: Long) = playerConns.remove(playerId)
+    fun unregisterGameConn(playerId: Long) = playerGameConnections.remove(playerId)
 
-    fun unregisterAllBingoBoardConns(socket: WebSocketSession, gameId: Long) {
-        bingoGameConns[gameId].removeIf { it.first == socket }
-        bingoPlayerConns.filterKeys { it.first == gameId }.forEach { bingoPlayerConns[it.key] -= socket }
+    fun unregisterAllObserverConnections(socket: WebSocketSession, gameId: Long) {
+        gameObserverConnections[gameId].removeIf { it.first == socket }
+        playerObserverConnections.filterKeys { it.first == gameId }.forEach { playerObserverConnections[it.key] -= socket }
     }
 
-    fun unregisterBingoBoardConn(socket: WebSocketSession, gameId: Long? = null, playerId: Long) {
-        bingoPlayerConns[gameId to playerId] -= socket
+    fun unregisterObserverConnection(socket: WebSocketSession, gameId: Long? = null, playerId: Long) {
+        playerObserverConnections[gameId to playerId] -= socket
     }
 
     //------------------------Convenience sending functions-------------------------------
@@ -81,7 +82,7 @@ class ConnectionRegistry {
         vararg messages: suspend SendChannel<Frame>.() -> Unit
     ) {
         for (player in players) {
-            playerConns[player]?.let { conn ->
+            playerGameConnections[player]?.let { conn ->
                 for (message in messages) {
                     try {
                         if (gameId == null || gameId == conn.gameId)
@@ -98,7 +99,8 @@ class ConnectionRegistry {
         toObservers(gameId, spectatorsOnly, *arrayOf(message))
 
     suspend fun toObservers(gameId: Long, spectatorsOnly: Boolean, vararg messages: suspend SendChannel<Frame>.() -> Unit) {
-        bingoGameConns[gameId].filter { !spectatorsOnly || it.second}.forEach { (conn, _) ->
+
+        gameObserverConnections[gameId].filter { !spectatorsOnly || it.second}.forEach { (conn, _) ->
             for (message in messages) {
                 try {
                     message(conn.outgoing)
@@ -113,11 +115,11 @@ class ConnectionRegistry {
         toObservers(gameId, playerId, *arrayOf(message))
 
     suspend fun toObservers(gameId: Long, playerId: Long, vararg messages: suspend SendChannel<Frame>.() -> Unit) {
-        var conns: Set<WebSocketSession> = bingoPlayerConns[gameId to playerId]
+        var conns: Set<WebSocketSession> = playerObserverConnections[gameId to playerId]
         if(newSuspendedTransaction {
             User.findById(playerId)?.latestBingoGame?.id?.value == gameId
         })
-            conns = conns + bingoPlayerConns[null to playerId]
+            conns = conns + playerObserverConnections[null to playerId]
 
         conns.forEach { conn ->
             for (message in messages) {

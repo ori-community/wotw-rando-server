@@ -15,14 +15,14 @@ data class UserInfo(
 
 @Serializable
 data class TeamInfo(
-    val id: Long,
-    val name: String,
-    val members: List<UserInfo>
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val name: String,
+    @ProtoNumber(3) val members: List<UserInfo>
 )
 
 @Serializable
 data class GameInfo(
-    val teams: List<TeamInfo>,
+    @ProtoNumber(1) val teams: List<TeamInfo>,
 )
 
 @Serializable

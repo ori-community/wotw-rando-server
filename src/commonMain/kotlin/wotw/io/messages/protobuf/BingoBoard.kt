@@ -11,11 +11,16 @@ import kotlin.math.max
 data class BingoData(val board: BingoBoard, val players: List<BingoPlayerInfo>)
 
 @Serializable
+data class PositionedBingoSquare(
+    @ProtoNumber(1) val position: Position,
+    @ProtoNumber(2) val square: BingoSquare,
+)
+@Serializable
 data class BingoBoard(
-    @ProtoNumber(1) val squares: Map<Position, BingoSquare> = emptyMap(),
+    @ProtoNumber(1) val squares: List<PositionedBingoSquare> = emptyList(),
     @ProtoNumber(2) val size: Int = -1) {
 
-    operator fun get(position: Position) = squares[position]
+    operator fun get(position: Position) = squares.first { it.position == position }.square
     fun merge(other: BingoBoard) =
         BingoBoard(squares + other.squares, max(size, other.size))
     operator fun plus(other: BingoBoard) = merge(other)

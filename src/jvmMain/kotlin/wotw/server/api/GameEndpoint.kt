@@ -19,7 +19,6 @@ import wotw.io.messages.sendMessage
 import wotw.server.bingo.coopStates
 import wotw.server.bingo.multiStates
 import wotw.server.database.model.*
-import wotw.server.exception.AlreadyExistsException
 import wotw.server.io.protocol
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -58,7 +57,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(SESSION_AUTH) {
             post("games/{game_id}/teams"){
                 val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
-                newSuspendedTransaction {
+                val gameInfo = newSuspendedTransaction {
                     val player = sessionInfo()
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
 
@@ -73,6 +72,10 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
 
                     Team.new(game, player)
+                    game.gameInfo
+                }
+                server.connections.toObservers(gameId){
+                    sendMessage(gameInfo)
                 }
                 call.respond(HttpStatusCode.Created)
             }
@@ -103,7 +106,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
             post("games/{game_id}/teams/{team_id}"){
                 val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
                 val teamId = call.parameters["team_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable TeamID")
-                newSuspendedTransaction {
+                val gameInfo = newSuspendedTransaction {
                     val player = sessionInfo()
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
 
@@ -119,8 +122,12 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val team = game.teams.firstOrNull { it.id.value == teamId } ?: throw NotFoundException("Team does not exist!")
                     team.members = SizedCollection(team.members + player)
+                    game.gameInfo
                 }
                 server.sync.aggregationStrategies.remove(gameId)
+                server.connections.toObservers(gameId){
+                    sendMessage(gameInfo)
+                }
 
                 call.respond(HttpStatusCode.OK)
             }
@@ -196,7 +203,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
             playerData.game.updateCompletions(playerData.team)
             result
         }
-        val pc = server.connections.playerConns[playerId]!!
+        val pc = server.connections.playerGameConnections[playerId]!!
         if(pc.gameId != game) {
             server.connections.unregisterGameConn(playerId)
             server.connections.registerGameConn(pc.socket, playerId, game)
@@ -219,7 +226,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
             result
         }
 
-        val pc = server.connections.playerConns[playerId]!!
+        val pc = server.connections.playerGameConnections[playerId]!!
         if(pc.gameId != game) {
             server.connections.unregisterGameConn(playerId)
             server.connections.registerGameConn(pc.socket, playerId, game)
