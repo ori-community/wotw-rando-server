@@ -19,7 +19,7 @@ class Team(id: EntityID<Long>) : LongEntity(id) {
     var members by User via TeamMemberships
 
     companion object : LongEntityClass<Team>(Teams) {
-        fun find(gameId: Long, playerId: Long) = Teams.innerJoin(TeamMemberships).select {
+        fun find(gameId: Long, playerId: String) = Teams.innerJoin(TeamMemberships).select {
             (Teams.gameId eq gameId) and (TeamMemberships.playerId eq playerId)
         }.map { Team.wrapRow(it) }.firstOrNull()
 

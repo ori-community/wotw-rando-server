@@ -27,17 +27,17 @@ external interface GameIdProps : RProps {
 
 external interface BingoViewProps : GameIdProps {
     var useLatest: Boolean
-    var playerId: Long?
+    var playerId: String?
 }
 
 external interface PlayerIdProps : RProps {
-    var playerId: Long?
+    var playerId: String?
 }
 
 external interface BingoCardProps : GameIdProps {
     var useLatest: Boolean?
-    var playerId: Long?
-    var sortedPlayerList: List<Long>?
+    var playerId: String?
+    var sortedPlayerList: List<String>?
 }
 
 external interface BingoCardState : RState {
@@ -66,8 +66,8 @@ external interface BingoGoalProps : RProps {
 }
 
 external interface BingoViewState : RState {
-    var trackedPlayer: Long?
-    var sortedPlayerList: List<Long>?
+    var trackedPlayer: String?
+    var sortedPlayerList: List<String>?
 }
 
 class BingoView : RComponent<BingoViewProps, BingoViewState>() {
@@ -173,7 +173,7 @@ class BingoCardComponent(props: BingoCardProps) : RComponent<BingoCardProps, Bin
                                 y !in cardRange -> (x + 64).toChar().toString()
                                 else -> ""
                             }
-                            val completedBy: Set<Long> = when {
+                            val completedBy: Set<String> = when {
                                 square != null -> square.completedBy.toSet()
                                 x == 0 && y == 0 || x > size && y > size -> cardRange.map {
                                     state.board[Position(it, it)]?.completedBy?.toSet() ?: emptySet()

@@ -29,17 +29,17 @@ external interface BingoPlayerProps : GameIdProps {
 
 external interface TeamListState : RState {
     var teams: List<TeamInfo>
-    var user: Long?
+    var user: String?
 }
 
 external interface BingoListState : RState {
     var players: List<BingoPlayerInfo>
-    var highlighted: Long?
+    var highlighted: String?
 }
 
 external interface BingoListProps : GameIdProps {
-    var listChangedCallback: ((List<Long>?) -> Unit)?
-    var highlightCallback: ((Long?) -> Unit)?
+    var listChangedCallback: ((List<String>?) -> Unit)?
+    var highlightCallback: ((String?) -> Unit)?
 }
 
 class PlayersComponent : RComponent<GameIdProps, TeamListState>() {
@@ -58,7 +58,7 @@ class PlayersComponent : RComponent<GameIdProps, TeamListState>() {
             GlobalScope.launch {
                 val maybeInfo = Application.user.await()
                 if (maybeInfo != null) {
-                    setState { user = maybeInfo.id.toLong() }
+                    setState { user = maybeInfo.id }
                 }
             }
     }
@@ -124,9 +124,9 @@ class BingoPlayersComponent : RComponent<BingoListProps, BingoListState>() {
             GlobalScope.launch {
                 val maybeInfo = Application.user.await()
                 if (maybeInfo != null) {
-                    setState { highlighted = maybeInfo.id.toLong() }
-                    props.highlightCallback?.invoke(maybeInfo.id.toLong())
-                    Application.eventBus.send(Packet.from(RequestUpdatesMessage(maybeInfo.id.toLong())))
+                    setState { highlighted = maybeInfo.id }
+                    props.highlightCallback?.invoke(maybeInfo.id)
+                    Application.eventBus.send(Packet.from(RequestUpdatesMessage(maybeInfo.id)))
                 }
             }
 
@@ -202,13 +202,13 @@ class BingoPlayersComponent : RComponent<BingoListProps, BingoListState>() {
 }
 
 external interface JoinBingoProps : GameIdProps {
-    var afterJoin: (Long) -> Unit
-    var userId: Long?
+    var afterJoin: (String) -> Unit
+    var userId: String?
 }
 
 external interface JoinGameProps : GameIdProps {
     var afterJoin: () -> Unit
-    var userId: Long?
+    var userId: String?
 }
 
 external interface JoinTeamProps : GameIdProps {

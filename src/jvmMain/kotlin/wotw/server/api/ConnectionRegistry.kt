@@ -20,28 +20,28 @@ class ConnectionRegistry {
     * If GameId == null then Socket listens to newest
     * */
     private val playerObserverConnections =
-        MultiMap<Pair<Long?, Long>, WebSocketSession>(Collections.synchronizedMap(hashMapOf()))
+        MultiMap<Pair<Long?, String>, WebSocketSession>(Collections.synchronizedMap(hashMapOf()))
 
-    val playerGameConnections = Collections.synchronizedMap(hashMapOf<Long, PlayerConn>())
+    val playerGameConnections = Collections.synchronizedMap(hashMapOf<String, PlayerConn>())
 
-    fun registerObserverConnection(socket: WebSocketSession, gameId: Long? = null, playerId: Long? = null, spectator: Boolean = false) {
+    fun registerObserverConnection(socket: WebSocketSession, gameId: Long? = null, playerId: String? = null, spectator: Boolean = false) {
         if(gameId != null)
             gameObserverConnections[gameId] += socket to spectator
         if (playerId != null)
             playerObserverConnections[gameId to playerId] += socket
     }
 
-    fun registerGameConn(socket: WebSocketSession, playerId: Long, gameId: Long? = null) =
+    fun registerGameConn(socket: WebSocketSession, playerId: String, gameId: Long? = null) =
         run { playerGameConnections[playerId] = PlayerConn(socket, gameId) }
 
-    fun unregisterGameConn(playerId: Long) = playerGameConnections.remove(playerId)
+    fun unregisterGameConn(playerId: String) = playerGameConnections.remove(playerId)
 
     fun unregisterAllObserverConnections(socket: WebSocketSession, gameId: Long) {
         gameObserverConnections[gameId].removeIf { it.first == socket }
         playerObserverConnections.filterKeys { it.first == gameId }.forEach { playerObserverConnections[it.key] -= socket }
     }
 
-    fun unregisterObserverConnection(socket: WebSocketSession, gameId: Long? = null, playerId: Long) {
+    fun unregisterObserverConnection(socket: WebSocketSession, gameId: Long? = null, playerId: String) {
         playerObserverConnections[gameId to playerId] -= socket
     }
 
@@ -57,10 +57,10 @@ class ConnectionRegistry {
         toPlayers(players, gameId, *messages)
     }
 
-    suspend fun toTeam(gameId: Long, playerId: Long, echo: Boolean = true, message: suspend SendChannel<Frame>.() -> Unit) =
+    suspend fun toTeam(gameId: Long, playerId: String, echo: Boolean = true, message: suspend SendChannel<Frame>.() -> Unit) =
         toTeam(gameId, playerId, echo, *arrayOf(message))
 
-    suspend fun toTeam(gameId: Long, playerId: Long, echo: Boolean = true, vararg messages: suspend SendChannel<Frame>.() -> Unit) {
+    suspend fun toTeam(gameId: Long, playerId: String, echo: Boolean = true, vararg messages: suspend SendChannel<Frame>.() -> Unit) {
         var players = newSuspendedTransaction {
             Team.find(gameId, playerId)?.members?.map { it.id.value }
         } ?: return
@@ -70,14 +70,14 @@ class ConnectionRegistry {
     }
 
     suspend fun toPlayers(
-        players: Iterable<Long>,
+        players: Iterable<String>,
         gameId: Long? = null,
         message: suspend SendChannel<Frame>.() -> Unit
     ) =
         toPlayers(players, gameId, *arrayOf(message))
 
     suspend fun toPlayers(
-        players: Iterable<Long>,
+        players: Iterable<String>,
         gameId: Long? = null,
         vararg messages: suspend SendChannel<Frame>.() -> Unit
     ) {
@@ -111,10 +111,10 @@ class ConnectionRegistry {
         }
     }
 
-    suspend fun toObservers(gameId: Long, playerId: Long, message: suspend SendChannel<Frame>.() -> Unit) =
+    suspend fun toObservers(gameId: Long, playerId: String, message: suspend SendChannel<Frame>.() -> Unit) =
         toObservers(gameId, playerId, *arrayOf(message))
 
-    suspend fun toObservers(gameId: Long, playerId: Long, vararg messages: suspend SendChannel<Frame>.() -> Unit) {
+    suspend fun toObservers(gameId: Long, playerId: String, vararg messages: suspend SendChannel<Frame>.() -> Unit) {
         var conns: Set<WebSocketSession> = playerObserverConnections[gameId to playerId]
         if(newSuspendedTransaction {
             User.findById(playerId)?.latestBingoGame?.id?.value == gameId

@@ -99,7 +99,7 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         val completions = scoreRelevantCompletionMap()
         syncedBoard.squares.forEach { (position, square) ->
             square.completedBy =
-                completions[position.x to position.y]?.map { it.members.firstOrNull()?.id?.value ?: -1L } ?: emptyList()
+                completions[position.x to position.y]?.map { it.members.firstOrNull()?.id?.value ?: "" } ?: emptyList()
         }
         return syncedBoard
     }
@@ -136,7 +136,7 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
 
 
     fun playerInfo(team: Team): BingoPlayerInfo {
-        val playerId = team.members.firstOrNull()?.id?.value ?: -1L
+        val playerId = team.members.firstOrNull()?.id?.value ?: ""
         val name = if (team.members.count() == 1L) team.members.first().name else team.name
 
         val board = board ?: return BingoPlayerInfo(playerId, name, "")

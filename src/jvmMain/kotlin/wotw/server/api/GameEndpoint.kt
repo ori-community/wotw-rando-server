@@ -32,7 +32,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
         post<UberStateUpdateMessage>("games/{game_id}/{player_id}/state") { message ->
             val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("")
-            val playerId = call.parameters["player_id"]?.toLongOrNull() ?: throw BadRequestException("")
+            val playerId = call.parameters["player_id"]?.ifEmpty { null }?: throw BadRequestException("")
 
             val result = newSuspendedTransaction {
                 val game = Game.findById(gameId) ?: throw NotFoundException()
@@ -191,7 +191,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
     }
 
-    private suspend fun UberStateUpdateMessage.updateUberState(gameStateId: Long, playerId: Long) {
+    private suspend fun UberStateUpdateMessage.updateUberState(gameStateId: Long, playerId: String) {
         val uberGroup = rezero(uberId.group)
         val uberState = rezero(uberId.state)
         val sentValue = rezero(value)
@@ -212,7 +212,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
         server.sync.syncState(game, playerId, UberId(uberGroup, uberState), result)
     }
 
-    private suspend fun UberStateBatchUpdateMessage.updateUberStates(gameStateId: Long, playerId: Long) {
+    private suspend fun UberStateBatchUpdateMessage.updateUberStates(gameStateId: Long, playerId: String) {
         val updates = updates.map {
             UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to if(it.value == -1.0) 0.0 else it.value
         }.toMap()

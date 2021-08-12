@@ -36,7 +36,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         return AggregationResult(oldValue, newValue, value, true)
     }
 
-    suspend fun syncState(gameId: Long, playerId: Long, uberId: UberId, aggregationResult: AggregationResult) {
+    suspend fun syncState(gameId: Long, playerId: String, uberId: UberId, aggregationResult: AggregationResult) {
         val strategy = aggregationStrategies[gameId]?.getStrategy(uberId) ?: return
         if (!aggregationResult.triggered || strategy.group == UberStateSyncStrategy.NotificationGroup.NONE)
             return
@@ -72,7 +72,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         }
     }
 
-    suspend fun syncStates(gameId: Long, playerId: Long, updates: Map<UberId, AggregationResult>) {
+    suspend fun syncStates(gameId: Long, playerId: String, updates: Map<UberId, AggregationResult>) {
         val triggered = updates.filter { it.value.triggered }
         val forPlayer = triggered.filter {
             val strategy = aggregationStrategies[gameId]?.getStrategy(it.key)
@@ -112,7 +112,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         }
     }
 
-    suspend fun forceSyncStates(gameId: Long, playerId: Long, updates: Map<UberId, Double>) {
+    suspend fun forceSyncStates(gameId: Long, playerId: String, updates: Map<UberId, Double>) {
         server.connections.toTeam(gameId, playerId) {
             sendMessage(
                 UberStateBatchUpdateMessage(
