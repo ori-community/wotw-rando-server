@@ -27,7 +27,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
         get("bingo/latest/{playerId?}") {
             val boardData = newSuspendedTransaction {
-                val player = call.parameters["playerId"]?.toLongOrNull()?.let { User.findById(it) } ?: sessionInfo()
+                val player = call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: sessionInfo()
                 val game = player.latestBingoGame ?: throw NotFoundException()
                 game.board ?: throw NotFoundException()
                 val info = game.playerInfo()
@@ -61,7 +61,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
         //FIXME
         post("bingo/{game_id}/players") {
             //FIXME
-            val userId = call.receiveOrNull<Long>()
+            val userId = call.receiveOrNull<String>()
             val gameId = call.parameters["game_id"]?.toLongOrNull() ?: return@post call.respondText(
                 "Cannot parse gameID",
                 status = HttpStatusCode.BadRequest
@@ -95,10 +95,12 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
     private fun Route.userboardWebsocket() {
         webSocket(path = "/observers/latest/{playerId?}") {
-            val playerId = call.parameters["playerId"]?.toLongOrNull() ?: call.sessions.get<UserSession>()?.user
-            ?: return@webSocket this.close(
+            val playerId = call.parameters["playerId"]?.ifEmpty {
+                call.sessions.get<UserSession>()?.user
+            } ?: return@webSocket this.close(
                 CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No playerId!")
             )
+
             server.connections.registerObserverConnection(this@webSocket, null, playerId)
             protocol {
                 onClose {
@@ -132,7 +134,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     )
                 )
 
-            var playerId = -1L
+            var playerId = ""
             server.connections.registerObserverConnection(this@webSocket, gameId, spectator = spectate)
             protocol {
                 onMessage(RequestUpdatesMessage::class) {

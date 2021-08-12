@@ -39,6 +39,7 @@ suspend fun WebSocketSession.protocol(block: WebsocketProtocolBuilder.() -> Unit
                     val message = Packet.deserialize(frame.data) ?: continue
                     builder.eventBus.send(message)
                 } catch (e: SerializationException) {
+                    e.printStackTrace()
                     builder.errorHandler?.invoke(e)
                 }
             }

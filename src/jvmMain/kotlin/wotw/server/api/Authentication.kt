@@ -23,7 +23,7 @@ import wotw.server.main.WotwBackendServer
 const val DISCORD_OAUTH = "discordOAuth"
 const val SESSION_AUTH = "sessionid"
 
-data class UserSession(val user: Long)
+data class UserSession(val user: String)
 
 class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
@@ -65,7 +65,7 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
             //FIXME needs to be removed once client stuff gets figured out
             post<String>("/uid") {
-                call.sessions.set(UserSession(it.toLongOrNull() ?: -1))
+                call.sessions.set(UserSession(it))
                 call.respondText(call.response.cookies[SESSION_AUTH]?.value ?: "")
             }
             authenticate(SESSION_AUTH) {
@@ -81,7 +81,7 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
             header("Authorization", "Bearer $accessToken")
         }
         val json = json.parseToJsonElement(jsonResponse).jsonObject
-        val userId = json["id"]?.jsonPrimitive?.longOrNull ?: -1L
+        val userId = json["id"]?.jsonPrimitive?.contentOrNull ?: ""
         val discordUserName = json["username"]?.jsonPrimitive?.contentOrNull
         val avatarId = json["avatar"]?.jsonPrimitive?.contentOrNull
 
