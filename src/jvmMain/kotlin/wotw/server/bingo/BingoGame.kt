@@ -48,7 +48,7 @@ data class CountGoal(
 
     override fun printSubText(state: GameState) =
         if (hideChildren)
-            listOf("${goals.count { it.isCompleted(state) }}/$threshold" to false)
+            listOf("${goals.count { it.isCompleted(state) }} / $threshold" to false)
         else
             super.printSubText(state)
 
