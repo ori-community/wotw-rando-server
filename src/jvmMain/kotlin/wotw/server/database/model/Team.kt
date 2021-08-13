@@ -4,6 +4,7 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import wotw.io.messages.protobuf.TeamInfo
@@ -45,8 +46,8 @@ class Team(id: EntityID<Long>) : LongEntity(id) {
 }
 
 object TeamMemberships : LongIdTable() {
-    val teamId = reference("team_id", Teams)
-    val playerId = reference("user_id", Users)
+    val teamId = reference("team_id", Teams, ReferenceOption.CASCADE)
+    val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
 
     init {
         uniqueIndex(TeamMemberships.teamId, TeamMemberships.playerId)

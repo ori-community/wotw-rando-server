@@ -66,7 +66,6 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         existingTeam.members = SizedCollection(existingTeam.members.minus(player))
 
                         if (existingTeam.members.count() == 0L) {
-                            GameState.find(existingTeam.game.id.value, existingTeam.id.value)?.delete()
                             existingTeam.delete()
                         }
                     }
@@ -115,7 +114,6 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         existingTeam.members = SizedCollection(existingTeam.members.minus(player))
 
                         if (existingTeam.members.count() == 0L) {
-                            GameState.find(existingTeam.game.id.value, existingTeam.id.value)?.delete()
                             existingTeam.delete()
                         }
                     }

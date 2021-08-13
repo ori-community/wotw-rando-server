@@ -4,11 +4,12 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.ReferenceOption
 
 object BingoEvents : LongIdTable("events") {
     override val primaryKey = PrimaryKey(id)
-    val gameId = reference("game_id", Games)
-    val teamId = reference("team_id", Teams)
+    val gameId = reference("game_id", Games, ReferenceOption.CASCADE)
+    val teamId = reference("team_id", Teams, ReferenceOption.CASCADE)
     val time = long("timestamp")
     val x = integer("x")
     val y = integer("y")
