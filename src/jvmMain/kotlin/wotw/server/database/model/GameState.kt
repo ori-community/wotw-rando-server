@@ -6,6 +6,7 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
 import wotw.io.messages.protobuf.UberId
 import wotw.server.api.*
@@ -15,8 +16,9 @@ import wotw.server.bingo.coopAggregation
 import wotw.server.database.jsonb
 
 object GameStates : LongIdTable() {
-    val gameId = reference("game_id", Games)
-    val teamId = reference("team_id", Teams)
+    val gameId = reference("game_id", Games, ReferenceOption.CASCADE)
+    val teamId = reference("team_id", Teams, ReferenceOption.CASCADE)
+
     @OptIn(InternalSerializationApi::class)
     val uberStateData = jsonb("uber_state_data", UberStateMap::class.serializer())
 
