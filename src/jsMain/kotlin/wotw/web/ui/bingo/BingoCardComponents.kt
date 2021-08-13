@@ -129,7 +129,7 @@ class BingoCardComponent(props: BingoCardProps) : RComponent<BingoCardProps, Bin
             setState {
                 this.board = boardData.board
             }
-            Application.eventBus.send(SyncBingoPlayersMessage(boardData.teams))
+            Application.eventBus.send(SyncBingoTeamsMessage(boardData.teams))
         }
 
 

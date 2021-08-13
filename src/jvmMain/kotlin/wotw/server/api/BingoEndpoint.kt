@@ -15,11 +15,8 @@ import wotw.io.messages.BingoGenProperties
 import wotw.io.messages.GameProperties
 import wotw.io.messages.protobuf.BingoData
 import wotw.io.messages.protobuf.RequestUpdatesMessage
-import wotw.io.messages.protobuf.SyncBoardMessage
-import wotw.io.messages.sendMessage
 import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.database.model.*
-import wotw.server.exception.AlreadyExistsException
 import wotw.server.io.protocol
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -31,7 +28,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val player = call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: sessionInfo()
                 val game = player.latestBingoGame ?: throw NotFoundException()
                 game.board ?: throw NotFoundException()
-                val info = game.teamInfo()
+                val info = game.bingoTeamInfo()
                 BingoData(game.createSyncableBoard(Team.find(game.id.value, player.id.value)), info)
             }
             call.respond(boardData)
@@ -48,7 +45,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 val game = Game.findById(gameId) ?: throw NotFoundException()
                 game.board ?: throw NotFoundException()
-                val info = game.teamInfo()
+                val info = game.bingoTeamInfo()
                 BingoData(game.createSyncableBoard(team, spectate), info)
             }
             call.respond(boardData)
@@ -98,15 +95,14 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 )
             )
             val spectate = call.request.queryParameters["spectate"] == "true"
-            val (game, board) = newSuspendedTransaction {
-                val game = Game.findById(gameId)
-                game to game?.board
+            val gameExists = newSuspendedTransaction {
+                Game.findById(gameId) != null
             }
-            if (game == null || board == null)
+            if (!gameExists)
                 return@webSocket this.close(
                     CloseReason(
                         CloseReason.Codes.NORMAL,
-                        "Requested Bingo-Game does not exist"
+                        "Requested Game does not exist"
                     )
                 )
 

@@ -99,7 +99,7 @@ class ConnectionRegistry {
         toObservers(gameId, spectatorsOnly, *arrayOf(message))
 
     suspend fun toObservers(gameId: Long, spectatorsOnly: Boolean, vararg messages: suspend SendChannel<Frame>.() -> Unit) {
-
+        println(gameId)
         gameObserverConnections[gameId].filter { !spectatorsOnly || it.second}.forEach { (conn, _) ->
             for (message in messages) {
                 try {
