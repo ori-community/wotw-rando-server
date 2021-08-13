@@ -19,6 +19,7 @@ import wotw.io.messages.sendMessage
 import wotw.server.bingo.coopStates
 import wotw.server.bingo.multiStates
 import wotw.server.database.model.*
+import wotw.server.exception.UnauthorizedException
 import wotw.server.io.protocol
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -31,6 +32,10 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
     val logger = logger()
     override fun Route.initRouting() {
         post<UberStateUpdateMessage>("games/{game_id}/{player_id}/state") { message ->
+            if (System.getenv("DEV").isNullOrBlank()) {
+                throw BadRequestException("Only available in dev mode")
+            }
+
             val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("")
             val playerId = call.parameters["player_id"]?.ifEmpty { null }?: throw BadRequestException("")
 
@@ -91,7 +96,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 println(members)
                 call.respond(TeamInfo(teamId, team.name, members))
             }
-            get("games/{game_id}/teams"){
+            get("games/{game_id}"){
                 val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
                 call.respond(newSuspendedTransaction {
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")

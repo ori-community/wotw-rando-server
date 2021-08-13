@@ -179,8 +179,6 @@ data class SeedGenConfig(
     val logic: List<String> = emptyList(),
     val goals: List<String> = emptyList(),
     val multiNames: List<String>? = null,
-    val isMulti: Boolean = false,
-    val isCoop: Boolean = false,
     val seed: String? = null,
     val spawn: String? = null,
     val customHeaders: List<String>? = null,

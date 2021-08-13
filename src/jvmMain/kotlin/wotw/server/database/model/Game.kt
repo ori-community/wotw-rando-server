@@ -33,7 +33,7 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
     val players
         get() = teams.flatMap { it.members }
     val gameInfo
-        get() = GameInfo(id.value, teams.map { it.teamInfo })
+        get() = GameInfo(id.value, teams.map { it.teamInfo }, board != null)
 
     fun updateCompletions(team: Team) {
         val board = board ?: return

@@ -52,9 +52,6 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(HttpStatusCode.Created, SeedGenResponse(
                     seedId = seed.id.value,
                     playerList = config.multiNames?: emptyList(),
-                    gameId = if(config.isCoop || config.isMulti) {
-                        newSuspendedTransaction { Game.new {props = GameProperties(config.isMulti, config.isCoop)} }.id.value
-                    } else null
                 ))
             } else {
                 call.respondText(

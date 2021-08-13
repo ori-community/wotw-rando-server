@@ -22,6 +22,7 @@ data class TeamInfo(
 data class GameInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val teams: List<TeamInfo>,
+    @ProtoNumber(3) val hasBingoBoard: Boolean,
 )
 
 @Serializable
