@@ -16,12 +16,10 @@ import wotw.server.database.jsonb
 
 object GameStates : LongIdTable() {
     val gameId = reference("game_id", Games)
-    val teamId = reference("user_id", Teams)
+    val teamId = reference("team_id", Teams)
     @OptIn(InternalSerializationApi::class)
     val uberStateData = jsonb("uber_state_data", UberStateMap::class.serializer())
 
-    //TODO - migrate later
-    override val tableName: String = "playerdata"
     init {
         uniqueIndex(gameId, teamId)
     }

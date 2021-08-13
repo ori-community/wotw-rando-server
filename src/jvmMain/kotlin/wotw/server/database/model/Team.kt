@@ -6,6 +6,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
+import wotw.io.messages.protobuf.TeamInfo
 import wotw.server.bingo.UberStateMap
 
 object Teams : LongIdTable() {
@@ -38,6 +39,9 @@ class Team(id: EntityID<Long>) : LongEntity(id) {
                 uberStateData = UberStateMap()
             }.team
     }
+
+    val teamInfo: TeamInfo
+        get() = TeamInfo(id.value, name, members.map { it.userInfo })
 }
 
 object TeamMemberships : LongIdTable() {
