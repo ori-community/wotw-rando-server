@@ -4,16 +4,12 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.GameProperties
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoCard
 import wotw.server.bingo.Line
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.jsonb
-import wotw.util.BiHashMap
-import wotw.util.BiMap
-import wotw.util.toBiMap
 import java.util.*
 import kotlin.math.ceil
 import kotlin.to
@@ -88,8 +84,7 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         val completions = scoreRelevantCompletionMap()
         goals.forEach {
             it.second.completedBy =
-                completions[it.first.x to it.first.y]?.flatMap { it.members.map { it.id.value}} ?: emptyList()
-
+                completions[it.first.x to it.first.y]?.map { it.teamInfo } ?: emptyList()
         }
 
         return BingoBoard(goals.map{ PositionedBingoSquare(it.first, it.second) }, board.size)
@@ -99,7 +94,7 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         val completions = scoreRelevantCompletionMap()
         syncedBoard.squares.forEach { (position, square) ->
             square.completedBy =
-                completions[position.x to position.y]?.map { it.members.firstOrNull()?.id?.value ?: "" } ?: emptyList()
+                completions[position.x to position.y]?.map { it.teamInfo } ?: emptyList()
         }
         return syncedBoard
     }
@@ -135,11 +130,8 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         } else goalCompletionMap())
 
 
-    fun playerInfo(team: Team): BingoPlayerInfo {
-        val playerId = team.members.firstOrNull()?.id?.value ?: ""
-        val name = if (team.members.count() == 1L) team.members.first().name else team.name
-
-        val board = board ?: return BingoPlayerInfo(playerId, name, "")
+    fun teamInfo(team: Team): BingoTeamInfo {
+        val board = board ?: return BingoTeamInfo(team.id.value, "")
         val lockout = board.config?.lockout ?: false
         val completions = scoreRelevantCompletionMap().filterValues { team in it }.keys.toSet()
 
@@ -147,9 +139,8 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         val squares = completions.count { it in completions }
         val scoreLine =
             if (lockout) "$squares / ${ceil((board.goals.size).toFloat() / 2f).toLong()}" else "$lines line${(if (lines == 1) "" else "s")} | $squares / ${board.goals.size}"
-        return BingoPlayerInfo(
-            playerId,
-            name,
+        return BingoTeamInfo(
+            team.id.value,
             scoreLine,
             if (lockout) squares else lines * board.size * board.size + squares,
             squares,
@@ -157,9 +148,9 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         )
     }
 
-    fun playerInfo(): List<BingoPlayerInfo> {
+    fun teamInfo(): List<BingoTeamInfo> {
         return teams.map { team ->
-            playerInfo(team)
+            teamInfo(team)
         }.sortedByDescending { it.rank }
     }
 

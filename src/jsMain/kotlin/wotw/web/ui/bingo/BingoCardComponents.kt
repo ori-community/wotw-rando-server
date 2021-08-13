@@ -4,7 +4,6 @@ import io.ktor.client.request.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.css.*
-import kotlinx.css.properties.border
 import kotlinx.html.classes
 import kotlinx.html.js.onClickFunction
 import react.*
@@ -13,7 +12,6 @@ import react.dom.div
 import react.dom.p
 import styled.css
 import styled.styledDiv
-import styled.styledP
 import wotw.io.messages.protobuf.*
 import wotw.io.messages.protobuf.Position
 import wotw.web.io.WebSocketComponent
@@ -76,36 +74,36 @@ class BingoView : RComponent<BingoViewProps, BingoViewState>() {
     }
 
     override fun RBuilder.render() {
-        vbox {
-            hbox {
-                css {
-                    gap = 10.px
-                }
-                child(BingoCardComponent::class) {
-                    attrs.gameId = props.gameId
-                    attrs.playerId = state.trackedPlayer ?: props.playerId
-                    attrs.spectate = props.spectate
-                    attrs.sortedPlayerList = state.sortedPlayerList
-                    attrs.useLatest = props.useLatest
-                }
-                child(BingoPlayersComponent::class) {
-                    attrs.gameId = props.gameId
-                    attrs.spectate = props.spectate || props.useLatest
-                    if (!props.spectate && !props.useLatest) {
-                        attrs.highlightCallback = {
-                            setState {
-                                trackedPlayer = it
-                            }
-                        }
-                    }
-                    attrs.listChangedCallback = {
-                        setState {
-                            sortedPlayerList = it
-                        }
-                    }
-                }
-            }
-        }
+//        vbox {
+//            hbox {
+//                css {
+//                    gap = 10.px
+//                }
+//                child(BingoCardComponent::class) {
+//                    attrs.gameId = props.gameId
+//                    attrs.playerId = state.trackedPlayer ?: props.playerId
+//                    attrs.spectate = props.spectate
+//                    attrs.sortedPlayerList = state.sortedPlayerList
+//                    attrs.useLatest = props.useLatest
+//                }
+//                child(BingoPlayersComponent::class) {
+//                    attrs.gameId = props.gameId
+//                    attrs.spectate = props.spectate || props.useLatest
+//                    if (!props.spectate && !props.useLatest) {
+//                        attrs.highlightCallback = {
+//                            setState {
+//                                trackedPlayer = it
+//                            }
+//                        }
+//                    }
+//                    attrs.listChangedCallback = {
+//                        setState {
+//                            sortedPlayerList = it
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 }
 
@@ -131,7 +129,7 @@ class BingoCardComponent(props: BingoCardProps) : RComponent<BingoCardProps, Bin
             setState {
                 this.board = boardData.board
             }
-            Application.eventBus.send(SyncBingoPlayersMessage(boardData.players))
+            Application.eventBus.send(SyncBingoPlayersMessage(boardData.teams))
         }
 
 
@@ -173,7 +171,7 @@ class BingoCardComponent(props: BingoCardProps) : RComponent<BingoCardProps, Bin
                                 y !in cardRange -> (x + 64).toChar().toString()
                                 else -> ""
                             }
-                            val completedBy: Set<String> = when {
+                            val completedBy: Set<String> = emptySet() /* when {
                                 square != null -> square.completedBy.toSet()
                                 x == 0 && y == 0 || x > size && y > size -> cardRange.map {
                                     state.board[Position(it, it)]?.completedBy?.toSet() ?: emptySet()
@@ -187,7 +185,7 @@ class BingoCardComponent(props: BingoCardProps) : RComponent<BingoCardProps, Bin
                                 else -> cardRange.map {
                                     state.board[Position(x, it)]?.completedBy?.toSet() ?: emptySet()
                                 }.reduce { l1, l2 -> l1.intersect(l2) }
-                            }
+                            } */
 
                             val squareColors = when {
                                 (props.sortedPlayerList?.size ?: 0) in 1..8 -> {

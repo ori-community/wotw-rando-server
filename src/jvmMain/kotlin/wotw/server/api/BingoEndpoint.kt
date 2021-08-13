@@ -1,7 +1,6 @@
 package wotw.server.api
 
 import io.ktor.application.*
-import io.ktor.auth.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
@@ -9,6 +8,7 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
+import io.ktor.util.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.BingoGenProperties
@@ -22,6 +22,7 @@ import wotw.server.database.model.*
 import wotw.server.exception.AlreadyExistsException
 import wotw.server.io.protocol
 import wotw.server.main.WotwBackendServer
+import wotw.server.util.logger
 
 class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
@@ -30,7 +31,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val player = call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: sessionInfo()
                 val game = player.latestBingoGame ?: throw NotFoundException()
                 game.board ?: throw NotFoundException()
-                val info = game.playerInfo()
+                val info = game.teamInfo()
                 BingoData(game.createSyncableBoard(Team.find(game.id.value, player.id.value)), info)
             }
             call.respond(boardData)
@@ -40,11 +41,15 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
         get("bingo/{game_id}") {
             val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Cannot parse game_id")
             val spectate = call.request.queryParameters["spectate"] == "true"
+
             val boardData = newSuspendedTransaction {
+                val player = sessionInfoOrNull()
+                val team = player?.let { Team.find(gameId, player.id.value) }
+
                 val game = Game.findById(gameId) ?: throw NotFoundException()
                 game.board ?: throw NotFoundException()
-                val info = game.playerInfo()
-                BingoData(game.createSyncableBoard(null, spectate), info)
+                val info = game.teamInfo()
+                BingoData(game.createSyncableBoard(team, spectate), info)
             }
             call.respond(boardData)
         }
@@ -58,38 +63,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
             call.respondText("${game.id.value}", status = HttpStatusCode.Created)
         }
-        //FIXME
-        post("bingo/{game_id}/players") {
-            //FIXME
-            val userId = call.receiveOrNull<String>()
-            val gameId = call.parameters["game_id"]?.toLongOrNull() ?: return@post call.respondText(
-                "Cannot parse gameID",
-                status = HttpStatusCode.BadRequest
-            )
-            val game = newSuspendedTransaction {
-                val user = if (userId != null) {
-                    User.findById(userId) ?: throw NotFoundException("user unknown?")
-                } else {
-                    //FIXME
-                    val id = call.sessions.get<UserSession>()?.user ?: throw  NotFoundException("Id unknown?")
-                    //FIXME
-                    User.findById(id) ?: throw NotFoundException("user unknown??")
-                }
 
-                val existing = Team.find(gameId, user.id.value)
-                if (existing != null)
-                    throw AlreadyExistsException()
-
-                val game = Game.findById(gameId) ?: throw NotFoundException("game not found??")
-
-                Team.new(game, user)
-                game.id.value
-            }
-
-            server.sync.syncGameProgress(game)
-
-            call.respond(HttpStatusCode.OK)
-        }
         observerWebsocket()
     }
 
@@ -107,7 +81,9 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     server.connections.unregisterObserverConnection(this@webSocket, null, playerId)
                 }
                 onError {
+                    logger().error(it)
                     server.connections.unregisterObserverConnection(this@webSocket, null, playerId)
+                    this@webSocket.close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "an error occurred"))
                 }
             }
         }
@@ -147,11 +123,6 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         server.connections.unregisterObserverConnection(this@webSocket, gameId, playerId)
                         playerId = this.playerId
                         server.connections.registerObserverConnection(this@webSocket, gameId, playerId)
-
-                        val syncBoard = newSuspendedTransaction {
-                            game.createSyncableBoard(Team.find(gameId, playerId))
-                        }
-                        outgoing.sendMessage(SyncBoardMessage(syncBoard, true))
                     }
                 }
                 onClose {

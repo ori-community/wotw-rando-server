@@ -33,13 +33,13 @@ external interface TeamListState : RState {
 }
 
 external interface BingoListState : RState {
-    var players: List<BingoPlayerInfo>
+    var teams: List<BingoTeamInfo>
     var highlighted: String?
 }
 
 external interface BingoListProps : GameIdProps {
-    var listChangedCallback: ((List<String>?) -> Unit)?
-    var highlightCallback: ((String?) -> Unit)?
+    var listChangedCallback: ((List<Long>?) -> Unit)?
+    var highlightCallback: ((Long?) -> Unit)?
 }
 
 class PlayersComponent : RComponent<GameIdProps, TeamListState>() {
@@ -48,66 +48,66 @@ class PlayersComponent : RComponent<GameIdProps, TeamListState>() {
     }
 
     override fun componentDidMount() {
-        GlobalScope.launch {
-            val gameInfo = Application.api.get<GameInfo>("/games/${props.gameId}/teams")
-            console.log(gameInfo)
-            setState { teams = gameInfo.teams }
-        }
-
-        if (!props.spectate)
-            GlobalScope.launch {
-                val maybeInfo = Application.user.await()
-                if (maybeInfo != null) {
-                    setState { user = maybeInfo.id }
-                }
-            }
+//        GlobalScope.launch {
+//            val gameInfo = Application.api.get<GameInfo>("/games/${props.gameId}/teams")
+//            console.log(gameInfo)
+//            setState { teams = gameInfo.teams }
+//        }
+//
+//        if (!props.spectate)
+//            GlobalScope.launch {
+//                val maybeInfo = Application.user.await()
+//                if (maybeInfo != null) {
+//                    setState { user = maybeInfo.id }
+//                }
+//            }
     }
 
     override fun RBuilder.render() {
-        console.log(state)
-        div {
-            child(TempHeaderComp::class) {}
-
-            styledP {
-                css {
-                    marginTop = 1.em
-                    fontSize = 2.em
-                }
-                +"Teams: "
-            }
-            styledDiv {
-                css {
-                    marginBottom = 1.em
-                }
-                state.teams.forEach {
-                    styledDiv {
-                        css {
-                            backgroundColor = Color.white
-                            color = Color.black
-                        }
-
-                        +"${it.name} (${it.members.joinToString(", ", transform = { it.name })})"
-
-                        if (!it.members.any { it.id == state.user.toString() })
-                            child(JoinTeamComponent::class) {
-                                attrs {
-                                    gameId = props.gameId
-                                    teamId = it.id
-                                    afterJoin = { componentDidMount() }
-                                }
-                            }
-                    }
-                }
-            }
-            child(JoinGameComponent::class) {
-                attrs {
-                    userId = state.user
-                    gameId = props.gameId
-                    afterJoin = { componentDidMount() }
-                }
-            }
-
-        }
+//        console.log(state)
+//        div {
+//            child(TempHeaderComp::class) {}
+//
+//            styledP {
+//                css {
+//                    marginTop = 1.em
+//                    fontSize = 2.em
+//                }
+//                +"Teams: "
+//            }
+//            styledDiv {
+//                css {
+//                    marginBottom = 1.em
+//                }
+//                state.teams.forEach {
+//                    styledDiv {
+//                        css {
+//                            backgroundColor = Color.white
+//                            color = Color.black
+//                        }
+//
+//                        +"${it.name} (${it.members.joinToString(", ", transform = { it.name })})"
+//
+//                        if (!it.members.any { it.id == state.user.toString() })
+//                            child(JoinTeamComponent::class) {
+//                                attrs {
+//                                    gameId = props.gameId
+//                                    teamId = it.id
+//                                    afterJoin = { componentDidMount() }
+//                                }
+//                            }
+//                    }
+//                }
+//            }
+//            child(JoinGameComponent::class) {
+//                attrs {
+//                    userId = state.user
+//                    gameId = props.gameId
+//                    afterJoin = { componentDidMount() }
+//                }
+//            }
+//
+//        }
     }
 
 
@@ -115,27 +115,27 @@ class PlayersComponent : RComponent<GameIdProps, TeamListState>() {
 
 class BingoPlayersComponent : RComponent<BingoListProps, BingoListState>() {
     override fun BingoListState.init() {
-        players = emptyList()
+        teams = emptyList()
         highlighted = null
     }
 
     override fun componentDidMount() {
-        if (!props.spectate)
-            GlobalScope.launch {
-                val maybeInfo = Application.user.await()
-                if (maybeInfo != null) {
-                    setState { highlighted = maybeInfo.id }
-                    props.highlightCallback?.invoke(maybeInfo.id)
-                    Application.eventBus.send(Packet.from(RequestUpdatesMessage(maybeInfo.id)))
-                }
-            }
-
-        Application.eventBus.register(this, SyncBingoPlayersMessage::class) {
-            setState {
-                players = it.players
-                props.listChangedCallback?.invoke(players.map { it.playerId }.sorted())
-            }
-        }
+//        if (!props.spectate)
+//            GlobalScope.launch {
+//                val maybeInfo = Application.user.await()
+//                if (maybeInfo != null) {
+//                    setState { highlighted = maybeInfo.id }
+//                    props.highlightCallback?.invoke(maybeInfo.id)
+//                    Application.eventBus.send(Packet.from(RequestUpdatesMessage(maybeInfo.id)))
+//                }
+//            }
+//
+//        Application.eventBus.register(this, SyncBingoPlayersMessage::class) {
+//            setState {
+//                teams = it.teams
+//                props.listChangedCallback?.invoke(teams.map { it.teamId }.sorted())
+//            }
+//        }
     }
 
     override fun componentWillUnmount() {
@@ -143,61 +143,61 @@ class BingoPlayersComponent : RComponent<BingoListProps, BingoListState>() {
     }
 
     override fun RBuilder.render() {
-        if (props.spectate)
-            return
-        val order = state.players.sortedBy { it.playerId }
-        div {
-            child(TempHeaderComp::class) {}
-            div {
-                attrs.classes = setOf("bingo-players")
-                h1 {
-                    +"Players"
-                }
-                div {
-                    attrs.classes = setOf("bingo-players-list")
-                    state.players.sortedBy { it.rank }.forEach {
-                        styledDiv {
-                            attrs.classes = setOf("bingo-player")
-                            if (it.playerId == state.highlighted)
-                                attrs.classes += "highlighted"
-
-                            if (state.players.size <= bingoPlayerColors.size)
-                                css {
-                                    background =
-                                        "linear-gradient(135deg, var(--bg) 70%, var(--bingo-colour-${order.indexOf(it)}) 75% 100%)"
-                                }
-
-                            p {
-                                +"${it.name} | ${it.score}"
-                            }
-                            attrs.onClickFunction = { _ ->
-                                setState {
-                                    highlighted = it.playerId
-                                    props.highlightCallback?.invoke(it.playerId)
-                                }
-                                GlobalScope.launch {
-                                    Application.eventBus.send(Packet.from(RequestUpdatesMessage(it.playerId)))
-                                }
-                            }
-
-                        }
-                    }
-
-                    child(JoinBingoComponent::class) {
-                        attrs {
-                            userId = state.highlighted
-                            gameId = props.gameId
-                            afterJoin = {
-                                setState {
-                                    highlighted = it
-                                    props.highlightCallback?.invoke(it)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+//        if (props.spectate)
+//            return
+//        val order = state.teams.sortedBy { it.playerId }
+//        div {
+//            child(TempHeaderComp::class) {}
+//            div {
+//                attrs.classes = setOf("bingo-players")
+//                h1 {
+//                    +"Players"
+//                }
+//                div {
+//                    attrs.classes = setOf("bingo-players-list")
+//                    state.teams.sortedBy { it.rank }.forEach {
+//                        styledDiv {
+//                            attrs.classes = setOf("bingo-player")
+//                            if (it.playerId == state.highlighted)
+//                                attrs.classes += "highlighted"
+//
+//                            if (state.teams.size <= bingoPlayerColors.size)
+//                                css {
+//                                    background =
+//                                        "linear-gradient(135deg, var(--bg) 70%, var(--bingo-colour-${order.indexOf(it)}) 75% 100%)"
+//                                }
+//
+//                            p {
+//                                +"${it.name} | ${it.score}"
+//                            }
+//                            attrs.onClickFunction = { _ ->
+//                                setState {
+//                                    highlighted = it.playerId
+//                                    props.highlightCallback?.invoke(it.playerId)
+//                                }
+//                                GlobalScope.launch {
+//                                    Application.eventBus.send(Packet.from(RequestUpdatesMessage(it.playerId)))
+//                                }
+//                            }
+//
+//                        }
+//                    }
+//
+//                    child(JoinBingoComponent::class) {
+//                        attrs {
+//                            userId = state.highlighted
+//                            gameId = props.gameId
+//                            afterJoin = {
+//                                setState {
+//                                    highlighted = it
+//                                    props.highlightCallback?.invoke(it)
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 }
 
@@ -218,69 +218,69 @@ external interface JoinTeamProps : GameIdProps {
 
 class JoinTeamComponent : RComponent<JoinTeamProps, RState>() {
     override fun RBuilder.render() {
-        button {
-            attrs.classes = setOf("join-button")
-            +"Join"
-            attrs {
-                onClickFunction = {
-                    GlobalScope.launch {
-                        val response =
-                            Application.api.post<HttpResponse>(path = "games/${props.gameId}/teams/${props.teamId}")
-                        if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created || response.status == HttpStatusCode.Companion.Conflict) {
-                            props.afterJoin()
-                        } else {
-                            console.error("failed to join team")
-                        }
-                    }
-                }
-            }
-        }
+//        button {
+//            attrs.classes = setOf("join-button")
+//            +"Join"
+//            attrs {
+//                onClickFunction = {
+//                    GlobalScope.launch {
+//                        val response =
+//                            Application.api.post<HttpResponse>(path = "games/${props.gameId}/teams/${props.teamId}")
+//                        if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created || response.status == HttpStatusCode.Companion.Conflict) {
+//                            props.afterJoin()
+//                        } else {
+//                            console.error("failed to join team")
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 }
 
 class JoinGameComponent : RComponent<JoinGameProps, RState>() {
     override fun RBuilder.render() {
-        button {
-            attrs.classes = setOf("join-button")
-            +"Join game on new team"
-            attrs {
-                onClickFunction = {
-                    props.userId?.let {
-                        GlobalScope.launch {
-                            val response = Application.api.post<HttpResponse>(path = "games/${props.gameId}/teams")
-                            if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created || response.status == HttpStatusCode.Companion.Conflict) {
-                                props.afterJoin()
-                            } else {
-                                console.error("failed to join team")
-                            }
-                        }
-                    }
-                }
-            }
-        }
+//        button {
+//            attrs.classes = setOf("join-button")
+//            +"Join game on new team"
+//            attrs {
+//                onClickFunction = {
+//                    props.userId?.let {
+//                        GlobalScope.launch {
+//                            val response = Application.api.post<HttpResponse>(path = "games/${props.gameId}/teams")
+//                            if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created || response.status == HttpStatusCode.Companion.Conflict) {
+//                                props.afterJoin()
+//                            } else {
+//                                console.error("failed to join team")
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 }
 
 class JoinBingoComponent : RComponent<JoinBingoProps, RState>() {
     override fun RBuilder.render() {
-        button {
-            attrs.classes = setOf("join-button")
-            +"Join"
-            attrs {
-                onClickFunction = {
-                    props.userId?.let {
-                        GlobalScope.launch {
-                            val response = Application.api.post<HttpResponse>(path = "bingo/${props.gameId}/players")
-                            if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Companion.Conflict) {
-                                Application.eventBus.send(Packet.from(RequestUpdatesMessage(it)))
-                                props.afterJoin(it)
-                            } else {
-                                console.error("Nop")
-                            }
-                        }
-                    }
-                }
-            }
-        }
+//        button {
+//            attrs.classes = setOf("join-button")
+//            +"Join"
+//            attrs {
+//                onClickFunction = {
+//                    props.userId?.let {
+//                        GlobalScope.launch {
+//                            val response = Application.api.post<HttpResponse>(path = "bingo/${props.gameId}/players")
+//                            if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Companion.Conflict) {
+//                                Application.eventBus.send(Packet.from(RequestUpdatesMessage(it)))
+//                                props.afterJoin(it)
+//                            } else {
+//                                console.error("Nop")
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 }

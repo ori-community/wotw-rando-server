@@ -10,9 +10,8 @@ data class SyncBoardMessage(
 )
 
 @Serializable
-data class BingoPlayerInfo(
-    @ProtoNumber(1) val playerId: String,
-    @ProtoNumber(2) val name: String,
+data class BingoTeamInfo(
+    @ProtoNumber(1) val teamId: Long,
     @ProtoNumber(3) val score: String,
     @ProtoNumber(4) val rank: Int = 0,
     @ProtoNumber(5) val squares: Int = 0,
@@ -21,7 +20,7 @@ data class BingoPlayerInfo(
 
 @Serializable
 data class SyncBingoPlayersMessage(
-    @ProtoNumber(1) val players: List<BingoPlayerInfo>
+    @ProtoNumber(1) val teams: List<BingoTeamInfo>
 )
 
 @Serializable

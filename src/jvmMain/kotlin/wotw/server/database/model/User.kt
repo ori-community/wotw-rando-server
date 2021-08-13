@@ -7,6 +7,7 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.select
+import wotw.io.messages.protobuf.UserInfo
 import wotw.server.database.StringEntity
 import wotw.server.database.StringEntityClass
 import wotw.server.database.StringIdTable
@@ -32,4 +33,7 @@ class User(id: EntityID<String>) : StringEntity(id) {
         }.sortedByDescending {
             it[Teams.id]
         }.firstOrNull()?.get(Games.id)?.let { Game.findById(it) }
+
+    val userInfo: UserInfo
+        get() = UserInfo(id.value, name, avatarId)
 }

@@ -132,10 +132,10 @@ class StateSynchronization(private val server: WotwBackendServer) {
             val game = Game.findById(gameId) ?: return@newSuspendedTransaction null
             game.board ?: return@newSuspendedTransaction null
 
-            val info = game.playerInfo()
+            val info = game.teamInfo()
             val playerInfo = SyncBingoPlayersMessage(info)
             val teamUpdates = game.teams.map { team ->
-                val bingoPlayerData = game.playerInfo(team)
+                val bingoPlayerData = game.teamInfo(team)
                 Triple(
                     team.members.map { it.id.value },
                     UberStateBatchUpdateMessage(
