@@ -73,9 +73,11 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     Team.new(game, player)
                     game.gameInfo
                 }
+
                 server.connections.toObservers(gameId){
                     sendMessage(gameInfo)
                 }
+
                 call.respond(HttpStatusCode.Created)
             }
             get("games/{game_id}/teams/{team_id}"){
@@ -91,15 +93,10 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
             get("games/{game_id}/teams"){
                 val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
-                val teams = newSuspendedTransaction {
+                call.respond(newSuspendedTransaction {
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
-                    game.teams.map {
-                        val members = it.members.map { m -> UserInfo(m.id.value, m.name, m.avatarId) }
-                        TeamInfo(it.id.value, it.name, members)
-                    }
-                }
-                println(teams)
-                call.respond(GameInfo(teams))
+                    game.gameInfo
+                })
             }
 
             post("games/{game_id}/teams/{team_id}"){
@@ -122,6 +119,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     team.members = SizedCollection(team.members + player)
                     game.gameInfo
                 }
+
                 server.sync.aggregationStrategies.remove(gameId)
                 server.connections.toObservers(gameId){
                     sendMessage(gameInfo)

@@ -128,14 +128,14 @@ class StateSynchronization(private val server: WotwBackendServer) {
     }
 
     suspend fun syncGameProgress(gameId: Long) {
-        val (playerInfo, spectatorBoard, stateUpdates) = newSuspendedTransaction {
+        val (syncBingoTeamsMessage, spectatorBoard, stateUpdates) = newSuspendedTransaction {
             val game = Game.findById(gameId) ?: return@newSuspendedTransaction null
             game.board ?: return@newSuspendedTransaction null
 
-            val info = game.teamInfo()
-            val playerInfo = SyncBingoPlayersMessage(info)
+            val info = game.bingoTeamInfo()
+            val syncBingoTeamsMessage = SyncBingoTeamsMessage(info)
             val teamUpdates = game.teams.map { team ->
-                val bingoPlayerData = game.teamInfo(team)
+                val bingoPlayerData = game.bingoTeamInfo(team)
                 Triple(
                     team.members.map { it.id.value },
                     UberStateBatchUpdateMessage(
@@ -156,13 +156,13 @@ class StateSynchronization(private val server: WotwBackendServer) {
                 )
             }
 
-            Triple(playerInfo,SyncBoardMessage(
+            Triple(syncBingoTeamsMessage,SyncBoardMessage(
                 game.createSyncableBoard(null, true),
                 true
             ),  teamUpdates)
         } ?: return
 
-        server.connections.toObservers(gameId) { sendMessage(playerInfo) }
+        server.connections.toObservers(gameId) { sendMessage(syncBingoTeamsMessage) }
         server.connections.toObservers(gameId, true) { sendMessage(spectatorBoard) }
         stateUpdates.forEach { (players, goalStateUpdate, board) ->
             server.connections.toPlayers(players, gameId) { sendMessage(goalStateUpdate) }

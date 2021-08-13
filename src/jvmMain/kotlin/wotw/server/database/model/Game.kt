@@ -33,10 +33,7 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
     val players
         get() = teams.flatMap { it.members }
     val gameInfo
-        get() = GameInfo(teams.map {
-            val members = it.members.map { m -> UserInfo(m.id.value, m.name, m.avatarId) }
-            TeamInfo(it.id.value, it.name, members)
-        })
+        get() = GameInfo(id.value, teams.map { it.teamInfo })
 
     fun updateCompletions(team: Team) {
         val board = board ?: return
@@ -130,7 +127,7 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         } else goalCompletionMap())
 
 
-    fun teamInfo(team: Team): BingoTeamInfo {
+    fun bingoTeamInfo(team: Team): BingoTeamInfo {
         val board = board ?: return BingoTeamInfo(team.id.value, "")
         val lockout = board.config?.lockout ?: false
         val completions = scoreRelevantCompletionMap().filterValues { team in it }.keys.toSet()
@@ -148,9 +145,9 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         )
     }
 
-    fun teamInfo(): List<BingoTeamInfo> {
+    fun bingoTeamInfo(): List<BingoTeamInfo> {
         return teams.map { team ->
-            teamInfo(team)
+            bingoTeamInfo(team)
         }.sortedByDescending { it.rank }
     }
 

@@ -46,7 +46,7 @@ data class Packet(
             1 to typeOf<SyncBoardMessage>(),
             2 to typeOf<RequestUpdatesMessage>(),
             3 to typeOf<UberStateUpdateMessage>(),
-            4 to typeOf<SyncBingoPlayersMessage>(),
+            4 to typeOf<SyncBingoTeamsMessage>(),
             5 to typeOf<InitGameSyncMessage>(),
             6 to typeOf<PrintTextMessage>(),
             7 to typeOf<UberStateBatchUpdateMessage>(),

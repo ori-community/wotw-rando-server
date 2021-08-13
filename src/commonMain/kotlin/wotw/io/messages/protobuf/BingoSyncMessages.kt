@@ -19,7 +19,7 @@ data class BingoTeamInfo(
 )
 
 @Serializable
-data class SyncBingoPlayersMessage(
+data class SyncBingoTeamsMessage(
     @ProtoNumber(1) val teams: List<BingoTeamInfo>
 )
 
