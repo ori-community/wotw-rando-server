@@ -135,11 +135,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile>().configureEa
 
 val jvmJar = tasks.named<Jar>("jvmJar") {
     //includes webpack
-    val taskName = "jsBrowserProductionWebpack"//if (project.hasProperty("isProduction")) "jsBrowserProductionWebpack"  else "jsBrowserDevelopmentWebpack"
-    val jsWebpack = tasks.getByName<org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack>(taskName)
-
-    dependsOn(jsWebpack)
-    from(jsWebpack.entry, jsWebpack.destinationDirectory)
+//    val taskName = "jsBrowserProductionWebpack"//if (project.hasProperty("isProduction")) "jsBrowserProductionWebpack"  else "jsBrowserDevelopmentWebpack"
+//    val jsWebpack = tasks.getByName<org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack>(taskName)
+//
+//    dependsOn(jsWebpack)
+//    from(jsWebpack.entry, jsWebpack.destinationDirectory)
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
     manifest {
