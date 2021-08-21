@@ -20,25 +20,11 @@ data class BingoGenProperties(
 data class GameProperties(val isMulti: Boolean = false, val isCoop: Boolean = false)
 
 @Serializable
-data class HeaderFileEntry(val headerName: String, val name: String?, val description: List<String>?) : Presetable {
+data class HeaderParamDef(val paramName: String, val default: String, val type: String, val description: List<String>)
 
-    @Transient
-    private var lazyWorkaround: Preset? = null
-    override val preset: Preset
-        get() {
-            if (lazyWorkaround == null) lazyWorkaround = Preset(
-                name = name ?: headerName,
-                headerList = setOf(headerName),
-                description = description ?: emptyList(),
-                wrapper = true
-            )
-            return lazyWorkaround!!
-        }
-}
+@Serializable
+data class HeaderFileEntry(val headerName: String, val name: String?, val description: List<String>?, val params: List<HeaderParamDef>)
 
-interface Presetable {
-    val preset: Preset
-}
 
 fun Collection<Preset>.implies(preset: Preset): Boolean {
     return preset in this ||
@@ -65,6 +51,7 @@ data class PresetFile(
     val webConn: Boolean,
     val hard: Boolean,
     val spawnLoc: JsonElement,
+    val headerParams: Map<String, String>,
 ) {
     private val spawnLocString: String = if (spawnLoc is JsonPrimitive) {
         spawnLoc.content.lowercase() // Random → random
@@ -91,6 +78,7 @@ data class PresetFile(
             webConn or other.webConn,
             hard or other.hard,
             spawnLoc,
+            headerParams + other.headerParams
         )
     }
 
@@ -108,6 +96,7 @@ data class PresetFile(
             name = name,
             wrapper = false,
             spawnLoc = spawnLocString,
+            headerParams = headerParams,
         )
     }
 
@@ -128,15 +117,13 @@ data class Preset(
     val name: String = "",
     val wrapper: Boolean = false,
     val spawnLoc: String = "MarshSpawn.Main",
-) : Presetable {
-    @Transient
-    override val preset = this
-}
+    val headerParams: Map<String, String> = emptyMap(),
+)
 
 infix fun Boolean?.or(other: Boolean?): Boolean? =
     if (this == null) other else if (other == null) this else this || other
 
-enum class PathSet : Presetable {
+enum class PathSet  {
     MOKI,
     GORLEK,
     GLITCH,
@@ -148,10 +135,9 @@ enum class PathSet : Presetable {
     SENTRYBURN,
     REMOVEKILLPLANE, ;
 
-    override val preset by lazy { Preset(name = name.lowercase(), pathsets = setOf(this), wrapper = true) }
 }
 
-enum class GoalMode(private val displayName: String, private val description: String) : Presetable {
+enum class GoalMode(private val displayName: String, private val description: String) {
     TREES("All Trees", "Requires all Ancestral Trees to be activated before finishing the game"),
     WISPS("All Wisps", "Requires all Wisps to be collected before finishing the game."),
     QUESTS("All Quests", "Requires all Quests to be completed before finishing the game."),
@@ -159,16 +145,7 @@ enum class GoalMode(private val displayName: String, private val description: St
         "World Tour",
         "Spreads special relic pickups throughout certain zones. All relics must be collected before finishing the game"
     ),
-    ;
 
-    override val preset by lazy {
-        Preset(
-            name = displayName,
-            description = listOf(description),
-            goalmodes = setOf(this),
-            wrapper = true
-        )
-    }
 }
 
 @Serializable
@@ -182,6 +159,7 @@ data class SeedGenConfig(
     val seed: String? = null,
     val spawn: String? = null,
     val customHeaders: List<String>? = null,
+    val headerParams: Map<String, String>? = null,
 )
 
 @Serializable

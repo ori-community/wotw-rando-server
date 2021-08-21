@@ -102,6 +102,11 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             command += config.spawn
         }
 
+        if (!config.headerParams.isNullOrEmpty()) {
+            command += "--args"
+            command += config.headerParams.map{ if(it.value.isEmpty()) it.key else "${it.key}=${it.value}" }
+        }
+
         command += "--"
         command += fileName
 

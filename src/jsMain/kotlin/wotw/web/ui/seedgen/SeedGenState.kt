@@ -83,17 +83,8 @@ fun SeedGenState.toConfig(): SeedGenConfig {
     return SeedGenConfig()//flags.toList(), headers.toList(), emptyList(), paths.toList(), goals.toList(), null, seed)
 }
 
-enum class Flag : Presetable {
+enum class Flag  {
     RACE,
     MULTIPLAYER,
     HARD;
-
-    override val preset by lazy {
-        when (this) {
-            HARD -> Preset(name = "Hard", description = listOf(""), hard = true, wrapper = true)
-            MULTIPLAYER -> Preset(name = "Enable Netcode", webConn = true, wrapper = true)
-            RACE -> Preset(name = "Race Mode", spoilers = false, wrapper = true)
-            else -> Preset()
-        }
-    }
 }

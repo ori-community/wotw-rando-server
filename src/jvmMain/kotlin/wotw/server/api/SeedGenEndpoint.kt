@@ -24,8 +24,17 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val result = dir.toFile().listFiles()?.map {
                 val lines = it.readText().split(System.lineSeparator())
                 val descrLines = lines.filter { it.startsWith("/// ") }.map { it.substringAfter("/// ") }
+                val params = lines.mapIndexedNotNull { i, s ->
+                    if(s.startsWith("!!parameter ")) {
+                        val (name, info) = s.substringAfter("!!parameter ").split(" ", limit = 2)
+                        val (type, default) = if(info.contains(":")) {
+                            info.split(":", limit = 2)
+                        } else listOf("string", info)
+                        HeaderParamDef(name, type, default, lines.subList(0,i).takeLastWhile { it.startsWith("//// ") }.map{ it.substringAfter("//// ")})
+                    } else null
+                }
 
-                HeaderFileEntry(it.name.substringAfterLast("/").substringBeforeLast("."), descrLines.firstOrNull(), descrLines)
+                HeaderFileEntry(it.name.substringAfterLast("/").substringBeforeLast("."), descrLines.firstOrNull(), descrLines, params)
             }?.toList() ?: emptyList()
             call.respond(result)
         }
