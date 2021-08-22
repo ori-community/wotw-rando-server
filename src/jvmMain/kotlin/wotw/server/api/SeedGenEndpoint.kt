@@ -7,13 +7,11 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.*
-import wotw.server.database.model.Game
 import wotw.server.database.model.Seed
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import java.io.File
 import java.nio.file.Path
-import java.util.jar.JarFile
 import kotlin.io.path.Path
 
 class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -30,7 +28,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         val (type, default) = if(info.contains(":")) {
                             info.split(":", limit = 2)
                         } else listOf("string", info)
-                        HeaderParamDef(name, type, default, lines.subList(0,i).takeLastWhile { it.startsWith("//// ") }.map{ it.substringAfter("//// ")})
+                        HeaderArgDef(name, default, type, lines.subList(0,i).takeLastWhile { it.startsWith("//// ") }.map{ it.substringAfter("//// ")})
                     } else null
                 }
 

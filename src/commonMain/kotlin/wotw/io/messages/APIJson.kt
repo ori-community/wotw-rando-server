@@ -1,7 +1,6 @@
 package wotw.io.messages
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -20,10 +19,10 @@ data class BingoGenProperties(
 data class GameProperties(val isMulti: Boolean = false, val isCoop: Boolean = false)
 
 @Serializable
-data class HeaderParamDef(val paramName: String, val default: String, val type: String, val description: List<String>)
+data class HeaderArgDef(val name: String, val default: String, val type: String, val description: List<String>)
 
 @Serializable
-data class HeaderFileEntry(val headerName: String, val name: String?, val description: List<String>?, val params: List<HeaderParamDef>)
+data class HeaderFileEntry(val headerName: String, val name: String?, val description: List<String>?, val params: List<HeaderArgDef>)
 
 
 fun Collection<Preset>.implies(preset: Preset): Boolean {
@@ -51,7 +50,7 @@ data class PresetFile(
     val webConn: Boolean,
     val hard: Boolean,
     val spawnLoc: JsonElement,
-    val headerParams: Map<String, String>,
+    val headerArgs: List<String>,
 ) {
     private val spawnLocString: String = if (spawnLoc is JsonPrimitive) {
         spawnLoc.content.lowercase() // Random → random
@@ -78,7 +77,7 @@ data class PresetFile(
             webConn or other.webConn,
             hard or other.hard,
             spawnLoc,
-            headerParams + other.headerParams
+            headerArgs + other.headerArgs
         )
     }
 
@@ -96,7 +95,7 @@ data class PresetFile(
             name = name,
             wrapper = false,
             spawnLoc = spawnLocString,
-            headerParams = headerParams,
+            headerArgs = headerArgs,
         )
     }
 
@@ -117,7 +116,7 @@ data class Preset(
     val name: String = "",
     val wrapper: Boolean = false,
     val spawnLoc: String = "MarshSpawn.Main",
-    val headerParams: Map<String, String> = emptyMap(),
+    val headerArgs: List<String> = emptyList(),
 )
 
 infix fun Boolean?.or(other: Boolean?): Boolean? =
@@ -159,7 +158,7 @@ data class SeedGenConfig(
     val seed: String? = null,
     val spawn: String? = null,
     val customHeaders: List<String>? = null,
-    val headerParams: Map<String, String>? = null,
+    val headerArgs: List<String>? = null,
 )
 
 @Serializable
