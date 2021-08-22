@@ -25,15 +25,22 @@ data class HeaderArgDef(val name: String, val default: String, val type: String,
 data class HeaderFileEntry(val headerName: String, val name: String?, val description: List<String>?, val params: List<HeaderArgDef>)
 
 
+enum class SeedgenDifficulty(val level: Int) {
+    MOKI(1),
+    GORLEK(2),
+    UNSAFE(3),
+}
+
 fun Collection<Preset>.implies(preset: Preset): Boolean {
     return preset in this ||
             (preset.webConn != true || any { it.webConn == true })
             && (preset.hard != true || any { it.hard == true })
+            && !any { it.difficultyEnum.level < preset.difficultyEnum.level }
             && (preset.spoilers != false || any { it.spoilers == false })
             && (preset.worlds == null || any { it.worlds != null && it.worlds >= preset.worlds })
             && (preset.goalmodes.all { g -> any { g in it.goalmodes } })
             && (preset.headerList.all { h -> any { h in it.headerList } })
-            && (preset.pathsets.all { h -> any { h in it.pathsets } })
+            && (preset.glitches.all { h -> any { h in it.glitches } })
             && (preset.players.all { p -> any { p in it.players } })
             && (preset.presets.all { p -> any { it.name == p || p in it.presets } })
 }
@@ -43,7 +50,8 @@ data class PresetFile(
     val worlds: Int,
     val presets: Set<String>,
     val players: List<String>,
-    val pathsets: Set<String>,
+    val glitches: Set<String>,
+    val difficulty: String,
     val goalmodes: Set<String>,
     val headerList: Set<String>,
     val spoilers: Boolean,
@@ -58,6 +66,9 @@ data class PresetFile(
         spawnLoc.jsonObject["Set"]!!.jsonPrimitive.content
     }
 
+    private val difficultyEnum: SeedgenDifficulty
+        get() = SeedgenDifficulty.valueOf(difficulty.uppercase())
+
     fun fullResolve(presets: Map<String, PresetFile>): PresetFile {
         val merged = this.presets.mapNotNull {
             presets[it]?.fullResolve(presets)
@@ -70,7 +81,8 @@ data class PresetFile(
             max(1, (players + other.players).distinct().size),
             emptySet(),
             (players + other.players).distinct(),
-            pathsets + other.pathsets,
+            glitches + other.glitches,
+            if (difficultyEnum.level > other.difficultyEnum.level) difficulty else other.difficulty,
             goalmodes + other.goalmodes,
             headerList + other.headerList,
             spoilers or other.spoilers,
@@ -86,7 +98,8 @@ data class PresetFile(
             worlds,
             presets,
             players,
-            pathsets.map { PathSet.valueOf(it.uppercase()) }.toSet(),
+            glitches.map { Glitch.valueOf(it.uppercase()) }.toSet(),
+            difficulty,
             goalmodes.map { GoalMode.valueOf(it.uppercase()) }.toSet(),
             headerList,
             spoilers,
@@ -106,7 +119,8 @@ data class Preset(
     val worlds: Int? = null,
     val presets: Set<String> = emptySet(),
     val players: List<String> = emptyList(),
-    val pathsets: Set<PathSet> = emptySet(),
+    val glitches: Set<Glitch> = emptySet(),
+    val difficulty: String = "moki",
     val goalmodes: Set<GoalMode> = emptySet(),
     val headerList: Set<String> = emptySet(),
     val spoilers: Boolean? = null,
@@ -117,23 +131,23 @@ data class Preset(
     val wrapper: Boolean = false,
     val spawnLoc: String = "MarshSpawn.Main",
     val headerArgs: List<String> = emptyList(),
-)
+) {
+    val difficultyEnum: SeedgenDifficulty
+        get() = SeedgenDifficulty.valueOf(difficulty.uppercase())
+}
 
 infix fun Boolean?.or(other: Boolean?): Boolean? =
     if (this == null) other else if (other == null) this else this || other
 
-enum class PathSet  {
-    MOKI,
-    GORLEK,
-    GLITCH,
-    UNSAFE,
-    SJUMP,
+enum class Glitch {
     SWORDSENTRYJUMP,
     HAMMERSENTRYJUMP,
     SHURIKENBREAK,
+    SENTRYBREAK,
+    SPEARBREAK,
+    HAMMERBREAK,
     SENTRYBURN,
-    REMOVEKILLPLANE, ;
-
+    REMOVEKILLPLANE,
 }
 
 enum class GoalMode(private val displayName: String, private val description: String) {
@@ -152,7 +166,8 @@ data class SeedGenConfig(
     val flags: List<String> = emptyList(),
     val headers: List<String> = emptyList(),
     val presets: List<String> = emptyList(),
-    val logic: List<String> = emptyList(),
+    val glitches: List<String> = emptyList(),
+    val difficulty: String = "moki",
     val goals: List<String> = emptyList(),
     val multiNames: List<String>? = null,
     val seed: String? = null,

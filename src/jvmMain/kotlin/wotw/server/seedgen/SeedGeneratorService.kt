@@ -71,13 +71,17 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
 
     private fun buildSeedGenCommand(fileName: String, config: SeedGenConfig): Array<String> {
         var command = "$seedgenExec seed --verbose".split(" ").toTypedArray() + config.flags.flatMap { it.split(" ") }
+
+        command += "--difficulty"
+        command += config.difficulty
+
         if (config.goals.isNotEmpty()) {
             command += "--goals"
             command += config.goals.map { it.lowercase() }
         }
-        if (config.logic.isNotEmpty()) {
-            command += "--logic"
-            command += config.logic.map { it.lowercase() }
+        if (config.glitches.isNotEmpty()) {
+            command += "--glitches"
+            command += config.glitches.map { it.lowercase() }
         }
         if (config.presets.isNotEmpty()) {
             command += "--presets"

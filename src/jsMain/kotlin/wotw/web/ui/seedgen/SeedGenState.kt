@@ -3,9 +3,7 @@ package wotw.web.ui.seedgen
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import react.RState
 import wotw.io.messages.*
 
@@ -61,7 +59,7 @@ fun SeedGenState.remove(preset: Preset){
 
 fun SeedGenState.implies(preset: Preset) = preset !in disabledPresets && selectedPresets.implies(preset)
 
-val SeedGenState.paths: Set<PathSet>
+val SeedGenState.paths: Set<Glitch>
     get() = selectedPresets.flatMap { it.pathsets }.toSet() - disabledPresets.flatMap { it.pathsets }
 
 val SeedGenState.goals: Set<GoalMode>

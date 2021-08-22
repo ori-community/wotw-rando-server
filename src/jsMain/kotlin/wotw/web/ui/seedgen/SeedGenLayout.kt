@@ -33,7 +33,7 @@ value class SingleComponent(val component: String) : Comp {
             return Flag.valueOf(component.substringAfter("f:").uppercase())
         }
         if (component.startsWith("ps:")) {
-            return PathSet.valueOf(component.substringAfter("ps:").uppercase())
+            return Glitch.valueOf(component.substringAfter("ps:").uppercase())
         }
         if (component.startsWith("p:")) {
             presets.firstOrNull { it.name == component.substringAfter("p:") }?.let { return it }
