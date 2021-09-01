@@ -1,6 +1,7 @@
 package wotw.server.api
 
 import io.ktor.application.*
+import io.ktor.auth.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
@@ -25,7 +26,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
         get("bingo/latest/{playerId?}") {
             val boardData = newSuspendedTransaction {
-                val player = call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: sessionInfo()
+                val player = call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: authenticatedUser()
                 val game = player.latestBingoGame ?: throw NotFoundException()
                 game.board ?: throw NotFoundException()
                 val info = game.bingoTeamInfo()
@@ -40,7 +41,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val spectate = call.request.queryParameters["spectate"] == "true"
 
             val boardData = newSuspendedTransaction {
-                val player = sessionInfoOrNull()
+                val player = authenticatedUserOrNull()
                 val team = player?.let { Team.find(gameId, player.id.value) }
 
                 val game = Game.findById(gameId) ?: throw NotFoundException()
@@ -65,12 +66,15 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     }
 
     private fun Route.userboardWebsocket() {
-        webSocket(path = "/observers/latest/{playerId?}") {
-            val playerId = call.parameters["playerId"]?.ifEmpty {
-                call.sessions.get<UserSession>()?.user
-            } ?: return@webSocket this.close(
+        webSocket(path = "/observers/latest/") {
+            val playerId = call.wotwPrincipalOrNull()?.discordId
+            ?: return@webSocket this.close(
                 CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No playerId!")
             )
+            if (!call.wotwPrincipal().hasScope(Scope.BOARDS_READ)) return@webSocket this.close(
+                CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No read access!")
+            )
+
 
             server.connections.registerObserverConnection(this@webSocket, null, playerId)
             protocol {
@@ -94,6 +98,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     "Game-ID is required"
                 )
             )
+            //TODO: once spectators table is added, do the thing!
             val spectate = call.request.queryParameters["spectate"] == "true"
             val gameExists = newSuspendedTransaction {
                 Game.findById(gameId) != null

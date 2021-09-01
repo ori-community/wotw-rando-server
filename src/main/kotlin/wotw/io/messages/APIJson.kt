@@ -182,3 +182,6 @@ data class SeedGenResponse(
     val playerList: List<String> = emptyList(),
     val gameId: Long? = null,
 )
+
+@Serializable
+data class TokenRequest(val scopes: Set<String>, val duration: Long? = null)

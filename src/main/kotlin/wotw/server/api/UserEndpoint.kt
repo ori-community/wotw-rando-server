@@ -12,35 +12,40 @@ import wotw.server.util.put
 
 class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
-        authenticate(SESSION_AUTH) {
+        authenticate(SESSION_AUTH, JWT_AUTH) {
             route("users") {
                 get("/me/info") {
-                    val user = newSuspendedTransaction { sessionInfo() }
+                    val user = newSuspendedTransaction { authenticatedUser() }
+                    wotwPrincipal().require(Scope.USER_INFO_READ)
+
                     call.respond(UserInfo(user.id.value, user.name, user.avatarId))
                 }
             }
-        }
-        route("users") {
-            get("/me") {
-                val user = newSuspendedTransaction {
-                    sessionInfo()
-                }
-                call.respond(user)
-            }
 
-            put<String>("/me/nickname") {
-                if(it.isBlank())
-                    throw BadRequestException("Nickname may not be blank!")
-
-                val user = newSuspendedTransaction {
-                    sessionInfo().apply {
-                        name = it
-                        isCustomName = true
+            route("users") {
+                get("/me") {
+                    val user = newSuspendedTransaction {
+                        authenticatedUser()
                     }
+                    wotwPrincipal().require(Scope.USER_INFO_READ)
+                    call.respond(user)
                 }
-                call.respond(user)
-            }
 
+                put<String>("/me/nickname") {
+                    if(it.isBlank())
+                        throw BadRequestException("Nickname may not be blank!")
+
+                    wotwPrincipal().require(Scope.USER_INFO_WRITE)
+                    val user = newSuspendedTransaction {
+                        authenticatedUser().apply {
+                            name = it
+                            isCustomName = true
+                        }
+                    }
+                    call.respond(user)
+                }
+
+            }
         }
     }
 }
