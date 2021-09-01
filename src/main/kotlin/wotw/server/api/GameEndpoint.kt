@@ -36,7 +36,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("")
-            val playerId = call.parameters["player_id"]?.ifEmpty { null }?: throw BadRequestException("")
+            val playerId = call.parameters["player_id"]?.ifEmpty { null } ?: throw BadRequestException("")
 
             val result = newSuspendedTransaction {
                 val game = Game.findById(gameId) ?: throw NotFoundException()
@@ -51,18 +51,46 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
             server.sync.syncGameProgress(gameId)
             call.respond(HttpStatusCode.NoContent)
         }
-        post("games") {
-            val propsIn = call.receiveOrNull<GameProperties>()  ?: GameProperties()
-            val game = newSuspendedTransaction {Game.new {
-                props = propsIn
-            } }
-            call.respondText("${game.id.value}", status = HttpStatusCode.Created)
+        get("games/{game_id}/teams/{team_id}") {
+            val gameId =
+                call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
+            val teamId =
+                call.parameters["team_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable TeamID")
+            val (team, members) = newSuspendedTransaction {
+                val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
+                val team = game.teams.firstOrNull { it.id.value == teamId }
+                    ?: throw NotFoundException("Team does not exist!")
+                team to team.members.map { UserInfo(it.id.value, it.name, it.avatarId) }
+            }
+            println(members)
+            call.respond(TeamInfo(teamId, team.name, members))
         }
-        authenticate(SESSION_AUTH) {
-            post("games/{game_id}/teams"){
-                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
+        get("games/{game_id}") {
+            val gameId =
+                call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
+            call.respond(newSuspendedTransaction {
+                val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
+                game.gameInfo
+            })
+        }
+        authenticate(SESSION_AUTH, JWT_AUTH) {
+            post("games") {
+                wotwPrincipal().require(Scope.GAME_CREATE)
+                val propsIn = call.receiveOrNull<GameProperties>() ?: GameProperties()
+                val game = newSuspendedTransaction {
+                    Game.new {
+                        props = propsIn
+                    }
+                }
+                call.respondText("${game.id.value}", status = HttpStatusCode.Created)
+            }
+            post("games/{game_id}/teams") {
+                val gameId =
+                    call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
                 val gameInfo = newSuspendedTransaction {
-                    val player = sessionInfo()
+                    val player = authenticatedUser()
+                    wotwPrincipal().require(Scope.TEAM_CREATE)
+
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
 
                     val existingTeam = Team.find(gameId, player.id.value)
@@ -78,36 +106,22 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     game.gameInfo
                 }
 
-                server.connections.toObservers(gameId){
+                server.connections.toObservers(gameId) {
                     sendMessage(gameInfo)
                 }
 
                 call.respond(HttpStatusCode.Created)
             }
-            get("games/{game_id}/teams/{team_id}"){
-                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
-                val teamId = call.parameters["team_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable TeamID")
-                val (team, members) = newSuspendedTransaction {
-                    val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
-                    val team = game.teams.firstOrNull { it.id.value == teamId } ?: throw NotFoundException("Team does not exist!")
-                    team to team.members.map { UserInfo(it.id.value, it.name, it.avatarId) }
-                }
-                println(members)
-                call.respond(TeamInfo(teamId, team.name, members))
-            }
-            get("games/{game_id}"){
-                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
-                call.respond(newSuspendedTransaction {
-                    val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
-                    game.gameInfo
-                })
-            }
 
-            post("games/{game_id}/teams/{team_id}"){
-                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
-                val teamId = call.parameters["team_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable TeamID")
+            post("games/{game_id}/teams/{team_id}") {
+                val gameId =
+                    call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable GameID")
+                val teamId =
+                    call.parameters["team_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable TeamID")
                 val gameInfo = newSuspendedTransaction {
-                    val player = sessionInfo()
+                    val player = authenticatedUser()
+                    wotwPrincipal().require(Scope.TEAM_JOIN)
+
                     val game = Game.findById(gameId) ?: throw NotFoundException("Game does not exist!")
 
                     val existingTeam = Team.find(gameId, player.id.value)
@@ -119,13 +133,14 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
                     }
 
-                    val team = game.teams.firstOrNull { it.id.value == teamId } ?: throw NotFoundException("Team does not exist!")
+                    val team = game.teams.firstOrNull { it.id.value == teamId }
+                        ?: throw NotFoundException("Team does not exist!")
                     team.members = SizedCollection(team.members + player)
                     game.gameInfo
                 }
 
                 server.sync.aggregationStrategies.remove(gameId)
-                server.connections.toObservers(gameId){
+                server.connections.toObservers(gameId) {
                     sendMessage(gameInfo)
                 }
 
@@ -133,9 +148,16 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             webSocket("game_sync/") {
-                val playerId = call.sessions.get<UserSession>()?.user ?: return@webSocket this.close(
+                val playerId = call.wotwPrincipalOrNull()?.discordId ?: return@webSocket this.close(
                     CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session active!")
                 )
+                if (!call.wotwPrincipal().hasScope(Scope.GAME_CONNECTION))
+                    this.close(
+                        CloseReason(
+                            CloseReason.Codes.VIOLATED_POLICY,
+                            "You are not allowed to connect with these credentials!"
+                        )
+                    )
 
                 val (gameStateId, gameId, teamName, teamMembers) = newSuspendedTransaction {
                     val team = TeamMembership.find {
@@ -160,12 +182,14 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val gameProps = newSuspendedTransaction {
                     GameState.findById(gameStateId)?.game?.props ?: GameProperties()
                 }
-                val user = newSuspendedTransaction {  User.find{
-                    Users.id eq playerId
-                }.firstOrNull()?.name } ?: "Mystery User"
+                val user = newSuspendedTransaction {
+                    User.find {
+                        Users.id eq playerId
+                    }.firstOrNull()?.name
+                } ?: "Mystery User"
 
-                val states = (if(gameProps.isMulti) multiStates() else emptyList())
-                    .plus(if(gameProps.isCoop) coopStates() else emptyList())
+                val states = (if (gameProps.isMulti) multiStates() else emptyList())
+                    .plus(if (gameProps.isCoop) coopStates() else emptyList())
                     .plus(initData)  // don't sync new data
                 outgoing.sendMessage(InitGameSyncMessage(states.map {
                     UberId(zerore(it.group), zerore(it.state))
@@ -204,7 +228,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
             result
         }
         val pc = server.connections.playerGameConnections[playerId]!!
-        if(pc.gameId != game) {
+        if (pc.gameId != game) {
             server.connections.unregisterGameConn(playerId)
             server.connections.registerGameConn(pc.socket, playerId, game)
         }
@@ -214,7 +238,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
     private suspend fun UberStateBatchUpdateMessage.updateUberStates(gameStateId: Long, playerId: String) {
         val updates = updates.map {
-            UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to if(it.value == -1.0) 0.0 else it.value
+            UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to if (it.value == -1.0) 0.0 else it.value
         }.toMap()
 
         val (results, game) = newSuspendedTransaction {
@@ -227,7 +251,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
 
         val pc = server.connections.playerGameConnections[playerId]!!
-        if(pc.gameId != game) {
+        if (pc.gameId != game) {
             server.connections.unregisterGameConn(playerId)
             server.connections.registerGameConn(pc.socket, playerId, game)
         }

@@ -1,8 +1,11 @@
 package wotw.server.main
 
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.application.*
 import io.ktor.auth.*
+import io.ktor.auth.jwt.*
 import io.ktor.client.*
 import io.ktor.features.*
 import io.ktor.html.*
@@ -69,6 +72,7 @@ class WotwBackendServer {
         }
 
     }
+
     val proxyEndpoint = ProxyEndpoint(this)
     val bingoEndpoint = BingoEndpoint(this)
     val gameEndpoint = GameEndpoint(this)
@@ -91,7 +95,7 @@ class WotwBackendServer {
                     maxFrameSize = Long.MAX_VALUE
                 }
 
-                if(!System.getenv("ENABLE_HTTPS").isNullOrBlank())
+                if (!System.getenv("ENABLE_HTTPS").isNullOrBlank())
                     install(HttpsRedirect)
 
                 install(CallLogging) {
@@ -160,6 +164,23 @@ class WotwBackendServer {
                             }
                         }
                     }
+                    jwt(JWT_AUTH) {
+                        realm = "wotw-backend-server"
+                        verifier(
+                            JWT
+                                .require(Algorithm.HMAC256(System.getenv("JWT_SECRET")))
+                                .build()
+                        )
+                        validate { credential ->
+                            val userId = credential.payload.getClaim("user_id").asString()
+                            val scopes =
+                                credential.payload.getClaim("scopes").asArray(String::class.java) ?: emptyArray()
+
+                            newSuspendedTransaction {
+                                User.findById(userId)?.id?.value
+                            }?.let { WotwUserPrincipal(userId, *scopes) }
+                        }
+                    }
                     session<UserSession>(SESSION_AUTH) {
                         challenge {
                             call.respond(HttpStatusCode.Unauthorized)
@@ -167,13 +188,13 @@ class WotwBackendServer {
                         validate { session ->
                             newSuspendedTransaction {
                                 User.findById(session.user)?.id?.value
-                            }?.let { UserIdPrincipal(it.toString()) }
+                            }?.let { WotwUserPrincipal(it, Scope.ALL) }
                         }
                     }
                 }
 
                 install(Sessions) {
-                    cookie<UserSession>(SESSION_AUTH, directorySessionStorage(File(".sessions"), cached=true)) {
+                    cookie<UserSession>(SESSION_AUTH, directorySessionStorage(File(".sessions"), cached = true)) {
                         cookie.path = "/"
                     }
                 }
