@@ -31,6 +31,7 @@ import wotw.server.database.GameStateCache
 import wotw.server.sync.StateSynchronization
 import wotw.server.database.model.*
 import wotw.server.exception.AlreadyExistsException
+import wotw.server.exception.ForbiddenException
 import wotw.server.exception.UnauthorizedException
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.logger
@@ -114,7 +115,9 @@ class WotwBackendServer {
                     method(HttpMethod.Options)
                     allowNonSimpleContentTypes = true
                     allowCredentials = true
-                    header("Origin")
+                    header(HttpHeaders.Authorization)
+                    header(HttpHeaders.AccessControlAllowOrigin)
+                    header(HttpHeaders.Origin)
                     allowXHttpMethodOverride()
                     anyHost()
                 }
@@ -139,7 +142,9 @@ class WotwBackendServer {
                     exception<NotFoundException> {
                         call.respond(HttpStatusCode.NotFound, it.message ?: "")
                     }
-
+                    exception<ForbiddenException> {
+                        call.respond(HttpStatusCode.Forbidden, it.message ?: "")
+                    }
                 }
                 val discordOauthProvider = OAuthServerSettings.OAuth2ServerSettings(
                     name = "discord",
