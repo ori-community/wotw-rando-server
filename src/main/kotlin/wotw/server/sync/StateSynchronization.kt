@@ -2,7 +2,6 @@ package wotw.server.sync
 
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
-import wotw.io.messages.sendMessage
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.api.UberStateSyncStrategy
 import wotw.server.database.model.Game
@@ -52,23 +51,15 @@ class StateSynchronization(private val server: WotwBackendServer) {
                         strategy.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT)
 
         if (team) {
-            server.connections.toTeam(gameId, playerId, echo) {
-                sendMessage(
-                    UberStateUpdateMessage(
-                        uberId,
-                        zerore(aggregationResult.newValue ?: 0.0)
-                    )
-                )
-            }
+            server.connections.toTeam(gameId, playerId, echo, UberStateUpdateMessage(
+                uberId,
+                zerore(aggregationResult.newValue ?: 0.0)
+            ))
         } else if (echo) {
-            server.connections.toPlayers(listOf(playerId), gameId) {
-                sendMessage(
-                    UberStateUpdateMessage(
-                        uberId,
-                        zerore(aggregationResult.newValue ?: 0.0)
-                    )
-                )
-            }
+            server.connections.toPlayers(listOf(playerId), gameId, UberStateUpdateMessage(
+                uberId,
+                zerore(aggregationResult.newValue ?: 0.0)
+            ))
         }
     }
 
@@ -86,45 +77,33 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     (strategy?.group == UberStateSyncStrategy.NotificationGroup.OTHERS ||
                             strategy?.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT)
         }
-        server.connections.toTeam(gameId, playerId, false) {
-            sendMessage(
-                UberStateBatchUpdateMessage(
-                    forTeam.map { (uberId, result) ->
-                        UberStateUpdateMessage(
-                            UberId(zerore(uberId.group), zerore(uberId.state)),
-                            zerore(result.newValue ?: 0.0)
-                        )
-                    }
+        server.connections.toTeam(gameId, playerId, false, UberStateBatchUpdateMessage(
+            forTeam.map { (uberId, result) ->
+                UberStateUpdateMessage(
+                    UberId(zerore(uberId.group), zerore(uberId.state)),
+                    zerore(result.newValue ?: 0.0)
                 )
-            )
-        }
-        server.connections.toPlayers(listOf(playerId), gameId) {
-            sendMessage(
-                UberStateBatchUpdateMessage(
-                    forPlayer.map { (uberId, result) ->
-                        UberStateUpdateMessage(
-                            UberId(zerore(uberId.group), zerore(uberId.state)),
-                            zerore(result.newValue ?: 0.0)
-                        )
-                    }
+            }
+        ))
+        server.connections.toPlayers(listOf(playerId), gameId, UberStateBatchUpdateMessage(
+            forPlayer.map { (uberId, result) ->
+                UberStateUpdateMessage(
+                    UberId(zerore(uberId.group), zerore(uberId.state)),
+                    zerore(result.newValue ?: 0.0)
                 )
-            )
-        }
+            }
+        ))
     }
 
     suspend fun forceSyncStates(gameId: Long, playerId: String, updates: Map<UberId, Double>) {
-        server.connections.toTeam(gameId, playerId) {
-            sendMessage(
-                UberStateBatchUpdateMessage(
-                    updates.map { (uberId, value) ->
-                        UberStateUpdateMessage(
-                            uberId,
-                            value
-                        )
-                    }
+        server.connections.toTeam(gameId, playerId, UberStateBatchUpdateMessage(
+            updates.map { (uberId, value) ->
+                UberStateUpdateMessage(
+                    uberId,
+                    value
                 )
-            )
-        }
+            }
+        ))
     }
 
     suspend fun syncGameProgress(gameId: Long) {
@@ -162,15 +141,14 @@ class StateSynchronization(private val server: WotwBackendServer) {
             ),  teamUpdates)
         } ?: return
 
-        server.connections.toObservers(gameId) { sendMessage(syncBingoTeamsMessage) }
-        server.connections.toObservers(gameId, true) { sendMessage(spectatorBoard) }
+        server.connections.toObservers(gameId, message = syncBingoTeamsMessage)
+        server.connections.toObservers(gameId, true, spectatorBoard)
         stateUpdates.forEach { (players, goalStateUpdate, board) ->
-            server.connections.toPlayers(players, gameId) { sendMessage(goalStateUpdate) }
+            server.connections.toPlayers(players, gameId, goalStateUpdate)
             players.forEach { playerId ->
-                server.connections.toObservers(gameId, playerId) { sendMessage(board) }
+                server.connections.toObservers(gameId, playerId, board)
             }
         }
-
     }
 
     data class AggregationResult(

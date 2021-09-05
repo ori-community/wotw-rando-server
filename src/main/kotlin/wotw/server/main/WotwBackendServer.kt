@@ -2,6 +2,7 @@ package wotw.server.main
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.application.*
 import io.ktor.auth.*
@@ -43,6 +44,22 @@ class WotwBackendServer {
         fun main(args: Array<String>) {
             WotwBackendServer().start(args)
         }
+
+        fun getJwtVerifier(): JWTVerifier {
+            return JWT
+                .require(Algorithm.HMAC256(System.getenv("JWT_SECRET")))
+                .build()
+        }
+
+        suspend fun validateJwt(credential: JWTCredential): WotwUserPrincipal? {
+            val userId = credential.payload.getClaim("user_id").asString()
+            val scopes =
+                credential.payload.getClaim("scopes").asArray(String::class.java) ?: emptyArray()
+
+            return newSuspendedTransaction {
+                User.findById(userId)?.id?.value
+            }?.let { WotwUserPrincipal(userId, *scopes) }
+        }
     }
 
     val logger = logger()
@@ -69,7 +86,7 @@ class WotwBackendServer {
         this.db =
             Database.connect(ds)//"jdbc:postgresql://$host:$port/$db?user=$user&password=$password", "org.postgresql.Driver")
         transaction {
-            SchemaUtils.createMissingTablesAndColumns(Games, Users, GameStates, TeamMemberships, Teams, BingoEvents)
+            SchemaUtils.createMissingTablesAndColumns(Games, Users, GameStates, TeamMemberships, Teams, BingoEvents, Spectators)
         }
 
     }
@@ -171,19 +188,9 @@ class WotwBackendServer {
                     }
                     jwt(JWT_AUTH) {
                         realm = "wotw-backend-server"
-                        verifier(
-                            JWT
-                                .require(Algorithm.HMAC256(System.getenv("JWT_SECRET")))
-                                .build()
-                        )
-                        validate { credential ->
-                            val userId = credential.payload.getClaim("user_id").asString()
-                            val scopes =
-                                credential.payload.getClaim("scopes").asArray(String::class.java) ?: emptyArray()
-
-                            newSuspendedTransaction {
-                                User.findById(userId)?.id?.value
-                            }?.let { WotwUserPrincipal(userId, *scopes) }
+                        verifier(getJwtVerifier())
+                        validate {
+                            jwtCredential -> validateJwt(jwtCredential)
                         }
                     }
                     session<UserSession>(SESSION_AUTH) {

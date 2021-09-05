@@ -1,24 +1,23 @@
 package wotw.server.api
 
 import io.ktor.application.*
-import io.ktor.auth.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.sessions.*
 import io.ktor.util.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.BingoGenProperties
 import wotw.io.messages.GameProperties
 import wotw.io.messages.protobuf.BingoData
-import wotw.io.messages.protobuf.RequestUpdatesMessage
 import wotw.server.bingo.BingoBoardGenerator
-import wotw.server.database.model.*
-import wotw.server.io.protocol
+import wotw.server.database.model.Game
+import wotw.server.database.model.Team
+import wotw.server.database.model.User
+import wotw.server.io.handleWebsocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 
@@ -26,7 +25,8 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
         get("bingo/latest/{playerId?}") {
             val boardData = newSuspendedTransaction {
-                val player = call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: authenticatedUser()
+                val player =
+                    call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: authenticatedUser()
                 val game = player.latestBingoGame ?: throw NotFoundException()
                 game.board ?: throw NotFoundException()
                 val info = game.bingoTeamInfo()
@@ -67,23 +67,24 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
     private fun Route.userboardWebsocket() {
         webSocket(path = "/observers/latest/") {
-            val playerId = call.wotwPrincipalOrNull()?.discordId
-            ?: return@webSocket this.close(
-                CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No playerId!")
-            )
+            val playerId = call.wotwPrincipalOrNull()?.userId
+                ?: return@webSocket this.close(
+                    CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No playerId!")
+                )
             if (!call.wotwPrincipal().hasScope(Scope.BOARDS_READ)) return@webSocket this.close(
                 CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No read access!")
             )
 
-
-            server.connections.registerObserverConnection(this@webSocket, null, playerId)
-            protocol {
+            handleWebsocket(needsAuthentication = true) {
+                afterAuthenticated {
+                    server.connections.registerObserverConnection(socketConnection, null, playerId)
+                }
                 onClose {
-                    server.connections.unregisterObserverConnection(this@webSocket, null, playerId)
+                    server.connections.unregisterObserverConnection(socketConnection, null, playerId)
                 }
                 onError {
                     logger().error(it)
-                    server.connections.unregisterObserverConnection(this@webSocket, null, playerId)
+                    server.connections.unregisterObserverConnection(socketConnection, null, playerId)
                     this@webSocket.close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "an error occurred"))
                 }
             }
@@ -98,39 +99,37 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     "Game-ID is required"
                 )
             )
-            //TODO: once spectators table is added, do the thing!
-            val spectate = call.request.queryParameters["spectate"] == "true"
-            val gameExists = newSuspendedTransaction {
-                Game.findById(gameId) != null
-            }
-            if (!gameExists)
-                return@webSocket this.close(
-                    CloseReason(
-                        CloseReason.Codes.NORMAL,
-                        "Requested Game does not exist"
-                    )
-                )
 
-            var playerId = ""
-            server.connections.registerObserverConnection(this@webSocket, gameId, spectator = spectate)
-            protocol {
-                onMessage(RequestUpdatesMessage::class) {
-                    if(spectate)
-                        return@onMessage close(CloseReason(
-                            CloseReason.Codes.VIOLATED_POLICY,
-                            "Cannot track individual player progress on a spectating connection"
-                        ))
-                    if (this.playerId != playerId) {
-                        server.connections.unregisterObserverConnection(this@webSocket, gameId, playerId)
-                        playerId = this.playerId
-                        server.connections.registerObserverConnection(this@webSocket, gameId, playerId)
+            handleWebsocket(needsAuthentication = true) {
+                afterAuthenticated {
+                    if (!principal.hasScope(Scope.BOARDS_READ)) return@afterAuthenticated this@webSocket.close(
+                        CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No read access!")
+                    )
+
+                    val playerId = principal.userId
+
+                    val (gameExists, playerIsSpectator) = newSuspendedTransaction {
+                        val game = Game.findById(gameId)
+                        val player = User.findById(playerId)
+
+                        (game != null) to (game?.spectators?.contains(player) ?: false)
                     }
+
+                    if (!gameExists)
+                        return@afterAuthenticated this@webSocket.close(
+                            CloseReason(
+                                CloseReason.Codes.NORMAL,
+                                "Requested Game does not exist"
+                            )
+                        )
+
+                    server.connections.registerObserverConnection(socketConnection, gameId, playerId, playerIsSpectator)
                 }
                 onClose {
-                    server.connections.unregisterAllObserverConnections(this@webSocket, gameId)
+                    server.connections.unregisterAllObserverConnections(socketConnection, gameId)
                 }
                 onError {
-                    server.connections.unregisterAllObserverConnections(this@webSocket, gameId)
+                    server.connections.unregisterAllObserverConnections(socketConnection, gameId)
                 }
                 onMessage(Any::class) {
                     println("Incoming Message: $this")

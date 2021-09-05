@@ -1,6 +1,8 @@
 package wotw.server.database.model
 
+import io.ktor.features.*
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.select
 import wotw.io.messages.protobuf.UserInfo
 import wotw.server.database.StringEntity

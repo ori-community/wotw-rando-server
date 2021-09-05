@@ -4,6 +4,7 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.SizedCollection
 import wotw.io.messages.GameProperties
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoCard
@@ -28,12 +29,16 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
     val teams by Team referrersOn Teams.gameId
     private val states by GameState referrersOn GameStates.gameId
     private val events by BingoEvent referrersOn BingoEvents.gameId
+    var spectators by User via Spectators
+
     val teamStates
         get() = states.map { it.team to it }.toMap()
     val players
         get() = teams.flatMap { it.members }
     val gameInfo
-        get() = GameInfo(id.value, teams.map { it.teamInfo }, board != null)
+        get() = GameInfo(id.value, teams.map { it.teamInfo }, board != null, spectators.map { it.userInfo })
+    val members
+        get() = players + spectators
 
     fun updateCompletions(team: Team) {
         val board = board ?: return
@@ -126,7 +131,6 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
             setOf(team)
         } else goalCompletionMap())
 
-
     fun bingoTeamInfo(team: Team): BingoTeamInfo {
         val board = board ?: return BingoTeamInfo(team.id.value, "")
         val lockout = board.config?.lockout ?: false
@@ -149,6 +153,17 @@ class Game(id: EntityID<Long>) : LongEntity(id) {
         return teams.map { team ->
             bingoTeamInfo(team)
         }.sortedByDescending { it.rank }
+    }
+
+    fun removePlayerFromTeams(player: User) {
+        val existingTeam = Team.find(this.id.value, player.id.value)
+        if (existingTeam != null) {
+            existingTeam.members = SizedCollection(existingTeam.members.minus(player))
+
+            if (existingTeam.members.count() == 0L) {
+                existingTeam.delete()
+            }
+        }
     }
 
     companion object : LongEntityClass<Game>(Games)

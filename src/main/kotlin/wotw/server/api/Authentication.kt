@@ -143,8 +143,8 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
 }
 
-data class WotwUserPrincipal(val discordId: String, private val scopes: Set<String>) : Principal {
-    constructor(discordId: String, vararg scopes: String) : this(discordId, setOf(*scopes))
+data class WotwUserPrincipal(val userId: String, private val scopes: Set<String>) : Principal {
+    constructor(userId: String, vararg scopes: String) : this(userId, setOf(*scopes))
 
     fun hasScope(scope: String): Boolean {
         val queriedSegments = scope.split(".")
@@ -185,6 +185,7 @@ fun createJWTToken(
 object Scope {
     const val GAME_CONNECTION = "games.connect"
     const val GAME_CREATE = "games.create"
+    const val GAME_SPECTATE = "games.spectate"
     const val TEAM_CREATE = "teams.create"
     const val TEAM_JOIN = "teams.join"
     const val USER_INFO_READ = "user.info.read"
