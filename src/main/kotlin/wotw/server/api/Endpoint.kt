@@ -8,7 +8,7 @@ import wotw.server.database.model.User
 import wotw.server.exception.UnauthorizedException
 import wotw.server.main.WotwBackendServer
 
-abstract class Endpoint(val server: WotwBackendServer){
+abstract class Endpoint(val server: WotwBackendServer) {
     fun init(routing: Route) = routing.initRouting()
     protected abstract fun Route.initRouting()
 
@@ -16,7 +16,7 @@ abstract class Endpoint(val server: WotwBackendServer){
         return principal()
     }
 
-    fun ApplicationCall.wotwPrincipal(): WotwUserPrincipal{
+    fun ApplicationCall.wotwPrincipal(): WotwUserPrincipal {
         return wotwPrincipalOrNull() ?: throw UnauthorizedException()
     }
 
@@ -24,16 +24,16 @@ abstract class Endpoint(val server: WotwBackendServer){
         return call.principal()
     }
 
-    fun PipelineContext<Unit, ApplicationCall>.wotwPrincipal(): WotwUserPrincipal{
+    fun PipelineContext<Unit, ApplicationCall>.wotwPrincipal(): WotwUserPrincipal {
         return wotwPrincipalOrNull() ?: throw UnauthorizedException()
     }
 
     fun PipelineContext<Unit, ApplicationCall>.authenticatedUserOrNull(): User? {
-        val id = wotwPrincipalOrNull()?.discordId ?: return null
+        val id = wotwPrincipalOrNull()?.userId ?: return null
         return User.findById(id)
     }
 
-    fun PipelineContext<Unit, ApplicationCall>.authenticatedUser(): User{
+    fun PipelineContext<Unit, ApplicationCall>.authenticatedUser(): User {
         return authenticatedUserOrNull() ?: throw UnauthorizedException()
     }
 }

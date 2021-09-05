@@ -11,3 +11,4 @@ class ForbiddenException(scopes: Collection<String> = emptySet()) :
             it + "missing scopes: ${scopes.toList().sorted()}"
         }
     })
+class ConflictException(message: String?) : Exception(message)
