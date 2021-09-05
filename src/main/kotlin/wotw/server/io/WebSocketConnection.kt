@@ -57,7 +57,11 @@ class WebSocketConnection(val socket: WebSocketSession, var needsAuthentication:
     }
 
     suspend inline fun <reified T : Any> sendMessage(message: T) {
-        val binaryData = Packet.serialize(message) ?: throw IOException("Cannot serialize object: $message | ${message::class}")
-        socket.send(Frame.Binary(true, binaryData))
+        if (!needsAuthentication || principal != null) {
+            val binaryData = Packet.serialize(message) ?: throw IOException("Cannot serialize object: $message | ${message::class}")
+            socket.send(Frame.Binary(true, binaryData))
+        } else {
+            logger().warn("Packet of type ${message::class} has been discarded. Authentication is required but socket is not authenticated.")
+        }
     }
 }
