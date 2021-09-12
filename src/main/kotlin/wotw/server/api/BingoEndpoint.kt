@@ -1,6 +1,7 @@
 package wotw.server.api
 
 import io.ktor.application.*
+import io.ktor.auth.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
@@ -36,21 +37,34 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
         userboardWebsocket()
 
-        get("bingo/{game_id}") {
-            val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Cannot parse game_id")
-            val spectate = call.request.queryParameters["spectate"] == "true"
+        authenticate(SESSION_AUTH, JWT_AUTH) {
+            get("bingo/{game_id}") {
+                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Cannot parse game_id")
 
-            val boardData = newSuspendedTransaction {
-                val player = authenticatedUserOrNull()
-                val team = player?.let { Team.find(gameId, player.id.value) }
+                val playerIsSpectator = newSuspendedTransaction {
+                    val game = Game.findById(gameId)
+                    val player = authenticatedUserOrNull()
 
-                val game = Game.findById(gameId) ?: throw NotFoundException()
-                game.board ?: throw NotFoundException()
-                val info = game.bingoTeamInfo()
-                BingoData(game.createSyncableBoard(team, spectate), info)
+                    println(player?.id?.value)
+
+                    player != null && game?.spectators?.contains(player) ?: false
+                }
+
+                println(playerIsSpectator)
+
+                val boardData = newSuspendedTransaction {
+                    val player = authenticatedUserOrNull()
+                    val team = player?.let { Team.find(gameId, player.id.value) }
+
+                    val game = Game.findById(gameId) ?: throw NotFoundException()
+                    game.board ?: throw NotFoundException()
+                    val info = game.bingoTeamInfo()
+                    BingoData(game.createSyncableBoard(team, playerIsSpectator), info)
+                }
+                call.respond(boardData)
             }
-            call.respond(boardData)
         }
+
         post("bingo") {
             val props = call.receiveOrNull<BingoGenProperties>()
             val game = newSuspendedTransaction {
