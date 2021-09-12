@@ -192,8 +192,8 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             )
                         }
 
-                        gameStateId = _gameStateId!!
-                        server.connections.registerGameConn(socketConnection, playerId!!, gameId)
+                        gameStateId = _gameStateId
+                        server.connections.registerGameConn(socketConnection, playerId, gameId)
 
                         val initData = newSuspendedTransaction {
                             GameState.findById(gameStateId)?.game?.board?.goals?.flatMap { it.value.keys }
@@ -202,7 +202,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         val gameProps = newSuspendedTransaction {
                             GameState.findById(gameStateId)?.game?.props ?: GameProperties()
                         }
-                        val user = newSuspendedTransaction {
+                        val userName = newSuspendedTransaction {
                             User.find {
                                 Users.id eq playerId
                             }.firstOrNull()?.name
@@ -215,7 +215,7 @@ class GameEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             UberId(zerore(it.group), zerore(it.state))
                         }))
 
-                        var greeting = "$user - Connected to game $gameId"
+                        var greeting = "$userName - Connected to game $gameId"
 
                         if (teamName != null) {
                             greeting += "\nTeam: $teamName\n" + teamMembers?.joinToString()
