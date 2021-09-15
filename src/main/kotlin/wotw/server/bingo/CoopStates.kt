@@ -2,14 +2,17 @@ package wotw.server.bingo
 
 import wotw.io.messages.protobuf.UberId
 import wotw.server.api.AggregationStrategyRegistry
+import wotw.server.api.across
 import wotw.server.api.on
 import wotw.server.api.sync
+import wotw.server.sync.ShareScope
 
 fun coopStates() = (
-                tpIds.values + /*ksDoorIds.values +*/ safeMaxLevers + seedQuestStates + corruptedHeartIds.values +
+        tpIds.values + /*ksDoorIds.values +*/ safeMaxLevers + seedQuestStates + corruptedHeartIds.values +
                 questIds.values + pickupIds.values + unsortedCoop
         )
-fun multiStates() = (0..2000).map{ UberId(12, it) }
+
+fun multiStates() = (0..2000).map { UberId(12, it) }
 val tpIds = mapOf(
     "savePedestalMidnightBurrows" to UberId(24922, 42531),
     "savePedestalInkwaterMarsh" to UberId(21786, 10185),
@@ -59,8 +62,8 @@ val seedQuestStates = listOf(
 )
 
 val corruptedHeartIds = mapOf(
-    "Wind Spinners" to UberId(16155,42976),
-    "Spinning Lasers" to UberId(16155,54940),
+    "Wind Spinners" to UberId(16155, 42976),
+    "Spinning Lasers" to UberId(16155, 54940),
     "Upper Heart" to UberId(16155, 24290),
     "Burrow Heart" to UberId(16155, 3588),
     "Laser Boss" to UberId(16155, 28478),
@@ -90,7 +93,6 @@ val questIds = mapOf(
     "FindToad" to UberId(14019, 48794),
 )
 //    "Into The Darkness" to UberId(14019, 33776), bad to sync for reasons
-
 
 
 val pickupIds = mapOf(
@@ -657,9 +659,9 @@ val unsortedCoop = listOf(
     UberId(9593, 47420),      // inkwaterMarshStateGroup.secretWallA
     UberId(9593, 59418),      // inkwaterMarshStateGroup.enemyRoom
     UberId(9593, 9229)      // inkwaterMarshStateGroup.lanternAndCreepA
- )
+)
 
-val coopAggregation by lazy {
+val worldStateAggregationRegistry by lazy {
     AggregationStrategyRegistry().apply {
         register(
             sync(tpIds.values),
@@ -669,11 +671,17 @@ val coopAggregation by lazy {
             sync(questIds.values),
             sync(pickupIds.values),
             sync(unsortedCoop),
-            sync(multiStates()),
             sync(37858, 8487).on(threshold = 5f), //Wellspring fight room
             sync(5377, 53480).on(threshold = 4f), // pools fight room 2
             sync(9593, 25130).on(threshold = 3f), // double jump lizard fight
-            sync(945, 58403).on(threshold = 7f) // kwolok fight
+            sync(945, 58403).on(threshold = 7f),  // kwolok fight
+        )
+    }
+}
+val universeStateAggregationRegistry by lazy {
+    AggregationStrategyRegistry().apply {
+        register(
+            sync(multiStates()).across(ShareScope.UNIVERSE),
         )
     }
 }

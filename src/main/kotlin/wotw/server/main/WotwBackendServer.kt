@@ -28,13 +28,12 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.event.Level
 import wotw.server.api.*
-import wotw.server.database.GameStateCache
-import wotw.server.sync.StateSynchronization
 import wotw.server.database.model.*
 import wotw.server.exception.AlreadyExistsException
 import wotw.server.exception.ForbiddenException
 import wotw.server.exception.UnauthorizedException
 import wotw.server.seedgen.SeedGeneratorService
+import wotw.server.sync.StateSynchronization
 import wotw.server.util.logger
 import java.io.File
 
@@ -86,14 +85,23 @@ class WotwBackendServer {
         this.db =
             Database.connect(ds)//"jdbc:postgresql://$host:$port/$db?user=$user&password=$password", "org.postgresql.Driver")
         transaction {
-            SchemaUtils.createMissingTablesAndColumns(Games, Users, GameStates, TeamMemberships, Teams, BingoEvents, Spectators)
+            SchemaUtils.createMissingTablesAndColumns(
+                Multiverses,
+                Universes,
+                Worlds,
+                GameStates,
+                Users,
+                WorldMemberships,
+                BingoEvents,
+                Spectators
+            )
         }
 
     }
 
     val proxyEndpoint = ProxyEndpoint(this)
     val bingoEndpoint = BingoEndpoint(this)
-    val gameEndpoint = GameEndpoint(this)
+    val multiverseEndpoint = MultiverseEndpoint(this)
     val seedGenEndpoint = SeedGenEndpoint(this)
     val authEndpoint = AuthenticationEndpoint(this)
     val userEndpoint = UserEndpoint(this)
@@ -101,7 +109,6 @@ class WotwBackendServer {
     val connections = ConnectionRegistry()
     val sync = StateSynchronization(this)
     val seedGeneratorService = SeedGeneratorService(this)
-    val gameState = GameStateCache()
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)
@@ -189,8 +196,8 @@ class WotwBackendServer {
                     jwt(JWT_AUTH) {
                         realm = "wotw-backend-server"
                         verifier(getJwtVerifier())
-                        validate {
-                            jwtCredential -> validateJwt(jwtCredential)
+                        validate { jwtCredential ->
+                            validateJwt(jwtCredential)
                         }
                     }
                     session<UserSession>(SESSION_AUTH) {
@@ -214,7 +221,7 @@ class WotwBackendServer {
                 routing {
                     route("api") {
                         bingoEndpoint.init(this)
-                        gameEndpoint.init(this)
+                        multiverseEndpoint.init(this)
                         authEndpoint.init(this)
                         userEndpoint.init(this)
                         seedGenEndpoint.init(this)

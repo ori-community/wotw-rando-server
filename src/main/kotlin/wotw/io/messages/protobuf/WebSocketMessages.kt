@@ -12,16 +12,23 @@ data class UserInfo(
 
 
 @Serializable
-data class TeamInfo(
+data class WorldInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val members: List<UserInfo>
 )
 
 @Serializable
-data class GameInfo(
+data class UniverseInfo(
     @ProtoNumber(1) val id: Long,
-    @ProtoNumber(2) val teams: List<TeamInfo>,
+    @ProtoNumber(2) val name: String,
+    @ProtoNumber(3) val members: List<WorldInfo>
+)
+
+@Serializable
+data class MultiverseInfo(
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val teams: List<UniverseInfo>,
     @ProtoNumber(3) val hasBingoBoard: Boolean,
     @ProtoNumber(4) val spectators: List<UserInfo>,
 )

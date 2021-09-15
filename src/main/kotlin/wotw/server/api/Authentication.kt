@@ -183,9 +183,9 @@ fun createJWTToken(
 }
 
 object Scope {
-    const val GAME_CONNECTION = "games.connect"
-    const val GAME_CREATE = "games.create"
-    const val GAME_SPECTATE = "games.spectate"
+    const val MULTIVERSE_CONNECTION = "multiverses.connect"
+    const val MULTIVERSE_CREATE = "multiverses.create"
+    const val MULTIVERSE_SPECTATE = "multiverses.spectate"
     const val TEAM_CREATE = "teams.create"
     const val TEAM_JOIN = "teams.join"
     const val USER_INFO_READ = "user.info.read"

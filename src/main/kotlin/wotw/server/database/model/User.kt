@@ -1,8 +1,6 @@
 package wotw.server.database.model
 
-import io.ktor.features.*
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.select
 import wotw.io.messages.protobuf.UserInfo
 import wotw.server.database.StringEntity
@@ -22,14 +20,14 @@ class User(id: EntityID<String>) : StringEntity(id) {
     var name by Users.name
     var isCustomName by Users.isCustomName
     var avatarId by Users.avatarId
-    val games by Game via GameStates
+    val games by Multiverse via GameStates
 
-    val latestBingoGame: Game?
-        get() = (TeamMemberships innerJoin Teams innerJoin Games).slice(Teams.id, Games.id).select {
-            TeamMemberships.playerId eq id.value
+    val latestBingoMultiverse: Multiverse?
+        get() = (WorldMemberships innerJoin Worlds innerJoin Multiverses).slice(Worlds.id, Multiverses.id).select {
+            WorldMemberships.playerId eq id.value
         }.sortedByDescending {
-            it[Teams.id]
-        }.firstOrNull()?.get(Games.id)?.let { Game.findById(it) }
+            it[Worlds.id]
+        }.firstOrNull()?.get(Multiverses.id)?.let { Multiverse.findById(it) }
 
     val userInfo: UserInfo
         get() = UserInfo(id.value, name, avatarId)

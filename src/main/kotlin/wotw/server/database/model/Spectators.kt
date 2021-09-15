@@ -7,7 +7,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
 object Spectators : LongIdTable() {
-    val gameId = reference("game_id", Games, ReferenceOption.CASCADE)
+    val gameId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
 
     init {
@@ -16,8 +16,8 @@ object Spectators : LongIdTable() {
 }
 
 class Spectator(id: EntityID<Long>) : LongEntity(id) {
-    companion object : LongEntityClass<TeamMembership>(TeamMemberships)
+    companion object : LongEntityClass<WorldMemberShip>(WorldMemberships)
 
-    var game by Game referencedOn Spectators.gameId
+    var multiverse by Multiverse referencedOn Spectators.gameId
     var player by User referencedOn Spectators.playerId
 }

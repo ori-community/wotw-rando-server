@@ -16,7 +16,8 @@ data class BingoGenProperties(
 )
 
 @Serializable
-data class GameProperties(val isMulti: Boolean = false, val isCoop: Boolean = false)
+@Deprecated("Kept around for historical preservation of monuments")
+data class VerseProperties(val isMulti: Boolean = false, val isCoop: Boolean = false)
 
 @Serializable
 data class HeaderArgDef(val name: String, val default: String, val type: String, val description: List<String>)
@@ -180,7 +181,7 @@ data class SeedGenConfig(
 data class SeedGenResponse(
     val seedId: Long,
     val playerList: List<String> = emptyList(),
-    val gameId: Long? = null,
+    val multiverseId: Long? = null,
 )
 
 @Serializable

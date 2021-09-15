@@ -38,7 +38,7 @@ infix fun Int.to (y: Int) = Position(this, y)
 data class BingoSquare(
     @ProtoNumber(1) val text: String = "",
     @ProtoNumber(3) val goals: List<BingoGoal> = emptyList(),
-    @ProtoNumber(2) var completedBy: List<TeamInfo> = emptyList(),
+    @ProtoNumber(2) var completedBy: List<WorldInfo> = emptyList(),
 )
 
 @Serializable

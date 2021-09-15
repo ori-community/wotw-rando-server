@@ -12,12 +12,12 @@ import io.ktor.util.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.BingoGenProperties
-import wotw.io.messages.GameProperties
+import wotw.io.messages.VerseProperties
 import wotw.io.messages.protobuf.BingoData
 import wotw.server.bingo.BingoBoardGenerator
-import wotw.server.database.model.Game
-import wotw.server.database.model.Team
+import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
+import wotw.server.database.model.World
 import wotw.server.io.handleWebsocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -28,55 +28,60 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val boardData = newSuspendedTransaction {
                 val player =
                     call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: authenticatedUser()
-                val game = player.latestBingoGame ?: throw NotFoundException()
-                game.board ?: throw NotFoundException()
-                val info = game.bingoTeamInfo()
-                BingoData(game.createSyncableBoard(Team.find(game.id.value, player.id.value)), info)
+                val multiverse = player.latestBingoMultiverse ?: throw NotFoundException()
+                multiverse.board ?: throw NotFoundException()
+                val info = multiverse.bingoTeamInfo()
+                BingoData(multiverse.createSyncableBoard(World.find(multiverse.id.value, player.id.value)), info)
             }
             call.respond(boardData)
         }
         userboardWebsocket()
 
         authenticate(SESSION_AUTH, JWT_AUTH) {
-            get("bingo/{game_id}") {
-                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Cannot parse game_id")
+            get("bingo/{multiverse_id}") {
+                val multiverseId =
+                    call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Cannot parse multiverse_id")
 
                 val playerIsSpectator = newSuspendedTransaction {
-                    val game = Game.findById(gameId)
+                    val multiverse = Multiverse.findById(multiverseId)
                     val player = authenticatedUserOrNull()
 
                     println(player?.id?.value)
 
-                    player != null && game?.spectators?.contains(player) ?: false
+                    player != null && multiverse?.spectators?.contains(player) ?: false
                 }
 
                 println(playerIsSpectator)
 
                 val boardData = newSuspendedTransaction {
                     val player = authenticatedUserOrNull()
-                    val team = player?.let { Team.find(gameId, player.id.value) }
+                    val team = player?.let { World.find(multiverseId, player.id.value) }
+                    val boardData = newSuspendedTransaction {
+                        val player = authenticatedUserOrNull()
+                        val team = player?.let { World.find(multiverseId, player.id.value) }
 
-                    val game = Game.findById(gameId) ?: throw NotFoundException()
-                    game.board ?: throw NotFoundException()
-                    val info = game.bingoTeamInfo()
-                    BingoData(game.createSyncableBoard(team, playerIsSpectator), info)
-                }
-                call.respond(boardData)
-            }
-        }
-
-        post("bingo") {
-            val props = call.receiveOrNull<BingoGenProperties>()
-            val game = newSuspendedTransaction {
-                Game.new {
-                    board = BingoBoardGenerator().generateBoard(props)
-                    this.props = GameProperties(isCoop = true)
+                        val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
+                        multiverse.board ?: throw NotFoundException()
+                        val info = multiverse.bingoTeamInfo()
+                        BingoData(multiverse.createSyncableBoard(team, playerIsSpectator), info)
+                    }
+                    call.respond(boardData)
                 }
             }
-            call.respondText("${game.id.value}", status = HttpStatusCode.Created)
-        }
 
-        observerWebsocket()
+            post("bingo") {
+                val props = call.receiveOrNull<BingoGenProperties>()
+                val multiverse = newSuspendedTransaction {
+                    Multiverse.new {
+                        board = BingoBoardGenerator().generateBoard(props)
+                        this.props = VerseProperties(isCoop = true)
+                    }
+                }
+                call.respondText("${multiverse.id.value}", status = HttpStatusCode.Created)
+            }
+
+            observerWebsocket()
+        }
     }
 
     private fun Route.userboardWebsocket() {
@@ -106,11 +111,11 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     }
 
     private fun Route.observerWebsocket() {
-        webSocket(path = "/observers/{game_id}") {
-            val gameId = call.parameters["game_id"]?.toLongOrNull() ?: return@webSocket this.close(
+        webSocket(path = "/observers/{multiverse_id}") {
+            val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: return@webSocket this.close(
                 CloseReason(
                     CloseReason.Codes.VIOLATED_POLICY,
-                    "Game-ID is required"
+                    "Multiverse-ID is required"
                 )
             )
 
@@ -122,28 +127,28 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val playerId = principal.userId
 
-                    val (gameExists, playerIsSpectator) = newSuspendedTransaction {
-                        val game = Game.findById(gameId)
+                    val (multiverseExists, playerIsSpectator) = newSuspendedTransaction {
+                        val multiverse = Multiverse.findById(multiverseId)
                         val player = User.findById(playerId)
 
-                        (game != null) to (game?.spectators?.contains(player) ?: false)
+                        (multiverse != null) to (multiverse?.spectators?.contains(player) ?: false)
                     }
 
-                    if (!gameExists)
+                    if (!multiverseExists)
                         return@afterAuthenticated this@webSocket.close(
                             CloseReason(
                                 CloseReason.Codes.NORMAL,
-                                "Requested Game does not exist"
+                                "Requested Multiverse does not exist"
                             )
                         )
 
-                    server.connections.registerObserverConnection(socketConnection, gameId, playerId, playerIsSpectator)
+                    server.connections.registerObserverConnection(socketConnection, multiverseId, playerId, playerIsSpectator)
                 }
                 onClose {
-                    server.connections.unregisterAllObserverConnections(socketConnection, gameId)
+                    server.connections.unregisterAllObserverConnections(socketConnection, multiverseId)
                 }
                 onError {
-                    server.connections.unregisterAllObserverConnections(socketConnection, gameId)
+                    server.connections.unregisterAllObserverConnections(socketConnection, multiverseId)
                 }
                 onMessage(Any::class) {
                     println("Incoming Message: $this")

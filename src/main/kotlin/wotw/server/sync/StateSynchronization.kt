@@ -4,89 +4,90 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.api.UberStateSyncStrategy
-import wotw.server.database.model.Game
 import wotw.server.database.model.GameState
+import wotw.server.database.model.Multiverse
+import wotw.server.database.model.World
+import wotw.server.database.model.generateStateAggregationRegistry
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.zerore
 import java.util.*
 import kotlin.to
 
 class StateSynchronization(private val server: WotwBackendServer) {
-    //TODO store coop flag in game so we can do this cleanly
-    //gameId to syncing rules
     val aggregationStrategies: MutableMap<Long, AggregationStrategyRegistry> = Collections.synchronizedMap(hashMapOf())
 
-    fun aggregateState(state: GameState, uberId: UberId, value: Double): AggregationResult {
+    //Requires active transaction
+    suspend fun aggregateState(world: World, uberId: UberId, value: Double): AggregationResult {
+        val universe = world.universe
+        val multiverse = universe.multiverse
+        val strategy = aggregationStrategies.getOrPut(multiverse.id.value) {
+            multiverse.generateStateAggregationRegistry()
+        }.getStrategy(uberId) ?: return AggregationResult(value)
+
+        val state = when (strategy.scope) {
+            ShareScope.WORLD -> world.state
+            ShareScope.UNIVERSE -> GameState.findUniverseState(universe.id.value)
+            ShareScope.MULTIVERSE -> GameState.findMultiverseState(multiverse.id.value)
+            else -> null
+        } ?: return AggregationResult(value, strategy)
         val data = state.uberStateData
+
         val oldValue = data[uberId.group to uberId.state]
-
-        val strategy = aggregationStrategies.getOrPut(state.game.id.value) {
-            state.generateStateAggregationForGame()
-        }.getStrategy(uberId) ?:
-            return AggregationResult(oldValue, oldValue, value, false)
-
         if (!strategy.trigger(oldValue, value))
-            return AggregationResult(oldValue, oldValue, value, false)
+            return AggregationResult(value, strategy, oldValue, false)
 
         val newValue = oldValue?.let { strategy.aggregation(it, value) } ?: value
         data[uberId.group to uberId.state] = newValue
 
         state.uberStateData = data
-        return AggregationResult(oldValue, newValue, value, true)
+        return AggregationResult(value, strategy, oldValue, true, newValue)
     }
 
     suspend fun syncState(gameId: Long, playerId: String, uberId: UberId, aggregationResult: AggregationResult) {
-        val strategy = aggregationStrategies[gameId]?.getStrategy(uberId) ?: return
+        val strategy = aggregationResult.strategy ?: return
         if (!aggregationResult.triggered || strategy.group == UberStateSyncStrategy.NotificationGroup.NONE)
             return
 
         val uberId = UberId(zerore(uberId.group), zerore(uberId.state))
-        val echo = strategy.group == UberStateSyncStrategy.NotificationGroup.ALL
-                || aggregationResult.sentValue != aggregationResult.newValue && strategy.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT
-
-        val team = strategy.group ==
-                UberStateSyncStrategy.NotificationGroup.ALL ||
-                aggregationResult.oldValue != aggregationResult.newValue &&
-                (strategy.group == UberStateSyncStrategy.NotificationGroup.OTHERS ||
-                        strategy.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT)
-
-        if (team) {
-            server.connections.toTeam(gameId, playerId, echo, UberStateUpdateMessage(
+        val excludePlayerFromUpdate = strategy.group == UberStateSyncStrategy.NotificationGroup.NONE
+                || strategy.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT && aggregationResult.sentValue == aggregationResult.newValue
+        server.connections.sendTo(
+            gameId, playerId, strategy.scope, excludePlayerFromUpdate, UberStateUpdateMessage(
                 uberId,
                 zerore(aggregationResult.newValue ?: 0.0)
-            ))
-        } else if (echo) {
-            server.connections.toPlayers(listOf(playerId), gameId, UberStateUpdateMessage(
-                uberId,
-                zerore(aggregationResult.newValue ?: 0.0)
-            ))
-        }
+            )
+        )
     }
 
     suspend fun syncStates(gameId: Long, playerId: String, updates: Map<UberId, AggregationResult>) {
         val triggered = updates.filter { it.value.triggered }
-        val forPlayer = triggered.filter {
-            val strategy = aggregationStrategies[gameId]?.getStrategy(it.key)
+        val playerUpdates = triggered.filter {
+            val strategy = it.value.strategy
             strategy?.group == UberStateSyncStrategy.NotificationGroup.ALL
                     || it.value.sentValue != it.value.newValue && strategy?.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT
         }
-        val forTeam = triggered.filter {
-            val strategy = aggregationStrategies[gameId]?.getStrategy(it.key)
+        val shareScopeUpdates = triggered.filter {
+            val strategy = it.value.strategy
             strategy?.group == UberStateSyncStrategy.NotificationGroup.ALL ||
                     it.value.oldValue != it.value.newValue &&
                     (strategy?.group == UberStateSyncStrategy.NotificationGroup.OTHERS ||
                             strategy?.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT)
+        }.entries.groupBy { it.value.strategy?.scope }
+
+        shareScopeUpdates.entries.forEach { (scope, states) ->
+            if (scope !== null)
+                server.connections.sendTo(
+                    gameId, playerId, scope, false,
+                    states.map { (uberId, result) ->
+                        UberStateUpdateMessage(
+                            UberId(zerore(uberId.group), zerore(uberId.state)),
+                            zerore(result.newValue ?: 0.0)
+                        )
+                    }
+                )
         }
-        server.connections.toTeam(gameId, playerId, false, UberStateBatchUpdateMessage(
-            forTeam.map { (uberId, result) ->
-                UberStateUpdateMessage(
-                    UberId(zerore(uberId.group), zerore(uberId.state)),
-                    zerore(result.newValue ?: 0.0)
-                )
-            }
-        ))
         server.connections.toPlayers(listOf(playerId), gameId, UberStateBatchUpdateMessage(
-            forPlayer.map { (uberId, result) ->
+            playerUpdates.map { (uberId, result) ->
                 UberStateUpdateMessage(
                     UberId(zerore(uberId.group), zerore(uberId.state)),
                     zerore(result.newValue ?: 0.0)
@@ -95,28 +96,17 @@ class StateSynchronization(private val server: WotwBackendServer) {
         ))
     }
 
-    suspend fun forceSyncStates(gameId: Long, playerId: String, updates: Map<UberId, Double>) {
-        server.connections.toTeam(gameId, playerId, UberStateBatchUpdateMessage(
-            updates.map { (uberId, value) ->
-                UberStateUpdateMessage(
-                    uberId,
-                    value
-                )
-            }
-        ))
-    }
-
-    suspend fun syncGameProgress(gameId: Long) {
+    suspend fun syncMultiverseProgress(gameId: Long) {
         val (syncBingoTeamsMessage, spectatorBoard, stateUpdates) = newSuspendedTransaction {
-            val game = Game.findById(gameId) ?: return@newSuspendedTransaction null
-            game.board ?: return@newSuspendedTransaction null
+            val multiverse = Multiverse.findById(gameId) ?: return@newSuspendedTransaction null
+            multiverse.board ?: return@newSuspendedTransaction null
 
-            val info = game.bingoTeamInfo()
+            val info = multiverse.bingoTeamInfo()
             val syncBingoTeamsMessage = SyncBingoTeamsMessage(info)
-            val teamUpdates = game.teams.map { team ->
-                val bingoPlayerData = game.bingoTeamInfo(team)
+            val teamUpdates = multiverse.worlds.map { world ->
+                val bingoPlayerData = multiverse.bingoTeamInfo(world)
                 Triple(
-                    team.members.map { it.id.value },
+                    world.members.map { it.id.value },
                     UberStateBatchUpdateMessage(
                         UberStateUpdateMessage(
                             UberId(10, 0),
@@ -129,16 +119,18 @@ class StateSynchronization(private val server: WotwBackendServer) {
                             bingoPlayerData.rank.toDouble()
                         )
                     ), SyncBoardMessage(
-                        game.createSyncableBoard(team),
+                        multiverse.createSyncableBoard(world),
                         true
                     )
                 )
             }
 
-            Triple(syncBingoTeamsMessage, SyncBoardMessage(
-                game.createSyncableBoard(null, true),
-                true
-            ),  teamUpdates)
+            Triple(
+                syncBingoTeamsMessage, SyncBoardMessage(
+                    multiverse.createSyncableBoard(null, true),
+                    true
+                ), teamUpdates
+            )
         } ?: return
 
         server.connections.toObservers(gameId, message = syncBingoTeamsMessage)
@@ -152,9 +144,10 @@ class StateSynchronization(private val server: WotwBackendServer) {
     }
 
     data class AggregationResult(
-        val oldValue: Double?,
-        val newValue: Double?,
         val sentValue: Double,
-        val triggered: Boolean
+        val strategy: UberStateSyncStrategy? = null,
+        val oldValue: Double? = null,
+        val triggered: Boolean = false,
+        val newValue: Double? = null,
     )
 }

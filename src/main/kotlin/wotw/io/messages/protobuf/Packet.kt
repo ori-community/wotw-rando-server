@@ -3,7 +3,6 @@ package wotw.io.messages.protobuf
 import kotlinx.serialization.*
 import kotlinx.serialization.protobuf.ProtoNumber
 import wotw.io.messages.protoBuf
-import wotw.server.database.model.Game
 import wotw.util.BiMap
 import wotw.util.biMapOf
 import kotlin.reflect.KType
@@ -51,7 +50,7 @@ data class Packet(
             5 to typeOf<InitGameSyncMessage>(),
             6 to typeOf<PrintTextMessage>(),
             7 to typeOf<UberStateBatchUpdateMessage>(),
-            8 to typeOf<GameInfo>(),
+            8 to typeOf<MultiverseInfo>(),
             9 to typeOf<Authenticate>(),
         )
 
@@ -61,7 +60,7 @@ data class Packet(
 
         inline fun <reified T : Any> from(obj: T): Packet {
             println(typeOf<T>())
-            println(typeOf<T>() == typeOf<GameInfo>())
+            println(typeOf<T>() == typeOf<MultiverseInfo>())
             val id = ids.inverse[typeOf<T>()]
                 ?: throw SerializationException("No packet-id known for ${obj::class.qualifiedName}, known values: ${ids.inverse.keys}")
             val serializer = serializer(typeOf<T>())
