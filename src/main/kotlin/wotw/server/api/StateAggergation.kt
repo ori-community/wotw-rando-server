@@ -1,14 +1,17 @@
 package wotw.server.api
 
 import wotw.io.messages.protobuf.UberId
+import wotw.server.api.UberStateSyncStrategy.NotificationGroup.DIFFERENT
+import wotw.server.sync.ShareScope
 import kotlin.math.max
 import kotlin.math.min
-import wotw.server.api.UberStateSyncStrategy.NotificationGroup.*
 
 
 data class UberStateSyncStrategy(val aggregation: (Double, Double) -> Double,
                    val trigger: (Double?, Double) -> Boolean = {_, _ -> true},
-                   val group: NotificationGroup = DIFFERENT){
+                   val group: NotificationGroup = DIFFERENT,
+                   val scope: ShareScope = ShareScope.WORLD
+){
     companion object{
         val MAX = UberStateSyncStrategy(::max)
         val MIN = UberStateSyncStrategy(::min)
@@ -16,6 +19,7 @@ data class UberStateSyncStrategy(val aggregation: (Double, Double) -> Double,
         val KEEP = UberStateSyncStrategy({ v, _ -> v })
         val AVG = UberStateSyncStrategy({ o, n -> (o + n) / 2 })
     }
+
     enum class NotificationGroup{
         /**
          * Only listen for updates
@@ -41,8 +45,8 @@ private typealias UberStateRegistration = Pair<Collection<UberId>, UberStateSync
 class AggregationStrategyRegistry(private val strategies: MutableMap<UberId, UberStateSyncStrategy> = mutableMapOf()){
     fun register(vararg registrations: UberStateRegistration): AggregationStrategyRegistry{
         strategies.putAll(registrations.flatMap{ (ids, strategy) ->
-            val mappedStrat = strategy?: UberStateSyncStrategy.MAX
-            ids.map { it to mappedStrat }
+            val mappedStrategy = strategy ?: UberStateSyncStrategy.MAX
+            ids.map { it to mappedStrategy }
         })
         return this
     }
@@ -64,4 +68,5 @@ fun sync(ids: Collection<UberId>, strategy: UberStateSyncStrategy? = null): Uber
 
 fun UberStateRegistration.with(strategy: UberStateSyncStrategy) = first to strategy
 fun UberStateRegistration.on(threshold: Float) = first to (second ?: UberStateSyncStrategy.MAX).copy(trigger = { o, n -> n >= threshold})
+fun UberStateRegistration.across(scope: ShareScope) = first to (second ?: UberStateSyncStrategy.MAX).copy(scope = scope)
 fun UberStateRegistration.notify(group: UberStateSyncStrategy.NotificationGroup) = first to (second ?: UberStateSyncStrategy.MAX).copy(group = group)

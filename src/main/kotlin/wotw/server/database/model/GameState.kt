@@ -12,42 +12,66 @@ import wotw.io.messages.protobuf.UberId
 import wotw.server.api.*
 import wotw.server.api.UberStateSyncStrategy.NotificationGroup.NONE
 import wotw.server.bingo.UberStateMap
-import wotw.server.bingo.coopAggregation
+import wotw.server.bingo.universeStateAggregationRegistry
+import wotw.server.bingo.worldStateAggregationRegistry
 import wotw.server.database.jsonb
 
 object GameStates : LongIdTable() {
-    val gameId = reference("game_id", Games, ReferenceOption.CASCADE)
-    val teamId = reference("team_id", Teams, ReferenceOption.CASCADE)
+    val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
+    val universeId = optReference("universe_id", Universes, ReferenceOption.CASCADE)
+    val worldId = optReference("world_id", Worlds, ReferenceOption.CASCADE)
 
     @OptIn(InternalSerializationApi::class)
     val uberStateData = jsonb("uber_state_data", UberStateMap::class.serializer())
 
     init {
-        uniqueIndex(gameId, teamId)
+        uniqueIndex(multiverseId, universeId, worldId)
     }
 }
 
-class GameState(id: EntityID<Long>): LongEntity(id){
-    var game by Game referencedOn GameStates.gameId
-    var team by Team referencedOn GameStates.teamId
+class GameState(id: EntityID<Long>) : LongEntity(id) {
+    var multiverse by Multiverse referencedOn GameStates.multiverseId
+    var universe by Universe optionalReferencedOn GameStates.universeId
+    var world by World optionalReferencedOn GameStates.worldId
     var uberStateData by GameStates.uberStateData
+    val type: Type
+        get() = when {
+            world != null -> Type.WORLD
+            universe != null -> Type.UNIVERSE
+            else -> Type.MULTIVERSE
+        }
 
-    companion object : LongEntityClass<GameState>(GameStates){
-        fun find(gameId: Long, playerId: Long) = find{
-            (GameStates.gameId eq gameId) and (GameStates.teamId eq playerId)
+    companion object : LongEntityClass<GameState>(GameStates) {
+        fun findMultiverseState(multiverseId: Long) = find {
+            (GameStates.multiverseId eq multiverseId and GameStates.universeId.isNull() and GameStates.worldId.isNull())
+        }.singleOrNull()
+
+        fun findUniverseState(universeId: Long) = find {
+            (GameStates.universeId eq universeId and GameStates.worldId.isNull())
+        }.singleOrNull()
+
+        fun findWorldState(worldId: Long) = find {
+            (GameStates.worldId eq worldId)
         }.singleOrNull()
     }
 
-    fun generateStateAggregationForGame(): AggregationStrategyRegistry {
-        val ids = game.board?.goals?.flatMap { it.value.keys }
-            ?.map { UberId(it.first, it.second) } ?: emptySet()
-
-        var aggr = AggregationStrategyRegistry().register(
-            sync(ids).notify(NONE)
-        )
-        if(team.members.count() > 1f)
-            aggr += coopAggregation
-
-        return aggr
+    enum class Type {
+        MULTIVERSE,
+        UNIVERSE,
+        WORLD,
+        INVALID,
     }
+}
+
+fun Multiverse.generateStateAggregationRegistry(): AggregationStrategyRegistry {
+    val bingoStates = board?.goals?.flatMap { it.value.keys }
+        ?.map { UberId(it.first, it.second) } ?: emptySet()
+
+    var aggregationRegistry = AggregationStrategyRegistry().register(
+        sync(bingoStates).notify(NONE)
+    )
+    aggregationRegistry += worldStateAggregationRegistry
+    aggregationRegistry += universeStateAggregationRegistry
+
+    return aggregationRegistry
 }

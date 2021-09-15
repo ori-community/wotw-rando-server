@@ -36,16 +36,3 @@ open class Cache<KEY : Any, ENTITY : Any>(
         }
     }
 }
-
-class GameStateCache : Cache<Pair<Long, Long>, UberStateMap>({ (gameId, playerId) ->
-    newSuspendedTransaction {
-        GameState.find(gameId, playerId)?.uberStateData
-    }
-}, { (gameId, playerId), map ->
-    newSuspendedTransaction {
-        GameState.find(gameId, playerId)?.uberStateData = map
-    }
-}){
-    suspend fun get(gameId: Long, playerId: Long) = get(gameId to playerId)
-}
-
