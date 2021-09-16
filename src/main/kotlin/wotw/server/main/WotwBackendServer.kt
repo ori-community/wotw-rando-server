@@ -302,7 +302,7 @@ class WotwBackendServer {
                         }
 
                         val message = Packet.deserialize(byteBuffer.array()) ?: continue
-                        connection.eventBus.send(message)
+                        connection.handleUdpMessage(datagram, message)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
