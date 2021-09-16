@@ -288,11 +288,6 @@ class WotwBackendServer {
                             continue
                         }
 
-                        if (datagram.packet.remaining > 65565L) {
-                            logger.warn("Dropped packet larger than 64K")
-                            continue
-                        }
-
                         val byteBuffer = ByteBuffer.allocate(datagram.packet.remaining.toInt())
                         datagram.packet.readAvailable(byteBuffer)
 

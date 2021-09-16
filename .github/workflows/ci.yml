@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
   workflow_dispatch: {}
 
 env:
@@ -35,11 +36,18 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}{% raw %}
 
+      - name: Set image Tag
+        run: |
+          echo IMAGE_TAG=dev >> $GITHUB_ENV
+          if [ $GITHUB_REF = "refs/heads/main" ]; then
+            echo IMAGE_TAG=latest >> $GITHUB_ENV
+          fi
+
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.6.1
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
 
