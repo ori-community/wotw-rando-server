@@ -29,7 +29,7 @@ ENV WOTW_DB=postgres
 ENV WOTW_DB_PORT=5432
 ENV WOTW_DB_USER=postgres
 
-COPY --from=build-jar /app/build/libs/wotw-server-jvm.jar /app/server/wotw-server.jar
+COPY --from=build-jar /app/build/libs/wotw-server.jar /app/server/wotw-server.jar
 COPY --from=build-seedgen /app/build/output/release/seedgen /app/seedgen/seedgen
 COPY --from=build-seedgen /app/projects/SeedGenCli/headers /app/seedgen/headers
 COPY --from=build-seedgen /app/projects/SeedGenCli/presets /app/seedgen/presets
