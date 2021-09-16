@@ -2,15 +2,12 @@ package wotw.server.io
 
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.serialization.SerializationException
-import wotw.io.messages.protobuf.Packet
 import wotw.server.api.WotwUserPrincipal
 import wotw.server.exception.UnauthorizedException
 import wotw.util.EventBus
-import kotlin.math.acos
 import kotlin.reflect.KClass
 
-class WebsocketProtocolBuilder(val socketConnection: WebSocketConnection, internal val eventBus: EventBus) {
+class ClientSocketProtocolBuilder(val socketConnection: ClientConnection, internal val eventBus: EventBus) {
     var errorHandler: (suspend (Throwable) -> Unit)? = null
         private set
     var closeHandler: (suspend (ClosedReceiveChannelException) -> Unit)? = null
@@ -40,13 +37,14 @@ class WebsocketProtocolBuilder(val socketConnection: WebSocketConnection, intern
 }
 
 
-suspend fun WebSocketSession.handleWebsocket(needsAuthentication: Boolean = false, block: WebsocketProtocolBuilder.() -> Unit) {
-    val builder = WebsocketProtocolBuilder(WebSocketConnection(this, needsAuthentication), EventBus())
+suspend fun WebSocketSession.handleClientSocket(block: ClientSocketProtocolBuilder.() -> Unit) {
+    val eventBus = EventBus()
+    val builder = ClientSocketProtocolBuilder(ClientConnection(this, eventBus), eventBus)
 
     block(builder)
 
     try {
-        builder.socketConnection.listen(builder.eventBus, builder.errorHandler, builder.afterAuthenticatedHandler)
+        builder.socketConnection.listen(builder.errorHandler, builder.afterAuthenticatedHandler)
     } catch (e: ClosedReceiveChannelException) {
         builder.closeHandler?.invoke(e)
     } catch (e: Throwable) {

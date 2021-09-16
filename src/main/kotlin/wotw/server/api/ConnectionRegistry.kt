@@ -3,7 +3,7 @@ package wotw.server.api
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
-import wotw.server.io.WebSocketConnection
+import wotw.server.io.ClientConnection
 import wotw.server.sync.ShareScope
 import wotw.server.util.logger
 import wotw.util.MultiMap
@@ -12,10 +12,10 @@ import java.util.*
 class ConnectionRegistry {
     val logger = logger()
 
-    data class PlayerConn(val socketConnection: WebSocketConnection, val multiverseId: Long?)
+    data class PlayerConnection(val clientConnection: ClientConnection, val multiverseId: Long?)
 
     data class MultiverseObserverConnection(
-        val socketConnection: WebSocketConnection,
+        val socketConnection: ClientConnection,
         val playerId: String?,
         var spectating: Boolean,
     )
@@ -29,12 +29,12 @@ class ConnectionRegistry {
     * If MultiverseId == null then Socket listens to newest
     * */
     val playerObserverConnections =
-        MultiMap<Pair<Long?, String>, WebSocketConnection>(Collections.synchronizedMap(hashMapOf()))
+        MultiMap<Pair<Long?, String>, ClientConnection>(Collections.synchronizedMap(hashMapOf()))
 
-    val playerMultiverseConnections = Collections.synchronizedMap(hashMapOf<String, PlayerConn>())
+    val playerMultiverseConnections = Collections.synchronizedMap(hashMapOf<String, PlayerConnection>())
 
     fun registerObserverConnection(
-        socket: WebSocketConnection,
+        socket: ClientConnection,
         multiverseId: Long? = null,
         playerId: String,
         spectator: Boolean = false
@@ -45,18 +45,18 @@ class ConnectionRegistry {
         playerObserverConnections[multiverseId to playerId] += socket
     }
 
-    fun registerMultiverseConn(socket: WebSocketConnection, playerId: String, multiverseId: Long? = null) =
-        run { playerMultiverseConnections[playerId] = PlayerConn(socket, multiverseId) }
+    fun registerMultiverseConn(socket: ClientConnection, playerId: String, multiverseId: Long? = null) =
+        run { playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId) }
 
     fun unregisterMultiverseConn(playerId: String) = playerMultiverseConnections.remove(playerId)
 
-    fun unregisterAllObserverConnections(socket: WebSocketConnection, multiverseId: Long) {
+    fun unregisterAllObserverConnections(socket: ClientConnection, multiverseId: Long) {
         multiverseObserverConnections[multiverseId].removeIf { it.socketConnection == socket }
         playerObserverConnections.filterKeys { it.first == multiverseId }
             .forEach { playerObserverConnections[it.key] -= socket }
     }
 
-    fun unregisterObserverConnection(socket: WebSocketConnection, multiverseId: Long? = null, playerId: String) {
+    fun unregisterObserverConnection(socket: ClientConnection, multiverseId: Long? = null, playerId: String) {
         playerObserverConnections[multiverseId to playerId] -= socket
     }
 
@@ -70,7 +70,8 @@ class ConnectionRegistry {
         playerId: String,
         scope: ShareScope = ShareScope.PLAYER,
         excludePlayer: Boolean = false,
-        vararg messages: T
+        vararg messages: T,
+        unreliable: Boolean = false,
     ) {
         val targets: MutableCollection<String> = newSuspendedTransaction {
             val multiverse = Multiverse.findById(multiverseId) ?: return@newSuspendedTransaction mutableSetOf()
@@ -89,19 +90,21 @@ class ConnectionRegistry {
         if(excludePlayer)
             targets -= playerId
 
-        toPlayers(targets, multiverseId, *messages)
+        toPlayers(targets, multiverseId, unreliable, *messages)
     }
 
     suspend inline fun <reified T : Any> toPlayers(
         players: Iterable<String>,
         multiverseId: Long? = null,
+        unreliable: Boolean = false,
         message: T
     ) =
-        toPlayers(players, multiverseId, *arrayOf(message))
+        toPlayers(players, multiverseId, unreliable, *arrayOf(message))
 
     suspend inline fun <reified T : Any> toPlayers(
         players: Iterable<String>,
         multiverseId: Long? = null,
+        unreliable: Boolean = false,
         vararg messages: T
     ) {
         for (player in players) {
@@ -109,7 +112,7 @@ class ConnectionRegistry {
                 for (message in messages) {
                     try {
                         if (multiverseId == null || multiverseId == conn.multiverseId)
-                            conn.socketConnection.sendMessage(message)
+                            conn.clientConnection.sendMessage(message)
                     } catch (e: Throwable) {
                         println(e)
                     }
@@ -146,7 +149,7 @@ class ConnectionRegistry {
         toObservers(multiverseId, playerId, *arrayOf(message))
 
     suspend inline fun <reified T : Any> toObservers(multiverseId: Long, playerId: String, vararg messages: T) {
-        var conns: Set<WebSocketConnection> = playerObserverConnections[multiverseId to playerId]
+        var conns: Set<ClientConnection> = playerObserverConnections[multiverseId to playerId]
         if (newSuspendedTransaction {
                 User.findById(playerId)?.latestBingoMultiverse?.id?.value == multiverseId
             })

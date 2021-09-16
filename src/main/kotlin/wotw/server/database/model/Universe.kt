@@ -55,7 +55,7 @@ class World(id: EntityID<Long>) : LongEntity(id) {
                 this.universe = universe
                 val world = World.new {
                     this.universe = universe
-                    this.name = player.name + "'s team"
+                    this.name = player.name + "'s world"
                 }
                 this.world = world
                 WorldMemberShip.new {
@@ -72,17 +72,17 @@ class World(id: EntityID<Long>) : LongEntity(id) {
 
 
 object WorldMemberships : LongIdTable() {
-    val teamId = reference("world_id", Worlds, ReferenceOption.CASCADE)
+    val worldId = reference("world_id", Worlds, ReferenceOption.CASCADE)
     val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
 
     init {
-        uniqueIndex(teamId, playerId)
+        uniqueIndex(worldId, playerId)
     }
 }
 
 class WorldMemberShip(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<WorldMemberShip>(WorldMemberships)
 
-    var world by World referencedOn WorldMemberships.teamId
+    var world by World referencedOn WorldMemberships.worldId
     var player by User referencedOn WorldMemberships.playerId
 }

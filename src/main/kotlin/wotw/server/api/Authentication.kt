@@ -58,7 +58,7 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     if (redir == null)
                         call.respondText("Hi ${user.name}! Your ID is ${user.id.value}")
                     else {
-                        val token = createJWTToken(user, Scope.TOKEN_CREATION) {
+                        val token = createJWTToken(user, Scope.TOKEN_CREATE) {
                             withExpiresAt(Date(getTimeMillis() + 1000 * 60))
                         }
                         redir += if ("?" in redir) "&" else "?"
@@ -89,7 +89,7 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         authenticatedUser()
                     }
                     val scopes = request.scopes.toTypedArray()
-                    principal.require(Scope.TOKEN_CREATION)
+                    principal.require(Scope.TOKEN_CREATE)
                     call.respond(createJWTToken(user, *scopes) {
                         request.duration?.let {
                             withExpiresAt(Date(getTimeMillis() + it))
@@ -183,14 +183,14 @@ fun createJWTToken(
 }
 
 object Scope {
-    const val MULTIVERSE_CONNECTION = "multiverses.connect"
+    const val MULTIVERSE_CONNECT = "multiverses.connect"
     const val MULTIVERSE_CREATE = "multiverses.create"
     const val MULTIVERSE_SPECTATE = "multiverses.spectate"
-    const val TEAM_CREATE = "teams.create"
-    const val TEAM_JOIN = "teams.join"
+    const val WORLD_CREATE = "worlds.create"
+    const val WORLD_JOIN = "worlds.join"
     const val USER_INFO_READ = "user.info.read"
     const val USER_INFO_WRITE = "user.info.write"
-    const val TOKEN_CREATION = "tokens.create"
+    const val TOKEN_CREATE = "tokens.create"
     const val BOARDS_READ = "boards.read"
     const val ALL = "*"
 }
