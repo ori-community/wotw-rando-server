@@ -5,11 +5,17 @@ import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
 import io.ktor.auth.jwt.*
 import io.ktor.http.cio.websocket.*
+import io.ktor.network.selector.*
+import io.ktor.network.sockets.*
+import io.ktor.util.network.*
+import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.SerializationException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.AuthenticateMessage
 import wotw.io.messages.protobuf.AuthenticatedMessage
+import wotw.io.messages.protobuf.MultiverseInfoMessage
 import wotw.io.messages.protobuf.Packet
 import wotw.server.api.WotwUserPrincipal
 import wotw.server.database.model.User
@@ -20,6 +26,7 @@ import java.lang.Exception
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
+import kotlin.text.String
 
 // ktor WHYYYY
 fun DecodedJWT.parsePayload(): Payload {
@@ -29,7 +36,7 @@ fun DecodedJWT.parsePayload(): Payload {
 
 class ClientConnectionUDPRegistry() {
     companion object {
-        private val availableUdpIDs = HashSet((0..65565).toList());
+        private val availableUdpIDs = HashSet((0..65535).toList());
         private val connections: HashMap<Int, ClientConnection> = hashMapOf()
 
         fun register(connection: ClientConnection): Int {
@@ -55,11 +62,19 @@ class ClientConnectionUDPRegistry() {
 }
 
 class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) {
-    private var udpId: Int? = null
+    var udpId: Int? = null
+    var udpSocket: ConnectedDatagramSocket? = null
     val udpKey = ByteArray(16)
 
     var principal: WotwUserPrincipal? = null
         private set
+
+    suspend inline fun<reified T : Any> handleUdpMessage(datagram: Datagram, message: T) {
+        if (udpSocket == null) {
+            udpSocket = aSocket(ActorSelectorManager(Dispatchers.IO)).udp().connect(datagram.address)
+        }
+        eventBus.send(message)
+    }
 
     suspend fun listen(errorHandler: (suspend (Throwable) -> Unit)?, afterAuthenticatedHandler: (suspend () -> Unit)?) {
         for (frame in webSocket.incoming) {
@@ -99,9 +114,11 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
             }
         }
 
-        if (udpId != null) {
-            ClientConnectionUDPRegistry.unregister(udpId!!)
+        udpId?.let {
+            ClientConnectionUDPRegistry.unregister(it)
         }
+
+        udpSocket?.dispose()
     }
 
     private fun generateUdpKey() {
@@ -110,10 +127,17 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
         }
     }
 
-    suspend inline fun <reified T : Any> sendMessage(message: T) {
+    suspend inline fun <reified T : Any> sendMessage(message: T, unreliable: Boolean = false) {
         if (principal != null) {
             val binaryData = Packet.serialize(message) ?: throw IOException("Cannot serialize object: $message | ${message::class}")
-            webSocket.send(Frame.Binary(true, binaryData))
+
+            if (unreliable) {
+                udpSocket?.let {
+                    it.send(Datagram(ByteReadPacket(binaryData), it.remoteAddress))
+                }
+            } else {
+                webSocket.send(Frame.Binary(true, binaryData))
+            }
         } else {
             logger().warn("Packet of type ${message::class} has been discarded. Authentication is required but websocket is not authenticated.")
         }

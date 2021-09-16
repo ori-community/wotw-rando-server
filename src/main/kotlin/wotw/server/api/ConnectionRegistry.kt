@@ -112,7 +112,7 @@ class ConnectionRegistry {
                 for (message in messages) {
                     try {
                         if (multiverseId == null || multiverseId == conn.multiverseId)
-                            conn.clientConnection.sendMessage(message)
+                            conn.clientConnection.sendMessage(message, unreliable)
                     } catch (e: Throwable) {
                         println(e)
                     }
@@ -137,7 +137,7 @@ class ConnectionRegistry {
         multiverseObserverConnections[multiverseId].filter { !spectatorsOnly || it.spectating }.forEach { (conn, _) ->
             for (message in messages) {
                 try {
-                    conn.sendMessage(message)
+                    conn.sendMessage(message, false)
                 } catch (e: Throwable) {
                     println(e)
                 }
@@ -158,7 +158,7 @@ class ConnectionRegistry {
         conns.forEach { conn ->
             for (message in messages) {
                 try {
-                    conn.sendMessage(message)
+                    conn.sendMessage(message, false)
                 } catch (e: Throwable) {
                     println(e)
                 }
