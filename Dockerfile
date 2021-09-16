@@ -3,7 +3,7 @@ FROM gradle:7-jdk16 as build-jar
 WORKDIR /app
 COPY . /app
 
-RUN gradle jvmJar
+RUN gradle jar
 
 
 FROM rust:alpine as build-seedgen
