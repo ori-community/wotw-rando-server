@@ -86,7 +86,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     }
                 )
         }
-        server.connections.toPlayers(listOf(playerId), gameId, UberStateBatchUpdateMessage(
+        server.connections.toPlayers(listOf(playerId), gameId, false, UberStateBatchUpdateMessage(
             playerUpdates.map { (uberId, result) ->
                 UberStateUpdateMessage(
                     UberId(zerore(uberId.group), zerore(uberId.state)),
@@ -97,14 +97,14 @@ class StateSynchronization(private val server: WotwBackendServer) {
     }
 
     suspend fun syncMultiverseProgress(gameId: Long) {
-        val (syncBingoTeamsMessage, spectatorBoard, stateUpdates) = newSuspendedTransaction {
+        val (syncBingoWorldsMessage, spectatorBoard, stateUpdates) = newSuspendedTransaction {
             val multiverse = Multiverse.findById(gameId) ?: return@newSuspendedTransaction null
             multiverse.board ?: return@newSuspendedTransaction null
 
-            val info = multiverse.bingoTeamInfo()
-            val syncBingoTeamsMessage = SyncBingoTeamsMessage(info)
-            val teamUpdates = multiverse.worlds.map { world ->
-                val bingoPlayerData = multiverse.bingoTeamInfo(world)
+            val info = multiverse.bingoWorldInfo()
+            val syncBingoWorldsMessage = SyncBingoWorldsMessage(info)
+            val worldUpdates = multiverse.worlds.map { world ->
+                val bingoPlayerData = multiverse.bingoWorldInfo(world)
                 Triple(
                     world.members.map { it.id.value },
                     UberStateBatchUpdateMessage(
@@ -126,17 +126,17 @@ class StateSynchronization(private val server: WotwBackendServer) {
             }
 
             Triple(
-                syncBingoTeamsMessage, SyncBoardMessage(
+                syncBingoWorldsMessage, SyncBoardMessage(
                     multiverse.createSyncableBoard(null, true),
                     true
-                ), teamUpdates
+                ), worldUpdates
             )
         } ?: return
 
-        server.connections.toObservers(gameId, message = syncBingoTeamsMessage)
+        server.connections.toObservers(gameId, message = syncBingoWorldsMessage)
         server.connections.toObservers(gameId, true, spectatorBoard)
         stateUpdates.forEach { (players, goalStateUpdate, board) ->
-            server.connections.toPlayers(players, gameId, goalStateUpdate)
+            server.connections.toPlayers(players, gameId, false, goalStateUpdate)
             players.forEach { playerId ->
                 server.connections.toObservers(gameId, playerId, board)
             }

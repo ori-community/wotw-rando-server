@@ -46,12 +46,15 @@ data class Packet(
             1 to typeOf<SyncBoardMessage>(),
             2 to typeOf<RequestUpdatesMessage>(),
             3 to typeOf<UberStateUpdateMessage>(),
-            4 to typeOf<SyncBingoTeamsMessage>(),
+            4 to typeOf<SyncBingoWorldsMessage>(),
             5 to typeOf<InitGameSyncMessage>(),
             6 to typeOf<PrintTextMessage>(),
             7 to typeOf<UberStateBatchUpdateMessage>(),
-            8 to typeOf<MultiverseInfo>(),
-            9 to typeOf<Authenticate>(),
+            8 to typeOf<MultiverseInfoMessage>(),
+            9 to typeOf<AuthenticateMessage>(),
+            10 to typeOf<PlayerPositionMessage>(),
+            11 to typeOf<UpdatePlayerPositionMessage>(),
+            12 to typeOf<AuthenticatedMessage>(),
         )
 
         fun deserialize(bytes: ByteArray): Any? {
@@ -60,7 +63,7 @@ data class Packet(
 
         inline fun <reified T : Any> from(obj: T): Packet {
             println(typeOf<T>())
-            println(typeOf<T>() == typeOf<MultiverseInfo>())
+            println(typeOf<T>() == typeOf<MultiverseInfoMessage>())
             val id = ids.inverse[typeOf<T>()]
                 ?: throw SerializationException("No packet-id known for ${obj::class.qualifiedName}, known values: ${ids.inverse.keys}")
             val serializer = serializer(typeOf<T>())

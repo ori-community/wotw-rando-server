@@ -14,12 +14,12 @@ val protoBuf = ProtoBuf {
     encodeDefaults = true
     serializersModule = EmptySerializersModule
 }
-val json = Json{
+val json = Json {
     prettyPrint = true
     allowStructuredMapKeys = true
     encodeDefaults = true
 }
-val relaxedJson = Json{
+val relaxedJson = Json {
     prettyPrint = true
     allowStructuredMapKeys = true
     ignoreUnknownKeys = true

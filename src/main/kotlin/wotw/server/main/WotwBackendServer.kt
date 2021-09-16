@@ -12,6 +12,8 @@ import io.ktor.features.*
 import io.ktor.html.*
 import io.ktor.http.*
 import io.ktor.http.content.*
+import io.ktor.network.selector.*
+import io.ktor.network.sockets.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
@@ -19,23 +21,31 @@ import io.ktor.serialization.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.sessions.*
+import io.ktor.util.network.*
 import io.ktor.util.pipeline.*
+import io.ktor.utils.io.core.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.*
 import kotlinx.html.*
+import kotlinx.serialization.SerializationException
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.event.Level
+import wotw.io.messages.protobuf.Packet
 import wotw.server.api.*
 import wotw.server.database.model.*
 import wotw.server.exception.AlreadyExistsException
 import wotw.server.exception.ForbiddenException
 import wotw.server.exception.UnauthorizedException
+import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.sync.StateSynchronization
 import wotw.server.util.logger
 import java.io.File
+import java.nio.ByteBuffer
+import kotlin.experimental.xor
 
 class WotwBackendServer {
     companion object {
@@ -254,9 +264,56 @@ class WotwBackendServer {
                 }
             }
         }
-        embeddedServer(Netty, env).start(wait = true)
-    }
 
+        runBlocking {
+            val udpSocketBuilder = aSocket(ActorSelectorManager(Dispatchers.IO)).udp()
+            val udpSocket = udpSocketBuilder.bind(NetworkAddress("0.0.0.0", (System.getenv("UDP_PORT") ?: "31415").toInt()))
+
+            // TODO: Move this out of main class
+            launch(Dispatchers.IO + udpSocket.socketContext) {
+                logger.info("UDP socket listening on port ${udpSocket.localAddress.port}")
+
+                for (datagram in udpSocket.incoming) {
+                    try {
+                        if (datagram.packet.remaining < 4) {
+                            logger.warn("Received invalid packet (too small)")
+                            continue
+                        }
+
+                        val connectionId = datagram.packet.readInt()
+                        val connection = ClientConnectionUDPRegistry.getById(connectionId)
+
+                        if (connection == null) {
+                            logger.warn("Received UDP packet for unknown connection")
+                            continue
+                        }
+
+                        if (datagram.packet.remaining > 65565L) {
+                            logger.warn("Dropped packet larger than 64K")
+                            continue
+                        }
+
+                        val byteBuffer = ByteBuffer.allocate(datagram.packet.remaining.toInt())
+                        datagram.packet.readAvailable(byteBuffer)
+
+                        // XOR the packet
+                        for (i in 0 until byteBuffer.capacity() - 1) {
+                            byteBuffer.put(i, byteBuffer[i].xor(connection.udpKey[i % connection.udpKey.size]))
+                        }
+
+                        val message = Packet.deserialize(byteBuffer.array()) ?: continue
+                        connection.eventBus.send(message)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
+            launch {
+                embeddedServer(Netty, env).start(wait = true)
+            }
+        }
+    }
 
     private fun ApplicationCall.redirectUrl(path: String): String {
         return if (!System.getenv("PUBLIC_URL").isNullOrBlank()) {

@@ -17,7 +17,7 @@ import wotw.server.bingo.coopStates
 import wotw.server.bingo.multiStates
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
-import wotw.server.io.handleWebsocket
+import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.rezero
@@ -47,20 +47,20 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             server.sync.syncMultiverseProgress(multiverseId)
             call.respond(HttpStatusCode.NoContent)
         }
-        get("multiverses/{multiverse_id}/teams/{team_id}") {
+        get("multiverses/{multiverse_id}/worlds/{world_id}") {
             val multiverseId =
                 call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
-            val teamId =
-                call.parameters["team_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable TeamID")
-            val (team, members) = newSuspendedTransaction {
+            val worldId =
+                call.parameters["world_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable WorldID")
+            val (world, members) = newSuspendedTransaction {
                 val multiverse =
                     Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
-                val team = multiverse.worlds.firstOrNull { it.id.value == teamId }
-                    ?: throw NotFoundException("Team does not exist!")
-                team to team.members.map { UserInfo(it.id.value, it.name, it.avatarId) }
+                val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
+                    ?: throw NotFoundException("World does not exist!")
+                world to world.members.map { UserInfo(it.id.value, it.name, it.avatarId) }
             }
             println(members)
-            call.respond(WorldInfo(teamId, team.name, members))
+            call.respond(WorldInfo(worldId, world.name, members))
         }
         get("multiverses/{multiverse_id}") {
             val multiverseId =
@@ -90,7 +90,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     call.parameters["universe_id"]?.toLongOrNull()
                 val multiverseInfo = newSuspendedTransaction {
                     val player = authenticatedUser()
-                    wotwPrincipal().require(Scope.TEAM_CREATE)
+                    wotwPrincipal().require(Scope.WORLD_CREATE)
 
                     val multiverse =
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
@@ -126,12 +126,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val multiverseId =
                     call.parameters["multiverse_id"]?.toLongOrNull()
                         ?: throw BadRequestException("Unparsable MultiverseID")
-                val teamId =
-                    call.parameters["world_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable TeamID")
+                val worldId =
+                    call.parameters["world_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable WorldID")
 
                 val multiverseInfo = newSuspendedTransaction {
                     val player = authenticatedUser()
-                    wotwPrincipal().require(Scope.TEAM_JOIN)
+                    wotwPrincipal().require(Scope.WORLD_JOIN)
 
                     val multiverse =
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
@@ -142,9 +142,9 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     multiverse.removePlayerFromWorlds(player)
 
-                    val team = multiverse.worlds.firstOrNull { it.id.value == teamId }
-                        ?: throw NotFoundException("Team does not exist!")
-                    team.members = SizedCollection(team.members + player)
+                    val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
+                        ?: throw NotFoundException("World does not exist!")
+                    world.members = SizedCollection(world.members + player)
                     multiverse.multiverseInfo
                 }
 
@@ -181,7 +181,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             webSocket("multiverse_sync/") {
-                handleWebsocket {
+                handleClientSocket {
                     var playerId = ""
                     var worldId = 0L
 
@@ -189,19 +189,19 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         playerId = principalOrNull?.userId ?: return@afterAuthenticated this@webSocket.close(
                             CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session active!")
                         )
-                        principalOrNull?.hasScope(Scope.MULTIVERSE_CONNECTION) ?: this@webSocket.close(
+                        principalOrNull?.hasScope(Scope.MULTIVERSE_CONNECT) ?: this@webSocket.close(
                             CloseReason(
                                 CloseReason.Codes.VIOLATED_POLICY,
                                 "You are not allowed to connect with these credentials!"
                             )
                         )
 
-                        val (_worldId, multiverseId, teamName, teamMembers) = newSuspendedTransaction {
-                            val team = WorldMemberShip.find {
+                        val (_worldId, multiverseId, worldName, worldMembers) = newSuspendedTransaction {
+                            val world = WorldMemberShip.find {
                                 WorldMemberships.playerId eq playerId
                             }.sortedByDescending { it.id.value }.firstOrNull()?.world
 
-                            team?.id?.value then team?.universe?.id?.value then team?.name then team?.members?.map { it.name }
+                            world?.id?.value then world?.universe?.id?.value then world?.name then world?.members?.map { it.name }
                         }
 
                         if (multiverseId == null || _worldId == null) {
@@ -235,8 +235,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                         var greeting = "$userName - Connected to multiverse $multiverseId"
 
-                        if (teamName != null) {
-                            greeting += "\nTeam: $teamName\n" + teamMembers?.joinToString()
+                        if (worldName != null) {
+                            greeting += "\nWorld: $worldName\n" + worldMembers?.joinToString()
                         }
 
                         socketConnection.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 3f))
@@ -250,6 +250,9 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         if (worldId != 0L && playerId.isNotEmpty()) {
                             updateUberStates(worldId, playerId)
                         }
+                    }
+                    onMessage(PlayerPositionMessage::class) {
+                        server.connections
                     }
                 }
             }
@@ -271,7 +274,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         val pc = server.connections.playerMultiverseConnections[playerId]!!
         if (pc.multiverseId != multiverseId) {
             server.connections.unregisterMultiverseConn(playerId)
-            server.connections.registerMultiverseConn(pc.socketConnection, playerId, multiverseId)
+            server.connections.registerMultiverseConn(pc.clientConnection, playerId, multiverseId)
         }
         server.sync.syncMultiverseProgress(multiverseId)
         server.sync.syncState(multiverseId, playerId, UberId(uberGroup, uberState), result)
@@ -294,7 +297,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         val pc = server.connections.playerMultiverseConnections[playerId]!!
         if (pc.multiverseId != multiverseId) {
             server.connections.unregisterMultiverseConn(playerId)
-            server.connections.registerMultiverseConn(pc.socketConnection, playerId, multiverseId)
+            server.connections.registerMultiverseConn(pc.clientConnection, playerId, multiverseId)
         }
         server.sync.syncMultiverseProgress(multiverseId)
         server.sync.syncStates(multiverseId, playerId, results)

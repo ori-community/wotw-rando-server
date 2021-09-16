@@ -39,14 +39,14 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val players
         get() = worlds.flatMap { it.members }
     val multiverseInfo
-        get() = MultiverseInfo(id.value, universes.map { it.universeInfo }, board != null, spectators.map { it.userInfo })
+        get() = MultiverseInfoMessage(id.value, universes.map { it.universeInfo }, board != null, spectators.map { it.userInfo })
     val members
         get() = players + spectators
 
     fun updateCompletions(world: World) {
         val board = board ?: return
         val state = worldStates[world]?.uberStateData ?: UberStateMap.empty
-        val completions = events.filter { it.team == world }.map { it.x to it.y }
+        val completions = events.filter { it.world == world }.map { it.x to it.y }
 
         for (x in 1..board.size) {
             for (y in 1..board.size) {
@@ -54,7 +54,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 if (point in completions) continue
                 if (board.goalCompleted(point, state)) {
                     BingoEvent.new {
-                        this.team = world
+                        this.world = world
                         this.multiverse = this@Multiverse
                         this.manual = false
                         this.time = Date().time
@@ -112,7 +112,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 x to y
             }
         }.map { (x, y) ->
-            (x to y) to events.filter { it.x == x && it.y == y }.map { it.team }.toSet()
+            (x to y) to events.filter { it.x == x && it.y == y }.map { it.world }.toSet()
         }.toMap()
     }
 
@@ -123,19 +123,19 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 x to y
             }
         }.map { (x, y) ->
-            (x to y) to events.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.team
+            (x to y) to events.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.world
         }.toMap()
         return owners
     }
 
     fun scoreRelevantCompletionMap() =
         (if (board?.config?.lockout == true) lockoutGoalOwnerMap().mapValues {
-            val team = it.value ?: return@mapValues emptySet()
-            setOf(team)
+            val world = it.value ?: return@mapValues emptySet()
+            setOf(world)
         } else goalCompletionMap())
 
-    fun bingoTeamInfo(world: World): BingoTeamInfo {
-        val board = board ?: return BingoTeamInfo(world.id.value, "")
+    fun bingoWorldInfo(world: World): BingoWorldInfo {
+        val board = board ?: return BingoWorldInfo(world.id.value, "")
         val lockout = board.config?.lockout ?: false
         val completions = scoreRelevantCompletionMap().filterValues { world in it }.keys.toSet()
 
@@ -143,7 +143,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val squares = completions.count { it in completions }
         val scoreLine =
             if (lockout) "$squares / ${ceil((board.goals.size).toFloat() / 2f).toLong()}" else "$lines line${(if (lines == 1) "" else "s")} | $squares / ${board.goals.size}"
-        return BingoTeamInfo(
+        return BingoWorldInfo(
             world.id.value,
             scoreLine,
             if (lockout) squares else lines * board.size * board.size + squares,
@@ -152,9 +152,9 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         )
     }
 
-    fun bingoTeamInfo(): List<BingoTeamInfo> {
-        return worlds.map { team ->
-            bingoTeamInfo(team)
+    fun bingoWorldInfo(): List<BingoWorldInfo> {
+        return worlds.map { world ->
+            bingoWorldInfo(world)
         }.sortedByDescending { it.rank }
     }
 

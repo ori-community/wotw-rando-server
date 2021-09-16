@@ -18,7 +18,7 @@ import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
 import wotw.server.database.model.World
-import wotw.server.io.handleWebsocket
+import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 
@@ -30,7 +30,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: authenticatedUser()
                 val multiverse = player.latestBingoMultiverse ?: throw NotFoundException()
                 multiverse.board ?: throw NotFoundException()
-                val info = multiverse.bingoTeamInfo()
+                val info = multiverse.bingoWorldInfo()
                 BingoData(multiverse.createSyncableBoard(World.find(multiverse.id.value, player.id.value)), info)
             }
             call.respond(boardData)
@@ -51,19 +51,15 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     player != null && multiverse?.spectators?.contains(player) ?: false
                 }
 
-                println(playerIsSpectator)
-
-                val boardData = newSuspendedTransaction {
-                    val player = authenticatedUserOrNull()
-                    val team = player?.let { World.find(multiverseId, player.id.value) }
+                newSuspendedTransaction {
                     val boardData = newSuspendedTransaction {
                         val player = authenticatedUserOrNull()
-                        val team = player?.let { World.find(multiverseId, player.id.value) }
+                        val world = player?.let { World.find(multiverseId, player.id.value) }
 
                         val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
                         multiverse.board ?: throw NotFoundException()
-                        val info = multiverse.bingoTeamInfo()
-                        BingoData(multiverse.createSyncableBoard(team, playerIsSpectator), info)
+                        val info = multiverse.bingoWorldInfo()
+                        BingoData(multiverse.createSyncableBoard(world, playerIsSpectator), info)
                     }
                     call.respond(boardData)
                 }
@@ -94,7 +90,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No read access!")
             )
 
-            handleWebsocket(needsAuthentication = true) {
+            handleClientSocket {
                 afterAuthenticated {
                     server.connections.registerObserverConnection(socketConnection, null, playerId)
                 }
@@ -119,7 +115,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 )
             )
 
-            handleWebsocket(needsAuthentication = true) {
+            handleClientSocket {
                 afterAuthenticated {
                     if (!principal.hasScope(Scope.BOARDS_READ)) return@afterAuthenticated this@webSocket.close(
                         CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No read access!")
