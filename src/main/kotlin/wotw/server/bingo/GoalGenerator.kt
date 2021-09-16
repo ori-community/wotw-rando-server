@@ -415,6 +415,7 @@ fun generatePool() = mutableListOf(
         bool("_petrifiedForestGroup.breakableWall", 58674, 54686),
         bool("howlsOriginGroup.secretWallA", 24922, 2524),
         bool("_petrifiedForestGroup.stompableFloor", 58674, 29622),
+        bool("swampStateGroup.secretWall", 21786, 44253),
         countGoal = {it.nextTriangular(12, 56, 23)},
         maxRepeats = 1,
         subsetGoal = false
@@ -642,6 +643,8 @@ fun generatePool() = mutableListOf(
         threshold("waterMillStateGroupDescriptor.rotationState", 37858, 36070, 1, hideValue = true),
         threshold("waterMillStateGroupDescriptor.rotationState", 37858, 36070, 2, hideValue = true),
         threshold("waterMillStateGroupDescriptor.rotationState", 37858, 36070, 3, hideValue = true),
+        threshold("kwolokGroupDescriptor.recedingWaterSetup", 937, 42245, 1, hideValue = true),
+        threshold("kwolokGroupDescriptor.recedingWaterSetup", 937, 42245, 2, hideValue = true),
         countGoal = { it.nextTriangular(3, 15, 6)},
         maxRepeats = 1,
         subsetGoal = false
