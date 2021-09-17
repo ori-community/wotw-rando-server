@@ -102,7 +102,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
             multiverse.board ?: return@newSuspendedTransaction null
 
             val info = multiverse.bingoWorldInfo()
-            val syncBingoWorldsMessage = SyncBingoWorldsMessage(info)
+            val syncBingoWorldsMessage = SyncBingoUniversesMessage(info)
             val worldUpdates = multiverse.worlds.map { world ->
                 val bingoPlayerData = multiverse.bingoWorldInfo(world)
                 Triple(

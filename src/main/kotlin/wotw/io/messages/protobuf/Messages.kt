@@ -71,8 +71,8 @@ data class SyncBoardMessage(
 )
 
 @Serializable
-data class BingoWorldInfo(
-    @ProtoNumber(1) val worldId: Long,
+data class BingoUniverseInfo(
+    @ProtoNumber(1) val universeId: Long,
     @ProtoNumber(3) val score: String,
     @ProtoNumber(4) val rank: Int = 0,
     @ProtoNumber(5) val squares: Int = 0,
@@ -80,8 +80,8 @@ data class BingoWorldInfo(
 )
 
 @Serializable
-data class SyncBingoWorldsMessage(
-    @ProtoNumber(1) val worlds: List<BingoWorldInfo>
+data class SyncBingoUniversesMessage(
+    @ProtoNumber(1) val universes: List<BingoUniverseInfo>
 )
 
 @Serializable
