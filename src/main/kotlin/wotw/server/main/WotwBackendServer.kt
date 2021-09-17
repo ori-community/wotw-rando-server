@@ -27,7 +27,6 @@ import io.ktor.utils.io.core.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.html.*
-import kotlinx.serialization.SerializationException
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -35,6 +34,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.event.Level
 import wotw.io.messages.protobuf.Packet
 import wotw.server.api.*
+import wotw.server.database.PlayerUniversePopulationCache
 import wotw.server.database.model.*
 import wotw.server.exception.AlreadyExistsException
 import wotw.server.exception.ForbiddenException
@@ -119,6 +119,8 @@ class WotwBackendServer {
     val connections = ConnectionRegistry()
     val sync = StateSynchronization(this)
     val seedGeneratorService = SeedGeneratorService(this)
+
+    val populationCache = PlayerUniversePopulationCache()
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)

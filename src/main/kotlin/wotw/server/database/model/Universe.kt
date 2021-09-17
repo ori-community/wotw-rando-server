@@ -58,7 +58,7 @@ class World(id: EntityID<Long>) : LongEntity(id) {
                     this.name = player.name + "'s world"
                 }
                 this.world = world
-                WorldMemberShip.new {
+                WorldMembership.new {
                     this.player = player
                     this.world = world
                 }
@@ -80,8 +80,9 @@ object WorldMemberships : LongIdTable() {
     }
 }
 
-class WorldMemberShip(id: EntityID<Long>) : LongEntity(id) {
-    companion object : LongEntityClass<WorldMemberShip>(WorldMemberships)
+//FIXME: Rename to Census while @zre is not looking :)
+class WorldMembership(id: EntityID<Long>) : LongEntity(id) {
+    companion object : LongEntityClass<WorldMembership>(WorldMemberships)
 
     var world by World referencedOn WorldMemberships.worldId
     var player by User referencedOn WorldMemberships.playerId
