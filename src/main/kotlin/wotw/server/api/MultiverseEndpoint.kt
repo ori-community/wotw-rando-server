@@ -35,8 +35,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val playerId = call.parameters["player_id"]?.ifEmpty { null } ?: throw BadRequestException("")
 
             val result = newSuspendedTransaction {
-                val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
-                val world = World.find(multiverseId, playerId) ?: throw NotFoundException()
+                val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
+                val world = World.find(multiverseId, playerId) ?: throw NotFoundException("World not found for player")
                 val result = server.sync.aggregateState(world, message.uberId, message.value)
                 multiverse.updateCompletions(world)
                 result

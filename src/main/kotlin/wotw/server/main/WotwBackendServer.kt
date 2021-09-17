@@ -1,5 +1,6 @@
 package wotw.server.main
 
+import ch.qos.logback.classic.Logger
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
@@ -31,6 +32,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import wotw.io.messages.protobuf.Packet
 import wotw.server.api.*
@@ -51,6 +53,11 @@ class WotwBackendServer {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
+            if (System.getenv("LOG_LEVEL") != null) {
+                val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
+                root.level = ch.qos.logback.classic.Level.valueOf(System.getenv("LOG_LEVEL"))
+            }
+
             WotwBackendServer().start(args)
         }
 
@@ -278,7 +285,7 @@ class WotwBackendServer {
                 for (datagram in udpSocket.incoming) {
                     try {
                         if (datagram.packet.remaining < 4) {
-                            logger.warn("Received invalid packet (too small)")
+                            logger.debug("Received invalid packet (too small)")
                             continue
                         }
 
@@ -286,7 +293,7 @@ class WotwBackendServer {
                         val connection = ClientConnectionUDPRegistry.getById(connectionId)
 
                         if (connection == null) {
-                            logger.warn("Received UDP packet for unknown connection")
+                            logger.debug("Received UDP packet for unknown connection")
                             continue
                         }
 

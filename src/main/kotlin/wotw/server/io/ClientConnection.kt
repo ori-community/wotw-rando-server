@@ -68,6 +68,7 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
 
     suspend inline fun<reified T : Any> handleUdpMessage(datagram: Datagram, message: T) {
         if (udpSocket == null) {
+            logger().debug("ClientConnection: Updated UDP remote address of connection $udpId to " + datagram.address.toString())
             udpSocket = aSocket(ActorSelectorManager(Dispatchers.IO)).udp().connect(datagram.address)
         }
         eventBus.send(message)
@@ -105,7 +106,7 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                     } else if (principal != null) {
                         eventBus.send(message)
                     } else {
-                        logger().info("Received message of type ${message::class.qualifiedName} while the socket was unauthenticated")
+                        logger().debug("Received message of type ${message::class.qualifiedName} while the socket was unauthenticated")
                         sendMessage(PrintTextMessage(text = "Authentication failed.\nPlease login again in the launcher.", frames = 240, ypos = 3f))
                         webSocket.close()
                         return
@@ -142,7 +143,7 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                 webSocket.send(Frame.Binary(true, binaryData))
             }
         } else {
-            logger().warn("ClientConnection: Packet of type ${message::class} has been discarded. Authentication is required but websocket is not authenticated.")
+            logger().debug("ClientConnection: Packet of type ${message::class} has been discarded. Authentication is required but websocket is not authenticated.")
         }
     }
 }

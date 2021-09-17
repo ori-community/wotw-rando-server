@@ -22,12 +22,10 @@ class User(id: EntityID<String>) : StringEntity(id) {
     var avatarId by Users.avatarId
     val games by Multiverse via GameStates
 
-    val latestBingoMultiverse: Multiverse?
-        get() = (WorldMemberships innerJoin Worlds innerJoin Multiverses).slice(Worlds.id, Multiverses.id).select {
+    val latestMultiverse: Multiverse?
+        get() = WorldMembership.find {
             WorldMemberships.playerId eq id.value
-        }.sortedByDescending {
-            it[Worlds.id]
-        }.firstOrNull()?.get(Multiverses.id)?.let { Multiverse.findById(it) }
+        }.sortedByDescending { it.id.value }.firstOrNull()?.world?.universe?.multiverse
 
     val userInfo: UserInfo
         get() = UserInfo(id.value, name, avatarId)

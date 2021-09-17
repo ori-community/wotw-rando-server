@@ -98,10 +98,10 @@ class StateSynchronization(private val server: WotwBackendServer) {
             val multiverse = Multiverse.findById(gameId) ?: return@newSuspendedTransaction null
             multiverse.board ?: return@newSuspendedTransaction null
 
-            val info = multiverse.bingoWorldInfo()
+            val info = multiverse.bingoUniverseInfo()
             val syncBingoWorldsMessage = SyncBingoUniversesMessage(info)
             val worldUpdates = multiverse.worlds.map { world ->
-                val bingoPlayerData = multiverse.bingoWorldInfo(world)
+                val bingoPlayerData = multiverse.bingoUniverseInfo(world.universe)
                 Triple(
                     world.members.map { it.id.value },
                     UberStateBatchUpdateMessage(
@@ -116,7 +116,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
                             bingoPlayerData.rank.toDouble()
                         )
                     ), SyncBoardMessage(
-                        multiverse.createSyncableBoard(world),
+                        multiverse.createSyncableBoard(world.universe),
                         true
                     )
                 )

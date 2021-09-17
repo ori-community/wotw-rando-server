@@ -97,14 +97,6 @@ class ConnectionRegistry {
         players: Iterable<String>,
         multiverseId: Long? = null,
         unreliable: Boolean = false,
-        message: T
-    ) =
-        toPlayers(players, multiverseId, unreliable, *arrayOf(message))
-
-    suspend inline fun <reified T : Any> toPlayers(
-        players: Iterable<String>,
-        multiverseId: Long? = null,
-        unreliable: Boolean = false,
         vararg messages: T
     ) {
         for (player in players) {
@@ -151,7 +143,7 @@ class ConnectionRegistry {
     suspend inline fun <reified T : Any> toObservers(multiverseId: Long, playerId: String, vararg messages: T) {
         var conns: Set<ClientConnection> = playerObserverConnections[multiverseId to playerId]
         if (newSuspendedTransaction {
-                User.findById(playerId)?.latestBingoMultiverse?.id?.value == multiverseId
+                User.findById(playerId)?.latestMultiverse?.id?.value == multiverseId
             })
             conns = conns + playerObserverConnections[null to playerId]
 

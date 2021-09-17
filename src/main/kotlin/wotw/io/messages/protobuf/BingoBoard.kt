@@ -8,7 +8,7 @@ import kotlin.math.max
 //We just send partial updates and merge state client-side
 
 @Serializable
-data class BingoData(val board: BingoBoard, val worlds: List<BingoUniverseInfo>)
+data class BingoData(val board: BingoBoard, val universes: List<BingoUniverseInfo>)
 
 @Serializable
 data class PositionedBingoSquare(
@@ -38,7 +38,7 @@ infix fun Int.to (y: Int) = Position(this, y)
 data class BingoSquare(
     @ProtoNumber(1) val text: String = "",
     @ProtoNumber(3) val goals: List<BingoGoal> = emptyList(),
-    @ProtoNumber(2) var completedBy: List<WorldInfo> = emptyList(),
+    @ProtoNumber(2) var completedBy: List<UniverseInfo> = emptyList(),
 )
 
 @Serializable
