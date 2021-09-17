@@ -57,7 +57,6 @@ class WotwBackendServer {
                 val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
                 root.level = ch.qos.logback.classic.Level.valueOf(System.getenv("LOG_LEVEL"))
             }
-
             WotwBackendServer().start(args)
         }
 
@@ -301,9 +300,9 @@ class WotwBackendServer {
                         datagram.packet.readAvailable(byteBuffer)
 
                         // XOR the packet
-                        for (i in 0 until byteBuffer.capacity() - 1) {
-                            byteBuffer.put(i, byteBuffer[i].xor(connection.udpKey[i % connection.udpKey.size]))
-                        }
+                        // for (i in 0 until byteBuffer.capacity() - 1) {
+                        //     byteBuffer.put(i, byteBuffer[i].xor(connection.udpKey[i % connection.udpKey.size]))
+                        // }
 
                         val message = Packet.deserialize(byteBuffer.array()) ?: continue
                         connection.handleUdpMessage(datagram, message)
