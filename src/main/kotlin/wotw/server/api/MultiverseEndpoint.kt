@@ -206,7 +206,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
 
                     if (multiverseId == null || _worldId == null) {
-                        logger.debug("MultiverseEndpoint: game_sync: Player ${playerId} is not part of an active multiverse")
+                        logger.info("MultiverseEndpoint: game_sync: Player $playerId is not part of an active multiverse")
                         return@afterAuthenticated this@webSocket.close(
                             CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
                         )
