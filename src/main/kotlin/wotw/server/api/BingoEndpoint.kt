@@ -12,7 +12,6 @@ import io.ktor.util.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.BingoGenProperties
-import wotw.io.messages.VerseProperties
 import wotw.io.messages.protobuf.BingoData
 import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.database.model.Multiverse
@@ -28,10 +27,10 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val boardData = newSuspendedTransaction {
                 val player =
                     call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: authenticatedUser()
-                val multiverse = player.latestBingoMultiverse ?: throw NotFoundException()
+                val multiverse = player.latestMultiverse ?: throw NotFoundException()
                 multiverse.board ?: throw NotFoundException()
-                val info = multiverse.bingoWorldInfo()
-                BingoData(multiverse.createSyncableBoard(World.find(multiverse.id.value, player.id.value)), info)
+                val info = multiverse.bingoUniverseInfo()
+                BingoData(multiverse.createSyncableBoard(World.find(multiverse.id.value, player.id.value)?.universe), info)
             }
             call.respond(boardData)
         }
@@ -46,8 +45,6 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val multiverse = Multiverse.findById(multiverseId)
                     val player = authenticatedUserOrNull()
 
-                    println(player?.id?.value)
-
                     player != null && multiverse?.spectators?.contains(player) ?: false
                 }
 
@@ -58,8 +55,8 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                         val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
                         multiverse.board ?: throw NotFoundException()
-                        val info = multiverse.bingoWorldInfo()
-                        BingoData(multiverse.createSyncableBoard(world, playerIsSpectator), info)
+                        val info = multiverse.bingoUniverseInfo()
+                        BingoData(multiverse.createSyncableBoard(world?.universe, playerIsSpectator), info)
                     }
                     call.respond(boardData)
                 }

@@ -5,7 +5,6 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.SizedCollection
-import wotw.io.messages.VerseProperties
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoCard
 import wotw.server.bingo.Line
@@ -19,7 +18,6 @@ object Multiverses : LongIdTable("multiverse") {
     override val primaryKey = PrimaryKey(id)
     val seed = reference("seed", Seeds).nullable()
     val board = jsonb("board", BingoCard.serializer()).nullable()
-    val props = jsonb("props", VerseProperties.serializer()).nullable()
 }
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
@@ -65,9 +63,9 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }
     }
 
-    fun createSyncableBoard(world: World?, spectator: Boolean = false): BingoBoard {
+    fun createSyncableBoard(universe: Universe?, spectator: Boolean = false): BingoBoard {
         val board = board ?: return BingoBoard()
-        val state = worldStates[world]?.uberStateData ?: UberStateMap.empty
+        val state = universeStates[universe]?.uberStateData ?: UberStateMap.empty
 
         var goals = board.goals.map { (position, goal) ->
             Position(position.first, position.second) to BingoSquare(
@@ -88,7 +86,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val completions = scoreRelevantCompletionMap()
         goals.forEach {
             it.second.completedBy =
-                completions[it.first.x to it.first.y]?.map { it.worldInfo } ?: emptyList()
+                completions[it.first.x to it.first.y]?.map { it.universeInfo } ?: emptyList()
         }
 
         return BingoBoard(goals.map{ PositionedBingoSquare(it.first, it.second) }, board.size)
@@ -98,12 +96,12 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val completions = scoreRelevantCompletionMap()
         syncedBoard.squares.forEach { (position, square) ->
             square.completedBy =
-                completions[position.x to position.y]?.map { it.worldInfo } ?: emptyList()
+                completions[position.x to position.y]?.map { it.universeInfo } ?: emptyList()
         }
         return syncedBoard
     }
 
-    fun goalCompletionMap(): Map<Pair<Int, Int>, Set<World>> {
+    fun goalCompletionMap(): Map<Pair<Int, Int>, Set<Universe>> {
         val board = board ?: return emptyMap()
         val events = events
         return (1..board.size).flatMap { x ->
@@ -111,39 +109,39 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 x to y
             }
         }.map { (x, y) ->
-            (x to y) to events.filter { it.x == x && it.y == y }.map { it.world }.toSet()
+            (x to y) to events.filter { it.x == x && it.y == y }.map { it.world.universe }.toSet()
         }.toMap()
     }
 
-    fun lockoutGoalOwnerMap(): Map<Pair<Int, Int>, World?> {
+    fun lockoutGoalOwnerMap(): Map<Pair<Int, Int>, Universe?> {
         val board = board ?: return emptyMap()
         val owners = (1..board.size).flatMap { x ->
             (1..board.size).map { y ->
                 x to y
             }
         }.map { (x, y) ->
-            (x to y) to events.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.world
+            (x to y) to events.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.world?.universe
         }.toMap()
         return owners
     }
 
     fun scoreRelevantCompletionMap() =
         (if (board?.config?.lockout == true) lockoutGoalOwnerMap().mapValues {
-            val world = it.value ?: return@mapValues emptySet()
-            setOf(world)
+            val universe = it.value ?: return@mapValues emptySet()
+            setOf(universe)
         } else goalCompletionMap())
 
-    fun bingoWorldInfo(world: World): BingoUniverseInfo {
-        val board = board ?: return BingoUniverseInfo(world.id.value, "")
+    fun bingoUniverseInfo(universe: Universe): BingoUniverseInfo {
+        val board = board ?: return BingoUniverseInfo(universe.id.value, "")
         val lockout = board.config?.lockout ?: false
-        val completions = scoreRelevantCompletionMap().filterValues { world in it }.keys.toSet()
+        val completions = scoreRelevantCompletionMap().filterValues { universe in it }.keys.toSet()
 
         val lines = Line.values().count { l -> l.cards(board.size).all { it in completions } }
         val squares = completions.count { it in completions }
         val scoreLine =
             if (lockout) "$squares / ${ceil((board.goals.size).toFloat() / 2f).toLong()}" else "$lines line${(if (lines == 1) "" else "s")} | $squares / ${board.goals.size}"
         return BingoUniverseInfo(
-            world.id.value,
+            universe.id.value,
             scoreLine,
             if (lockout) squares else lines * board.size * board.size + squares,
             squares,
@@ -151,9 +149,9 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         )
     }
 
-    fun bingoWorldInfo(): List<BingoUniverseInfo> {
-        return worlds.map { world ->
-            bingoWorldInfo(world)
+    fun bingoUniverseInfo(): List<BingoUniverseInfo> {
+        return universes.map { universe ->
+            bingoUniverseInfo(universe)
         }.sortedByDescending { it.rank }
     }
 

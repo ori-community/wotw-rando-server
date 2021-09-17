@@ -62,8 +62,6 @@ data class Packet(
         }
 
         inline fun <reified T : Any> from(obj: T): Packet {
-            println(typeOf<T>())
-            println(typeOf<T>() == typeOf<MultiverseInfoMessage>())
             val id = ids.inverse[typeOf<T>()]
                 ?: throw SerializationException("No packet-id known for ${obj::class.qualifiedName}, known values: ${ids.inverse.keys}")
             val serializer = serializer(typeOf<T>())

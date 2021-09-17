@@ -40,15 +40,15 @@ class World(id: EntityID<Long>) : LongEntity(id) {
     var members by User via WorldMemberships
 
     companion object : LongEntityClass<World>(Worlds) {
-        fun find(gameId: Long, playerId: String) =
-            findAll(gameId, playerId).firstOrNull()
+        fun find(multiverseId: Long, playerId: String) =
+            findAll(multiverseId, playerId).firstOrNull()
 
-        fun findAll(gameId: Long, playerId: String) =
+        fun findAll(multiverseId: Long, playerId: String) =
             Worlds
                 .innerJoin(WorldMemberships)
                 .innerJoin(Universes)
                 .select {
-                    (Universes.multiverseId eq gameId) and (WorldMemberships.playerId eq playerId)
+                    (Universes.multiverseId eq multiverseId) and (WorldMemberships.playerId eq playerId)
                 }.map { World.wrapRow(it) }
 
         fun new(universe: Universe, player: User) =
