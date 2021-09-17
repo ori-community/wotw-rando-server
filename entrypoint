@@ -5,4 +5,4 @@ while ! nc -z "$WOTW_DB_HOST" "$WOTW_DB_PORT"; do
   sleep 1
 done
 
-exec java -jar /app/server/wotw-server.jar
+exec $@

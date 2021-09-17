@@ -44,3 +44,4 @@ RUN adduser -DHu 1010 wotw && \
 USER wotw
 
 ENTRYPOINT ["/app/entrypoint"]
+CMD ["java", "-jar", "/app/server/wotw-server.jar"]
