@@ -134,8 +134,8 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             setOf(world)
         } else goalCompletionMap())
 
-    fun bingoWorldInfo(world: World): BingoWorldInfo {
-        val board = board ?: return BingoWorldInfo(world.id.value, "")
+    fun bingoWorldInfo(world: World): BingoUniverseInfo {
+        val board = board ?: return BingoUniverseInfo(world.id.value, "")
         val lockout = board.config?.lockout ?: false
         val completions = scoreRelevantCompletionMap().filterValues { world in it }.keys.toSet()
 
@@ -143,7 +143,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val squares = completions.count { it in completions }
         val scoreLine =
             if (lockout) "$squares / ${ceil((board.goals.size).toFloat() / 2f).toLong()}" else "$lines line${(if (lines == 1) "" else "s")} | $squares / ${board.goals.size}"
-        return BingoWorldInfo(
+        return BingoUniverseInfo(
             world.id.value,
             scoreLine,
             if (lockout) squares else lines * board.size * board.size + squares,
@@ -152,7 +152,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         )
     }
 
-    fun bingoWorldInfo(): List<BingoWorldInfo> {
+    fun bingoWorldInfo(): List<BingoUniverseInfo> {
         return worlds.map { world ->
             bingoWorldInfo(world)
         }.sortedByDescending { it.rank }
