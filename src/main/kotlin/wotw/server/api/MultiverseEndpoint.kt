@@ -197,7 +197,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
 
                         val (_worldId, multiverseId, worldName, worldMembers) = newSuspendedTransaction {
-                            val world = WorldMemberShip.find {
+                            val world = WorldMembership.find {
                                 WorldMemberships.playerId eq playerId
                             }.sortedByDescending { it.id.value }.firstOrNull()?.world
 
@@ -252,7 +252,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
                     }
                     onMessage(PlayerPositionMessage::class) {
-                        server.connections
+                        server.connections.toPlayers(
+                            server.populationCache.get(playerId, worldId) - playerId,
+                            null,
+                            true,
+                            UpdatePlayerPositionMessage(playerId, x, y)
+                        )
                     }
                 }
             }
