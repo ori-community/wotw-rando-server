@@ -202,10 +202,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             WorldMemberships.playerId eq playerId
                         }.sortedByDescending { it.id.value }.firstOrNull()?.world
 
-                        world?.id?.value then world?.universe?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.multiverseInfoMessage
+                        world?.id?.value then world?.universe?.multiverse?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.multiverseInfoMessage
                     }
 
                     if (multiverseId == null || _worldId == null) {
+                        logger.debug("MultiverseEndpoint: game_sync: Player ${playerId} is not part of an active multiverse")
                         return@afterAuthenticated this@webSocket.close(
                             CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
                         )

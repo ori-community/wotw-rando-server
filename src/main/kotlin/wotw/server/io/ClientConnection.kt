@@ -94,11 +94,13 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                                     User.findById(it.userId)!!.userInfo
                                 }
 
+                                logger().debug("ClientConnection: User ${userInfo.name} (${userInfo.id}) authenticated a WebSocket connection")
+
                                 sendMessage(AuthenticatedMessage(userInfo, udpId!!, udpKey))
                                 afterAuthenticatedHandler?.invoke()
-                            }
+                            } ?: logger().debug("ClientConnection: Authentication failed. Could not validate JWT.")
                         } else {
-                            logger().warn("Cannot authenticate twice in a WebSocket connection")
+                            logger().warn("ClientConnection: Cannot authenticate twice in a WebSocket connection")
                         }
                     } else if (principal != null) {
                         eventBus.send(message)
@@ -139,7 +141,7 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                 webSocket.send(Frame.Binary(true, binaryData))
             }
         } else {
-            logger().warn("Packet of type ${message::class} has been discarded. Authentication is required but websocket is not authenticated.")
+            logger().warn("ClientConnection: Packet of type ${message::class} has been discarded. Authentication is required but websocket is not authenticated.")
         }
     }
 }
