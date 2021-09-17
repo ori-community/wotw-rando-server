@@ -179,87 +179,87 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 call.respond(HttpStatusCode.Created)
             }
+        }
 
-            webSocket("game_sync/") {
-                handleClientSocket {
-                    var playerId = ""
-                    var worldId = 0L
+        webSocket("game_sync/") {
+            handleClientSocket {
+                var playerId = ""
+                var worldId = 0L
 
-                    afterAuthenticated {
-                        playerId = principalOrNull?.userId ?: return@afterAuthenticated this@webSocket.close(
-                            CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session active!")
+                afterAuthenticated {
+                    playerId = principalOrNull?.userId ?: return@afterAuthenticated this@webSocket.close(
+                        CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session active!")
+                    )
+                    principalOrNull?.hasScope(Scope.MULTIVERSE_CONNECT) ?: this@webSocket.close(
+                        CloseReason(
+                            CloseReason.Codes.VIOLATED_POLICY,
+                            "You are not allowed to connect with these credentials!"
                         )
-                        principalOrNull?.hasScope(Scope.MULTIVERSE_CONNECT) ?: this@webSocket.close(
-                            CloseReason(
-                                CloseReason.Codes.VIOLATED_POLICY,
-                                "You are not allowed to connect with these credentials!"
-                            )
-                        )
+                    )
 
-                        val (_worldId, multiverseId, worldName, worldMembers, multiverseInfoMessage) = newSuspendedTransaction {
-                            val world = WorldMembership.find {
-                                WorldMemberships.playerId eq playerId
-                            }.sortedByDescending { it.id.value }.firstOrNull()?.world
+                    val (_worldId, multiverseId, worldName, worldMembers, multiverseInfoMessage) = newSuspendedTransaction {
+                        val world = WorldMembership.find {
+                            WorldMemberships.playerId eq playerId
+                        }.sortedByDescending { it.id.value }.firstOrNull()?.world
 
-                            world?.id?.value then world?.universe?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.multiverseInfoMessage
-                        }
-
-                        if (multiverseId == null || _worldId == null) {
-                            return@afterAuthenticated this@webSocket.close(
-                                CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
-                            )
-                        }
-
-                        worldId = _worldId
-                        server.connections.registerMultiverseConn(socketConnection, playerId, multiverseId)
-
-                        val initData = newSuspendedTransaction {
-                            World.findById(worldId)?.universe?.multiverse?.board?.goals?.flatMap { it.value.keys }
-                                ?.map { UberId(it.first, it.second) }
-                        }.orEmpty()
-                        val userName = newSuspendedTransaction {
-                            User.find {
-                                Users.id eq playerId
-                            }.firstOrNull()?.name
-                        } ?: "Mystery User"
-
-                        val states = multiStates()
-                            .plus(coopStates())
-                            .plus(initData)  // don't sync new data
-                        socketConnection.sendMessage(InitGameSyncMessage(states.map {
-                            UberId(zerore(it.group), zerore(it.state))
-                        }))
-
-                        var greeting = "$userName - Connected to multiverse $multiverseId"
-
-                        if (worldName != null) {
-                            greeting += "\nWorld: $worldName\n" + worldMembers?.joinToString()
-                        }
-
-                        socketConnection.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 3f))
-
-                        if (multiverseInfoMessage != null) {
-                            socketConnection.sendMessage(multiverseInfoMessage)
-                        }
+                        world?.id?.value then world?.universe?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.multiverseInfoMessage
                     }
-                    onMessage(UberStateUpdateMessage::class) {
-                        if (worldId != 0L && playerId.isNotEmpty()) {
-                            updateUberState(worldId, playerId)
-                        }
-                    }
-                    onMessage(UberStateBatchUpdateMessage::class) {
-                        if (worldId != 0L && playerId.isNotEmpty()) {
-                            updateUberStates(worldId, playerId)
-                        }
-                    }
-                    onMessage(PlayerPositionMessage::class) {
-                        server.connections.toPlayers(
-                            server.populationCache.get(playerId, worldId) - playerId,
-                            null,
-                            true,
-                            UpdatePlayerPositionMessage(playerId, x, y)
+
+                    if (multiverseId == null || _worldId == null) {
+                        return@afterAuthenticated this@webSocket.close(
+                            CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
                         )
                     }
+
+                    worldId = _worldId
+                    server.connections.registerMultiverseConn(socketConnection, playerId, multiverseId)
+
+                    val initData = newSuspendedTransaction {
+                        World.findById(worldId)?.universe?.multiverse?.board?.goals?.flatMap { it.value.keys }
+                            ?.map { UberId(it.first, it.second) }
+                    }.orEmpty()
+                    val userName = newSuspendedTransaction {
+                        User.find {
+                            Users.id eq playerId
+                        }.firstOrNull()?.name
+                    } ?: "Mystery User"
+
+                    val states = multiStates()
+                        .plus(coopStates())
+                        .plus(initData)  // don't sync new data
+                    socketConnection.sendMessage(InitGameSyncMessage(states.map {
+                        UberId(zerore(it.group), zerore(it.state))
+                    }))
+
+                    var greeting = "$userName - Connected to multiverse $multiverseId"
+
+                    if (worldName != null) {
+                        greeting += "\nWorld: $worldName\n" + worldMembers?.joinToString()
+                    }
+
+                    socketConnection.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 3f))
+
+                    if (multiverseInfoMessage != null) {
+                        socketConnection.sendMessage(multiverseInfoMessage)
+                    }
+                }
+                onMessage(UberStateUpdateMessage::class) {
+                    if (worldId != 0L && playerId.isNotEmpty()) {
+                        updateUberState(worldId, playerId)
+                    }
+                }
+                onMessage(UberStateBatchUpdateMessage::class) {
+                    if (worldId != 0L && playerId.isNotEmpty()) {
+                        updateUberStates(worldId, playerId)
+                    }
+                }
+                onMessage(PlayerPositionMessage::class) {
+                    server.connections.toPlayers(
+                        server.populationCache.get(playerId, worldId) - playerId,
+                        null,
+                        true,
+                        UpdatePlayerPositionMessage(playerId, x, y)
+                    )
                 }
             }
         }
