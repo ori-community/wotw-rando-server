@@ -13,10 +13,7 @@ import io.ktor.utils.io.errors.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.SerializationException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.protobuf.AuthenticateMessage
-import wotw.io.messages.protobuf.AuthenticatedMessage
-import wotw.io.messages.protobuf.MultiverseInfoMessage
-import wotw.io.messages.protobuf.Packet
+import wotw.io.messages.protobuf.*
 import wotw.server.api.WotwUserPrincipal
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
@@ -104,6 +101,7 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                     } else if (principal != null) {
                         eventBus.send(message)
                     } else {
+                        sendMessage(PrintTextMessage(text = "Authentication failed.\nPlease login again in the launcher.", frames = 240, ypos = 3f))
                         webSocket.close()
                         return
                     }
