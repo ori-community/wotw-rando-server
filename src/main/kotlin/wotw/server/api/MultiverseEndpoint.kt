@@ -109,9 +109,9 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             }
                             universe
                         }
-                    World.new(universe, player)
+                    val world = World.new(universe, player)
 
-                    multiverse.removePlayerFromWorlds(player)
+                    multiverse.removePlayerFromWorlds(player, world)
 
                     multiverse.multiverseInfoMessage
                 }
@@ -139,11 +139,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         throw ConflictException("You cannot join this multiverse because you are spectating")
                     }
 
-                    multiverse.removePlayerFromWorlds(player)
-
                     val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                         ?: throw NotFoundException("World does not exist!")
                     world.members = SizedCollection(world.members + player)
+
+                    multiverse.removePlayerFromWorlds(player, world)
+
                     multiverse.multiverseInfoMessage
                 }
 
