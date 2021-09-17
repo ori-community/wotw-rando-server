@@ -181,7 +181,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(HttpStatusCode.Created)
             }
 
-            webSocket("multiverse_sync/") {
+            webSocket("game_sync/") {
                 handleClientSocket {
                     var playerId = ""
                     var worldId = 0L
