@@ -257,7 +257,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 onMessage(PlayerPositionMessage::class) {
                     val targetPlayers = server.populationCache.get(playerId, worldId) - playerId
 
-                    logger.debug("Received PlayerPositionMessage, sending to ${targetPlayers.size()} players")
+                    logger.debug("Received PlayerPositionMessage, sending to ${targetPlayers.size} players")
 
                     server.connections.toPlayers(
                         targetPlayers,
