@@ -29,7 +29,7 @@ message WorldInfo {
   repeated UserInfo members = 3;
 }
 
-message MultiverseInfo {
+message MultiverseInfoMessage {
   int64 id = 1;
   repeated UniverseInfo universes = 2;
   bool hasBingoBoard = 3;
