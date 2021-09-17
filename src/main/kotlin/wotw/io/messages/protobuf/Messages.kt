@@ -81,7 +81,7 @@ data class BingoUniverseInfo(
 
 @Serializable
 data class SyncBingoUniversesMessage(
-    @ProtoNumber(1) val universes: List<BingoUniverseInfo>
+    @ProtoNumber(1) val bingoUniverses: List<BingoUniverseInfo>
 )
 
 @Serializable
