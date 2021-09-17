@@ -4,10 +4,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.api.UberStateSyncStrategy
-import wotw.server.database.model.GameState
-import wotw.server.database.model.Multiverse
-import wotw.server.database.model.World
-import wotw.server.database.model.generateStateAggregationRegistry
+import wotw.server.database.model.*
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.zerore
 import java.util.*
@@ -25,7 +22,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         }.getStrategy(uberId) ?: return AggregationResult(value)
 
         val state = when (strategy.scope) {
-            ShareScope.WORLD -> world.state
+            ShareScope.WORLD -> GameState.findWorldState(world.id.value)
             ShareScope.UNIVERSE -> GameState.findUniverseState(universe.id.value)
             ShareScope.MULTIVERSE -> GameState.findMultiverseState(multiverse.id.value)
             else -> null

@@ -84,7 +84,9 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                             val verifier = WotwBackendServer.getJwtVerifier()
                             val decodedJwt = verifier.verify(message.jwt)
                             val credential = JWTCredential(decodedJwt.parsePayload())
-                            principal = WotwBackendServer.validateJwt(credential)?.also {
+                            WotwBackendServer.validateJwt(credential)?.let {
+                                principal = it
+
                                 udpId = ClientConnectionUDPRegistry.register(this)
                                 generateUdpKey()
 

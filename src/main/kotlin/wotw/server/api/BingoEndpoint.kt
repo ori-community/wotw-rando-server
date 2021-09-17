@@ -70,14 +70,13 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val multiverse = newSuspendedTransaction {
                     Multiverse.new {
                         board = BingoBoardGenerator().generateBoard(props)
-                        this.props = VerseProperties(isCoop = true)
                     }
                 }
                 call.respondText("${multiverse.id.value}", status = HttpStatusCode.Created)
             }
-
-            observerWebsocket()
         }
+
+        observerWebsocket()
     }
 
     private fun Route.userboardWebsocket() {

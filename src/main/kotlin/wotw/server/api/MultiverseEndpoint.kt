@@ -13,6 +13,7 @@ import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.VerseProperties
 import wotw.io.messages.protobuf.*
+import wotw.server.bingo.UberStateMap
 import wotw.server.bingo.coopStates
 import wotw.server.bingo.multiStates
 import wotw.server.database.model.*
@@ -74,11 +75,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(SESSION_AUTH, JWT_AUTH) {
             post("multiverses") {
                 wotwPrincipal().require(Scope.MULTIVERSE_CREATE)
-                val propsIn = call.receiveOrNull<VerseProperties>() ?: VerseProperties()
                 val multiverse = newSuspendedTransaction {
-                    Multiverse.new {
-                        props = propsIn
-                    }
+                    Multiverse.new {}
                 }
                 call.respondText("${multiverse.id.value}", status = HttpStatusCode.Created)
             }
@@ -98,7 +96,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         throw ConflictException("You cannot join this multiverse because you are spectating")
                     }
 
-                    multiverse.removePlayerFromWorlds(player)
                     val universe =
                         if (universeId != null) {
                             Universe.findById(universeId) ?: throw NotFoundException("Universe does not exist!")
@@ -110,10 +107,14 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             GameState.new {
                                 this.multiverse = multiverse
                                 this.universe = universe
+                                this.uberStateData = UberStateMap()
                             }
                             universe
                         }
                     World.new(universe, player)
+
+                    multiverse.removePlayerFromWorlds(player)
+
                     multiverse.multiverseInfo
                 }
 
@@ -217,17 +218,14 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             World.findById(worldId)?.universe?.multiverse?.board?.goals?.flatMap { it.value.keys }
                                 ?.map { UberId(it.first, it.second) }
                         }.orEmpty()
-                        val multiverseProps = newSuspendedTransaction {
-                            World.findById(worldId)?.universe?.multiverse?.props ?: VerseProperties()
-                        }
                         val userName = newSuspendedTransaction {
                             User.find {
                                 Users.id eq playerId
                             }.firstOrNull()?.name
                         } ?: "Mystery User"
 
-                        val states = (if (multiverseProps.isMulti) multiStates() else emptyList())
-                            .plus(if (multiverseProps.isCoop) coopStates() else emptyList())
+                        val states = multiStates()
+                            .plus(coopStates())
                             .plus(initData)  // don't sync new data
                         socketConnection.sendMessage(InitGameSyncMessage(states.map {
                             UberId(zerore(it.group), zerore(it.state))

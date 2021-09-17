@@ -38,7 +38,6 @@ class World(id: EntityID<Long>) : LongEntity(id) {
     var universe by Universe referencedOn Worlds.universeId
     var name by Worlds.name
     var members by User via WorldMemberships
-    var state by GameState optionalReferencedOn GameStates.worldId
 
     companion object : LongEntityClass<World>(Worlds) {
         fun find(gameId: Long, playerId: String) =

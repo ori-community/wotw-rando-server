@@ -24,7 +24,6 @@ object Multiverses : LongIdTable("multiverse") {
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var board by Multiverses.board
-    var props by Multiverses.props
     val universes by Universe referrersOn Universes.multiverseId
     val worlds: Collection<World>
         get() = universes.flatMap { it.worlds }
@@ -165,6 +164,10 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
 
             if (existingWorld.members.count() == 0L) {
                 existingWorld.delete()
+            }
+
+            if (existingWorld.universe.worlds.empty()) {
+                existingWorld.universe.delete()
             }
         }
     }
