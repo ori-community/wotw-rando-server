@@ -71,6 +71,8 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
             logger().debug("ClientConnection: Updated UDP remote address of connection $udpId to " + datagram.address.toString())
             udpSocket = aSocket(ActorSelectorManager(Dispatchers.IO)).udp().connect(datagram.address)
         }
+
+        logger().debug("ClientConnection: Received UDP message of type ${message::class}")
         eventBus.send(message)
     }
 

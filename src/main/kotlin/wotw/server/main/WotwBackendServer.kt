@@ -284,7 +284,7 @@ class WotwBackendServer {
                 for (datagram in udpSocket.incoming) {
                     try {
                         if (datagram.packet.remaining < 4) {
-                            logger.debug("Received invalid packet (too small)")
+                            logger.debug("Receive invalid packet (too small)")
                             continue
                         }
 
@@ -299,13 +299,17 @@ class WotwBackendServer {
                         val byteBuffer = ByteBuffer.allocate(datagram.packet.remaining.toInt())
                         datagram.packet.readAvailable(byteBuffer)
 
-                        // XOR the packet
-                        // for (i in 0 until byteBuffer.capacity() - 1) {
-                        //     byteBuffer.put(i, byteBuffer[i].xor(connection.udpKey[i % connection.udpKey.size]))
-                        // }
+                        for (i in 0 until byteBuffer.capacity() - 1) {
+                            byteBuffer.put(i, byteBuffer[i].xor(connection.udpKey[i % connection.udpKey.size]))
+                        }
 
-                        val message = Packet.deserialize(byteBuffer.array()) ?: continue
-                        connection.handleUdpMessage(datagram, message)
+                        val message = Packet.deserialize(byteBuffer.array())
+
+                        if (message != null) {
+                            connection.handleUdpMessage(datagram, message)
+                        } else {
+                            logger.debug("WotwBackendServer: Could not deserialize UDP packet from connection $connectionId")
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
