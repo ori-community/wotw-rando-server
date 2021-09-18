@@ -20,9 +20,11 @@ import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.util.EventBus
 import java.lang.Exception
+import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
+import kotlin.experimental.xor
 import kotlin.text.String
 
 // ktor WHYYYY
@@ -149,7 +151,14 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
 
                 WotwBackendServer.udpSocket?.let {
                     logger().debug("ClientConnection: Sending packet of type ${message::class.qualifiedName} to $udpAddress")
-                    it.send(Datagram(ByteReadPacket(binaryData), udpAddress!!))
+
+                    val byteBuffer = ByteBuffer.allocate(binaryData.size)
+
+                    binaryData.forEachIndexed { index, byte ->
+                        byteBuffer.put(index, byte.xor(udpKey[index % udpKey.size]))
+                    }
+
+                    it.send(Datagram(ByteReadPacket(byteBuffer.array()), udpAddress!!))
                 }
             } else {
                 webSocket.send(Frame.Binary(true, binaryData))

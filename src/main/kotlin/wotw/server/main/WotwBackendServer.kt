@@ -34,7 +34,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
-import wotw.io.messages.protobuf.Packet
+import wotw.io.messages.protobuf.UdpPacket
 import wotw.server.api.*
 import wotw.server.database.PlayerUniversePopulationCache
 import wotw.server.database.model.*
@@ -46,8 +46,6 @@ import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.sync.StateSynchronization
 import wotw.server.util.logger
 import java.io.File
-import java.nio.ByteBuffer
-import kotlin.experimental.xor
 
 class WotwBackendServer {
     companion object {
@@ -286,12 +284,9 @@ class WotwBackendServer {
 
                     for (datagram in it.incoming) {
                         try {
-                            if (datagram.packet.remaining < 4) {
-                                logger.debug("Receive invalid packet (too small)")
-                                continue
-                            }
+                            val udpPacket = UdpPacket.deserialize(datagram.packet.readBytes())
 
-                            val connectionId = datagram.packet.readInt()
+                            val connectionId = udpPacket.udpId
                             val connection = ClientConnectionUDPRegistry.getById(connectionId)
 
                             if (connection == null) {
@@ -299,14 +294,7 @@ class WotwBackendServer {
                                 continue
                             }
 
-                            val byteBuffer = ByteBuffer.allocate(datagram.packet.remaining.toInt())
-                            datagram.packet.readAvailable(byteBuffer)
-
-                            for (i in 0 until byteBuffer.capacity() - 1) {
-                                byteBuffer.put(i, byteBuffer[i].xor(connection.udpKey[i % connection.udpKey.size]))
-                            }
-
-                            val message = Packet.deserialize(byteBuffer.array())
+                            val message = udpPacket.getPacket(connection.udpKey)
 
                             if (message != null) {
                                 connection.handleUdpMessage(datagram, message)
