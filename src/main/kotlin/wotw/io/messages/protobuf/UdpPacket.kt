@@ -28,7 +28,7 @@ data class UdpPacket(
         }
 
         inline fun <reified T : Any> serialize(obj: T): ByteArray {
-            protoBuf.encodeToByteArray(obj)
+            return protoBuf.encodeToByteArray(obj)
         }
     }
 
