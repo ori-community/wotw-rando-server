@@ -83,6 +83,7 @@ object WorldMemberships : LongIdTable() {
 }
 
 //FIXME: Rename to Census while @zre is not looking :)
+//DONTFIXME: oriNo
 class WorldMembership(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<WorldMembership>(WorldMemberships)
 
