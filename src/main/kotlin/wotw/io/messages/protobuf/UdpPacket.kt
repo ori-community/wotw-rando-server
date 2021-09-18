@@ -1,6 +1,7 @@
 package wotw.io.messages.protobuf
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.protobuf.ProtoNumber
 import wotw.io.messages.protoBuf
 import java.nio.ByteBuffer
@@ -8,12 +9,28 @@ import kotlin.experimental.xor
 
 @Serializable
 data class UdpPacket(
-    @ProtoNumber(1) val udpId: Int,
+    @ProtoNumber(1) val udpId: Int?,
     @ProtoNumber(2) val encryptedPacket: ByteArray,
 ) {
     companion object {
         fun deserialize(bytes: ByteArray): UdpPacket {
             return protoBuf.decodeFromByteArray(serializer(), bytes)
+        }
+
+        fun fromPacketData(udpId: Int?, packetData: ByteArray, udpKey: ByteArray): UdpPacket {
+            val byteBuffer = ByteBuffer.allocate(packetData.size)
+
+            packetData.forEachIndexed { index, byte ->
+                byteBuffer.put(index, byte.xor(udpKey[index % udpKey.size]))
+            }
+
+            return UdpPacket(udpId, byteBuffer.array())
+        }
+
+        inline fun <reified T : Any> serialize(obj: T): ByteArray {
+            return Packet.from(obj).let {
+                protoBuf.encodeToByteArray(it)
+            }
         }
     }
 
@@ -41,7 +58,7 @@ data class UdpPacket(
 
     override fun hashCode(): Int {
         var result = udpId
-        result = 31 * result + encryptedPacket.contentHashCode()
+        result = 31 * (result ?: -1) + encryptedPacket.contentHashCode()
         return result
     }
 }

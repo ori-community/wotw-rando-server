@@ -151,14 +151,7 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
 
                 WotwBackendServer.udpSocket?.let {
                     logger().debug("ClientConnection: Sending packet of type ${message::class.qualifiedName} to $udpAddress")
-
-                    val byteBuffer = ByteBuffer.allocate(binaryData.size)
-
-                    binaryData.forEachIndexed { index, byte ->
-                        byteBuffer.put(index, byte.xor(udpKey[index % udpKey.size]))
-                    }
-
-                    it.send(Datagram(ByteReadPacket(byteBuffer.array()), udpAddress!!))
+                    it.send(Datagram(ByteReadPacket(UdpPacket.serialize(UdpPacket.fromPacketData(null, binaryData, udpKey))), udpAddress!!))
                 }
             } else {
                 webSocket.send(Frame.Binary(true, binaryData))
