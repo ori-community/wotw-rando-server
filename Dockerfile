@@ -23,7 +23,7 @@ COPY --from=build-jar /app/build/libs/wotw-server.jar /app/server/wotw-server.ja
 COPY --from=ghcr.io/sparkle-preference/oriwotwrandomizerclient:seedgen /app/ /app/seedgen/
 COPY ./entrypoint /app/entrypoint
 
-RUN adduser -DHu 1010 wotw && \
+RUN adduser --no-create-home --disabled-password --uid 1010 wotw && \
     chown -R wotw /app
 
 USER wotw
