@@ -24,7 +24,9 @@ COPY --from=ghcr.io/sparkle-preference/oriwotwrandomizerclient:seedgen /app/ /ap
 COPY ./entrypoint /app/entrypoint
 
 RUN adduser --no-create-home --disabled-password --uid 1010 wotw && \
-    chown -R wotw /app
+    chown -R wotw /app && \
+    apt-get update -y && \
+    apt-get install netcat -y
 
 USER wotw
 
