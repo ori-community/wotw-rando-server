@@ -286,6 +286,11 @@ class WotwBackendServer {
                         try {
                             val udpPacket = UdpPacket.deserialize(datagram.packet.readBytes())
 
+                            if (udpPacket.udpId == null) {
+                                logger.debug("Received UDP packet without connection ID")
+                                continue
+                            }
+
                             val connectionId = udpPacket.udpId
                             val connection = ClientConnectionUDPRegistry.getById(connectionId)
 
