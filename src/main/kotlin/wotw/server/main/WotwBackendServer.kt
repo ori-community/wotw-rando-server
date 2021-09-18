@@ -75,6 +75,8 @@ class WotwBackendServer {
                 User.findById(userId)?.id?.value
             }?.let { WotwUserPrincipal(userId, *scopes) }
         }
+
+        var udpSocket: BoundDatagramSocket? = null
     }
 
     val logger = logger()
@@ -275,43 +277,45 @@ class WotwBackendServer {
 
         runBlocking {
             val udpSocketBuilder = aSocket(ActorSelectorManager(Dispatchers.IO)).udp()
-            val udpSocket = udpSocketBuilder.bind(NetworkAddress("0.0.0.0", (System.getenv("UDP_PORT") ?: "31415").toInt()))
+            udpSocket = udpSocketBuilder.bind(NetworkAddress("0.0.0.0", (System.getenv("UDP_PORT") ?: "31415").toInt()))
 
             // TODO: Move this out of main class
-            launch(Dispatchers.IO + udpSocket.socketContext) {
-                logger.info("UDP socket listening on port ${udpSocket.localAddress.port}")
+            udpSocket?.let {
+                launch(Dispatchers.IO + it.socketContext) {
+                    logger.info("UDP socket listening on port ${it.localAddress.port}")
 
-                for (datagram in udpSocket.incoming) {
-                    try {
-                        if (datagram.packet.remaining < 4) {
-                            logger.debug("Receive invalid packet (too small)")
-                            continue
+                    for (datagram in it.incoming) {
+                        try {
+                            if (datagram.packet.remaining < 4) {
+                                logger.debug("Receive invalid packet (too small)")
+                                continue
+                            }
+
+                            val connectionId = datagram.packet.readInt()
+                            val connection = ClientConnectionUDPRegistry.getById(connectionId)
+
+                            if (connection == null) {
+                                logger.debug("Received UDP packet for unknown connection")
+                                continue
+                            }
+
+                            val byteBuffer = ByteBuffer.allocate(datagram.packet.remaining.toInt())
+                            datagram.packet.readAvailable(byteBuffer)
+
+                            for (i in 0 until byteBuffer.capacity() - 1) {
+                                byteBuffer.put(i, byteBuffer[i].xor(connection.udpKey[i % connection.udpKey.size]))
+                            }
+
+                            val message = Packet.deserialize(byteBuffer.array())
+
+                            if (message != null) {
+                                connection.handleUdpMessage(datagram, message)
+                            } else {
+                                logger.debug("WotwBackendServer: Could not deserialize UDP packet from connection $connectionId")
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-
-                        val connectionId = datagram.packet.readInt()
-                        val connection = ClientConnectionUDPRegistry.getById(connectionId)
-
-                        if (connection == null) {
-                            logger.debug("Received UDP packet for unknown connection")
-                            continue
-                        }
-
-                        val byteBuffer = ByteBuffer.allocate(datagram.packet.remaining.toInt())
-                        datagram.packet.readAvailable(byteBuffer)
-
-                        for (i in 0 until byteBuffer.capacity() - 1) {
-                            byteBuffer.put(i, byteBuffer[i].xor(connection.udpKey[i % connection.udpKey.size]))
-                        }
-
-                        val message = Packet.deserialize(byteBuffer.array())
-
-                        if (message != null) {
-                            connection.handleUdpMessage(datagram, message)
-                        } else {
-                            logger.debug("WotwBackendServer: Could not deserialize UDP packet from connection $connectionId")
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     }
                 }
             }

@@ -5,8 +5,8 @@ buildscript {
     }
 }
 
-val kotlin_version = "1.5.10"
-val ktor_version = "1.6.2"
+val kotlin_version = "1.5.30"
+val ktor_version = "1.6.3"
 val logback_version = "1.2.3"
 val exposed_version = "0.31.1"
 val kotlinx_html_version = "0.7.1"
@@ -57,7 +57,7 @@ dependencies {
 
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "11"
 }
 
 val jvmJar = tasks.named<Jar>("jar") {

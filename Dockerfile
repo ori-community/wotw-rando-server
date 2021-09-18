@@ -1,4 +1,4 @@
-FROM gradle:7-jdk16 as build-jar
+FROM gradle:7-jdk11 as build-jar
 
 WORKDIR /app
 COPY . /app
@@ -6,7 +6,7 @@ COPY . /app
 RUN gradle jar
 
 
-FROM openjdk:16-alpine
+FROM openjdk:11-alpine
 
 WORKDIR /app
 
