@@ -255,7 +255,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                 }
                 onMessage(PlayerPositionMessage::class) {
-                    val targetPlayers = server.populationCache.get(playerId, worldId)
+                    val targetPlayers = server.populationCache.get(playerId, worldId) - playerId
 
                     server.connections.toPlayers(
                         targetPlayers,
