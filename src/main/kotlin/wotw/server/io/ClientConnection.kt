@@ -145,12 +145,12 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
 
             if (unreliable) {
                 if (udpAddress == null) {
-                    logger().debug("ClientConnection: Could not sent ${message::class.qualifiedName}, no remote address.")
+                    logger().trace("ClientConnection: Could not sent ${message::class.qualifiedName}, no remote address.")
                     return
                 }
 
                 WotwBackendServer.udpSocket?.let {
-                    logger().debug("ClientConnection: Sending packet of type ${message::class.qualifiedName} to $udpAddress")
+                    logger().trace("ClientConnection: Sending packet of type ${message::class.qualifiedName} to $udpAddress")
                     it.send(Datagram(ByteReadPacket(UdpPacket.serialize(UdpPacket.fromPacketData(null, binaryData, udpKey))), udpAddress!!))
                 }
             } else {
