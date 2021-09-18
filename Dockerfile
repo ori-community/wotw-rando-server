@@ -6,16 +6,6 @@ COPY . /app
 RUN gradle jar
 
 
-FROM rust:alpine as build-seedgen
-
-WORKDIR /app
-
-RUN apk --no-cache add git musl-dev && \
-    git clone --depth 1 https://github.com/sparkle-preference/OriWotwRandomizerClient.git . && \
-    cd projects/SeedGenCli && \
-    cargo build --release --target-dir /app/build/output
-
-
 FROM openjdk:16-alpine
 
 WORKDIR /app
@@ -30,12 +20,7 @@ ENV WOTW_DB_PORT=5432
 ENV WOTW_DB_USER=postgres
 
 COPY --from=build-jar /app/build/libs/wotw-server.jar /app/server/wotw-server.jar
-COPY --from=build-seedgen /app/build/output/release/seedgen /app/seedgen/seedgen
-COPY --from=build-seedgen /app/projects/SeedGenCli/headers /app/seedgen/headers
-COPY --from=build-seedgen /app/projects/SeedGenCli/presets /app/seedgen/presets
-COPY --from=build-seedgen /app/projects/SeedGenCli/areas.wotw /app/seedgen/areas.wotw
-COPY --from=build-seedgen /app/projects/SeedGenCli/loc_data.csv /app/seedgen/loc_data.csv
-COPY --from=build-seedgen /app/projects/SeedGenCli/state_data.csv /app/seedgen/state_data.csv
+COPY --from=ghcr.io/sparkle-preference/oriwotwrandomizerclient:seedgen /app/ /app/seedgen/
 COPY ./entrypoint /app/entrypoint
 
 RUN adduser -DHu 1010 wotw && \
