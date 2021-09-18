@@ -72,7 +72,6 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
             udpSocket = aSocket(ActorSelectorManager(Dispatchers.IO)).udp().connect(datagram.address)
         }
 
-        logger().debug("ClientConnection: Received UDP message of type ${message::class}")
         eventBus.send(message)
     }
 
