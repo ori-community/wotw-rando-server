@@ -6,7 +6,7 @@ COPY . /app
 RUN gradle jar
 
 
-FROM openjdk:11-alpine
+FROM openjdk:11-slim
 
 WORKDIR /app
 
