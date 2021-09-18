@@ -60,17 +60,16 @@ class ClientConnectionUDPRegistry() {
 
 class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) {
     var udpId: Int? = null
-    var udpSocket: ConnectedDatagramSocket? = null
+    var udpAddress: NetworkAddress? = null
     val udpKey = ByteArray(16)
 
     var principal: WotwUserPrincipal? = null
         private set
 
-    suspend inline fun<reified T : Any> handleUdpMessage(datagram: Datagram, message: T) {
-        if(udpSocket?.remoteAddress != datagram.address){
-            udpSocket?.close()
+    suspend inline fun <reified T : Any> handleUdpMessage(datagram: Datagram, message: T) {
+        if (udpAddress != datagram.address) {
             logger().debug("ClientConnection: Updated UDP remote address of connection $udpId to ${datagram.address}")
-            udpSocket = aSocket(ActorSelectorManager(Dispatchers.IO)).udp().connect(datagram.address)
+            udpAddress = datagram.address
         }
 
         eventBus.send(message)
@@ -109,7 +108,13 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                         eventBus.send(message)
                     } else {
                         logger().debug("Received message of type ${message::class.qualifiedName} while the socket was unauthenticated")
-                        sendMessage(PrintTextMessage(text = "Authentication failed.\nPlease login again in the launcher.", frames = 240, ypos = 3f))
+                        sendMessage(
+                            PrintTextMessage(
+                                text = "Authentication failed.\nPlease login again in the launcher.",
+                                frames = 240,
+                                ypos = 3f
+                            )
+                        )
                         webSocket.close()
                         return
                     }
@@ -123,8 +128,6 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
         udpId?.let {
             ClientConnectionUDPRegistry.unregister(it)
         }
-
-        udpSocket?.dispose()
     }
 
     private fun generateUdpKey() {
@@ -135,18 +138,24 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
 
     suspend inline fun <reified T : Any> sendMessage(message: T, unreliable: Boolean = false) {
         if (principal != null) {
-            val binaryData = Packet.serialize(message) ?: throw IOException("Cannot serialize object: $message | ${message::class}")
+            val binaryData =
+                Packet.serialize(message) ?: throw IOException("Cannot serialize object: $message | ${message::class}")
 
             if (unreliable) {
-                udpSocket?.let {
-                    logger().debug("ClientConnection: Sending packet of type ${message::class} to ${it.remoteAddress}")
-                    it.send(Datagram(ByteReadPacket(binaryData), it.remoteAddress))
+                if (udpAddress == null) {
+                    logger().debug("ClientConnection: Could not sent ${message::class.qualifiedName}, no remote address.")
+                    return
+                }
+
+                WotwBackendServer.udpSocket?.let {
+                    logger().debug("ClientConnection: Sending packet of type ${message::class.qualifiedName} to $udpAddress")
+                    it.send(Datagram(ByteReadPacket(binaryData), udpAddress!!))
                 }
             } else {
                 webSocket.send(Frame.Binary(true, binaryData))
             }
         } else {
-            logger().debug("ClientConnection: Packet of type ${message::class} has been discarded. Authentication is required but websocket is not authenticated.")
+            logger().debug("ClientConnection: Packet of type ${message::class.qualifiedName} has been discarded. Authentication is required but websocket is not authenticated.")
         }
     }
 }
