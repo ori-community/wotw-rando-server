@@ -67,7 +67,8 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
         private set
 
     suspend inline fun<reified T : Any> handleUdpMessage(datagram: Datagram, message: T) {
-        if (udpSocket == null) {
+        if(udpSocket?.remoteAddress != datagram.address){
+            udpSocket?.close()
             logger().debug("ClientConnection: Updated UDP remote address of connection $udpId to ${datagram.address}")
             udpSocket = aSocket(ActorSelectorManager(Dispatchers.IO)).udp().connect(datagram.address)
         }
