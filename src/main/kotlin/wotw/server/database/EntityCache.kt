@@ -6,6 +6,8 @@ import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.server.database.model.User
+import wotw.server.database.model.World
 import wotw.server.database.model.WorldMembership
 import wotw.server.database.model.WorldMemberships
 import java.util.*
@@ -60,6 +62,14 @@ class PlayerUniversePopulationCache : Cache<Pair<String, Long>, Set<String>>({ (
             if (membership != null) {
                 val affectedWorldIds = membership.world.id.value
                 val affectedPlayerIds = membership.world.universe.worlds.flatMap { it.members }.map { it.id.value }
+                affectedPlayerIds.forEach {
+                    invalidate(it to affectedWorldIds)
+                }
+            }
+            val world = it.toEntity(World.Companion)
+            if(world != null){
+                val affectedWorldIds = world.id.value
+                val affectedPlayerIds = world.universe.worlds.flatMap { it.members }.map { it.id.value }
                 affectedPlayerIds.forEach {
                     invalidate(it to affectedWorldIds)
                 }
