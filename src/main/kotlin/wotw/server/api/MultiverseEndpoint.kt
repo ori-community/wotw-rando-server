@@ -38,7 +38,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
                 val world = World.find(multiverseId, playerId) ?: throw NotFoundException("World not found for player")
                 val result = server.sync.aggregateState(world, message.uberId, message.value)
-                multiverse.updateCompletions(world)
+                multiverse.updateCompletions(world.universe)
                 result
             }
 
@@ -279,7 +279,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val world = World.findById(worldId) ?: error("Inconsistent multiverse state")
             val result = server.sync.aggregateState(world, UberId(uberGroup, uberState), sentValue) to
                     world.universe.multiverse.id.value
-            world.universe.multiverse.updateCompletions(world)
+            world.universe.multiverse.updateCompletions(world.universe)
             result
         }
         val pc = server.connections.playerMultiverseConnections[playerId]!!
@@ -301,7 +301,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val result = updates.mapValues { (uberId, value) ->
                 server.sync.aggregateState(world, uberId, value)
             } to world.universe.multiverse.id.value
-            world.universe.multiverse.updateCompletions(world)
+            world.universe.multiverse.updateCompletions(world.universe)
             result
         }
 
