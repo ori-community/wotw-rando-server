@@ -200,3 +200,4 @@ dist
 dbconfig.properties
 /gradlew
 /gradlew.bat
+.sessions/

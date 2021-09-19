@@ -40,10 +40,10 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val members
         get() = players + spectators
 
-    fun updateCompletions(world: World) {
+    fun updateCompletions(universe: Universe) {
         val board = board ?: return
-        val state = worldStates[world]?.uberStateData ?: UberStateMap.empty
-        val completions = events.filter { it.world == world }.map { it.x to it.y }
+        val state = universeStates[universe]?.uberStateData ?: UberStateMap.empty
+        val completions = events.filter { it.universe == universe }.map { it.x to it.y }
 
         for (x in 1..board.size) {
             for (y in 1..board.size) {
@@ -51,7 +51,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 if (point in completions) continue
                 if (board.goalCompleted(point, state)) {
                     BingoEvent.new {
-                        this.world = world
+                        this.universe = universe
                         this.multiverse = this@Multiverse
                         this.manual = false
                         this.time = Date().time
@@ -109,7 +109,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 x to y
             }
         }.map { (x, y) ->
-            (x to y) to events.filter { it.x == x && it.y == y }.map { it.world.universe }.toSet()
+            (x to y) to events.filter { it.x == x && it.y == y }.map { it.universe }.toSet()
         }.toMap()
     }
 
@@ -120,7 +120,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 x to y
             }
         }.map { (x, y) ->
-            (x to y) to events.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.world?.universe
+            (x to y) to events.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.universe
         }.toMap()
         return owners
     }
