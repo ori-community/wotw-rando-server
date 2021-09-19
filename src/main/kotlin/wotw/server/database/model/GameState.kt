@@ -15,6 +15,7 @@ import wotw.server.bingo.UberStateMap
 import wotw.server.bingo.universeStateAggregationRegistry
 import wotw.server.bingo.worldStateAggregationRegistry
 import wotw.server.database.jsonb
+import wotw.server.sync.ShareScope
 
 object GameStates : LongIdTable() {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
@@ -68,7 +69,7 @@ fun Multiverse.generateStateAggregationRegistry(): AggregationStrategyRegistry {
         ?.map { UberId(it.first, it.second) } ?: emptySet()
 
     var aggregationRegistry = AggregationStrategyRegistry().register(
-        sync(bingoStates).notify(NONE)
+        sync(bingoStates).notify(NONE).across(ShareScope.UNIVERSE)
     )
     aggregationRegistry += worldStateAggregationRegistry
     aggregationRegistry += universeStateAggregationRegistry
