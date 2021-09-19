@@ -30,7 +30,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var spectators by User via Spectators
 
     val universeStates
-        get() = states.mapNotNull { it.universe?.let{universe -> universe to it}}.toMap()
+        get() = states.filter { it.world == null }.mapNotNull { it.universe?.let{universe -> universe to it}}.toMap()
     val worldStates
         get() = states.mapNotNull { it.world?.let{world -> world to it}}.toMap()
     val players
