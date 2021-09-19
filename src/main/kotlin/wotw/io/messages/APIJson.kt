@@ -180,7 +180,7 @@ data class SeedGenConfig(
 @Serializable
 data class SeedGenResponse(
     val seedId: Long,
-    val playerList: List<String> = emptyList(),
+    val worldList: List<String> = emptyList(),
     val multiverseId: Long? = null,
 )
 

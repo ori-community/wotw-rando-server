@@ -58,7 +58,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             if (result.isSuccess) {
                 call.respond(HttpStatusCode.Created, SeedGenResponse(
                     seedId = seed.id.value,
-                    playerList = config.multiNames?: emptyList(),
+                    worldList = config.multiNames?: emptyList(),
                 )
                 )
             } else {
