@@ -43,6 +43,7 @@ import wotw.server.exception.ForbiddenException
 import wotw.server.exception.UnauthorizedException
 import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.seedgen.SeedGeneratorService
+import wotw.server.services.UserService
 import wotw.server.sync.StateSynchronization
 import wotw.server.util.logger
 import java.io.File
@@ -121,6 +122,7 @@ class WotwBackendServer {
     val seedGenEndpoint = SeedGenEndpoint(this)
     val authEndpoint = AuthenticationEndpoint(this)
     val userEndpoint = UserEndpoint(this)
+    val userService = UserService(this)
 
     val connections = ConnectionRegistry()
     val sync = StateSynchronization(this)

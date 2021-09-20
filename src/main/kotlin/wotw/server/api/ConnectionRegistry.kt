@@ -33,6 +33,8 @@ class ConnectionRegistry {
 
     val playerMultiverseConnections = Collections.synchronizedMap(hashMapOf<String, PlayerConnection>())
 
+    //region Connection registering
+
     fun registerObserverConnection(
         socket: ClientConnection,
         multiverseId: Long? = null,
@@ -63,6 +65,7 @@ class ConnectionRegistry {
     fun setSpectating(multiverseId: Long, playerId: String, spectating: Boolean) {
         multiverseObserverConnections[multiverseId].filter { it.playerId == playerId }.map { it.spectating = spectating }
     }
+    // endregion
 
     // region Convenience sending functions
     suspend inline fun <reified T : Any> sendTo(
