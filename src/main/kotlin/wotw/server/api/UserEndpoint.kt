@@ -18,7 +18,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val user = newSuspendedTransaction { authenticatedUser() }
                     wotwPrincipal().require(Scope.USER_INFO_READ)
 
-                    call.respond(UserInfo(user.id.value, user.name, user.avatarId))
+                    call.respond(server.userService.generateUserInfo(user))
                 }
             }
 

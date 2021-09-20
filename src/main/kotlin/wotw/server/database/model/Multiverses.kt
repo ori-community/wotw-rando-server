@@ -35,8 +35,6 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         get() = states.mapNotNull { it.world?.let{world -> world to it}}.toMap()
     val players
         get() = worlds.flatMap { it.members }
-    val multiverseInfoMessage
-        get() = MultiverseInfoMessage(id.value, universes.map { it.universeInfo }, board != null, spectators.map { it.userInfo })
     val members
         get() = players + spectators
 
@@ -86,7 +84,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val completions = scoreRelevantCompletionMap()
         goals.forEach {
             it.second.completedBy =
-                completions[it.first.x to it.first.y]?.map { it.universeInfo } ?: emptyList()
+                completions[it.first.x to it.first.y]?.map { it.id.value } ?: emptyList()
         }
 
         return BingoBoard(goals.map{ PositionedBingoSquare(it.first, it.second) }, board.size)
@@ -96,7 +94,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val completions = scoreRelevantCompletionMap()
         syncedBoard.squares.forEach { (position, square) ->
             square.completedBy =
-                completions[position.x to position.y]?.map { it.universeInfo } ?: emptyList()
+                completions[position.x to position.y]?.map { it.id.value } ?: emptyList()
         }
         return syncedBoard
     }

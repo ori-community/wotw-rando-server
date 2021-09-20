@@ -8,6 +8,7 @@ data class UserInfo(
     @ProtoNumber(1) val id: String,
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val avatarId: String?,
+    @ProtoNumber(4) val connectedMultiverseId: Long?,
 )
 
 

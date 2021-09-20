@@ -7,8 +7,6 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
-import wotw.io.messages.protobuf.UniverseInfo
-import wotw.io.messages.protobuf.WorldInfo
 import wotw.server.bingo.UberStateMap
 
 object Universes : LongIdTable() {
@@ -20,8 +18,6 @@ class Universe(id: EntityID<Long>) : LongEntity(id) {
     var multiverse by Multiverse referencedOn Universes.multiverseId
     var name by Universes.name
     val worlds by World referrersOn Worlds.universeId
-    val universeInfo: UniverseInfo
-        get() = UniverseInfo(id.value, name, worlds.map { it.worldInfo })
 
     val state: GameState?
         get() = GameState.findUniverseState(id.value)
@@ -67,9 +63,6 @@ class World(id: EntityID<Long>) : LongEntity(id) {
                 uberStateData = UberStateMap()
             }.world
     }
-
-    val worldInfo: WorldInfo
-        get() = WorldInfo(id.value, name, members.map { it.userInfo })
 }
 
 

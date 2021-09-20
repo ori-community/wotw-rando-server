@@ -56,7 +56,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
                 val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                     ?: throw NotFoundException("World does not exist!")
-                world to world.members.map { UserInfo(it.id.value, it.name, it.avatarId) }
+                world to world.members.map { server.userService.generateUserInfo(it) }
             }
             println(members)
             call.respond(WorldInfo(worldId, world.name, members))
@@ -67,7 +67,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             call.respond(newSuspendedTransaction {
                 val multiverse =
                     Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
-                multiverse.multiverseInfoMessage
+                server.userService.generateMultiverseInfo(multiverse)
             })
         }
         authenticate(SESSION_AUTH, JWT_AUTH) {
@@ -113,7 +113,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     multiverse.removePlayerFromWorlds(player, world)
 
-                    multiverse.multiverseInfoMessage
+                    server.userService.generateMultiverseInfo(multiverse)
                 }
 
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
@@ -145,7 +145,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     multiverse.removePlayerFromWorlds(player, world)
 
-                    multiverse.multiverseInfoMessage
+                    server.userService.generateMultiverseInfo(multiverse)
                 }
 
                 server.sync.aggregationStrategies.remove(multiverseId)
@@ -171,7 +171,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
                     }
 
-                    multiverse.multiverseInfoMessage to player.id.value
+                    server.userService.generateMultiverseInfo(multiverse) to player.id.value
                 }
 
                 server.connections.setSpectating(multiverseInfo.id, playerId, true)
@@ -202,7 +202,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             WorldMemberships.playerId eq playerId
                         }.sortedByDescending { it.id.value }.firstOrNull()?.world
 
-                        world?.id?.value then world?.universe?.multiverse?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.multiverseInfoMessage
+                        world?.id?.value then world?.universe?.multiverse?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.let { server.userService.generateMultiverseInfo(it) }
                     }
 
                     if (multiverseId == null || _worldId == null) {

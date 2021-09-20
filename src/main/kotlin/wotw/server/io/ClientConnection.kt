@@ -95,7 +95,8 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                                 generateUdpKey()
 
                                 val userInfo = newSuspendedTransaction {
-                                    User.findById(it.userId)!!.userInfo
+                                    val user = User.findById(it.userId)!!
+                                    UserInfo(user.id.value, user.name, user.avatarId, null)
                                 }
 
                                 logger().info("ClientConnection: User ${userInfo.name} (${userInfo.id}) authenticated a WebSocket connection")

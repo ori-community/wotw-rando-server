@@ -1,8 +1,6 @@
 package wotw.server.database.model
 
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.select
-import wotw.io.messages.protobuf.UserInfo
 import wotw.server.database.StringEntity
 import wotw.server.database.StringEntityClass
 import wotw.server.database.StringIdTable
@@ -26,7 +24,4 @@ class User(id: EntityID<String>) : StringEntity(id) {
         get() = WorldMembership.find {
             WorldMemberships.playerId eq id.value
         }.sortedByDescending { it.id.value }.firstOrNull()?.world?.universe?.multiverse
-
-    val userInfo: UserInfo
-        get() = UserInfo(id.value, name, avatarId)
 }
