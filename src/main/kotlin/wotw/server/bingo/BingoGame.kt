@@ -8,7 +8,7 @@ import kotlin.math.min
 typealias GameState = UberStateMap //These have changed *4 times* now, I'm keeping the typealiases :D
 
 @Serializable //Type-erasure forces a compiled class for type-safe serialization
-class UberStateMap(private val map: MutableMap<Pair<Int, Int>, Double>): MutableMap<Pair<Int, Int>, Double> by map{
+data class UberStateMap(private val map: MutableMap<Pair<Int, Int>, Double>): MutableMap<Pair<Int, Int>, Double> by map{
     constructor(): this(mutableMapOf())
 
     companion object{

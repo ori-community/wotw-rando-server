@@ -106,7 +106,7 @@ class ConnectionRegistry {
                         if (multiverseId == null || multiverseId == conn.multiverseId)
                             conn.clientConnection.sendMessage(message, unreliable)
                     } catch (e: Throwable) {
-                        println(e)
+                        logger.error(e.message, e)
                     }
                 }
             }
@@ -125,13 +125,12 @@ class ConnectionRegistry {
         spectatorsOnly: Boolean,
         vararg messages: T
     ) {
-        println(multiverseId)
         multiverseObserverConnections[multiverseId].filter { !spectatorsOnly || it.spectating }.forEach { (conn, _) ->
             for (message in messages) {
                 try {
                     conn.sendMessage(message, false)
                 } catch (e: Throwable) {
-                    println(e)
+                    logger.error(e.message, e)
                 }
             }
         }
@@ -152,7 +151,7 @@ class ConnectionRegistry {
                 try {
                     conn.sendMessage(message, false)
                 } catch (e: Throwable) {
-                    println(e)
+                    logger.error(e.message, e)
                 }
             }
         }
