@@ -42,7 +42,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 result
             }
 
-            server.sync.syncState(multiverseId, playerId, message.uberId, result)
+            server.sync.syncStates(multiverseId, playerId, result)
             server.sync.syncMultiverseProgress(multiverseId)
             call.respond(HttpStatusCode.NoContent)
         }
@@ -270,37 +270,17 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
     }
 
-    private suspend fun UberStateUpdateMessage.updateUberState(worldId: Long, playerId: String) {
-        val uberGroup = rezero(uberId.group)
-        val uberState = rezero(uberId.state)
-        val sentValue = rezero(value)
-        val (result, multiverseId) = newSuspendedTransaction {
-            logger.debug("($uberGroup, $uberState) -> $sentValue")
-            val world = World.findById(worldId) ?: error("Inconsistent multiverse state")
-            val result = server.sync.aggregateState(world, UberId(uberGroup, uberState), sentValue) to
-                    world.universe.multiverse.id.value
-            world.universe.multiverse.updateCompletions(world.universe)
-            result
-        }
-        val pc = server.connections.playerMultiverseConnections[playerId]!!
-        if (pc.multiverseId != multiverseId) {
-            server.connections.unregisterMultiverseConn(playerId)
-            server.connections.registerMultiverseConn(pc.clientConnection, playerId, multiverseId)
-        }
-        server.sync.syncMultiverseProgress(multiverseId)
-        server.sync.syncState(multiverseId, playerId, UberId(uberGroup, uberState), result)
-    }
+    private suspend fun UberStateUpdateMessage.updateUberState(worldId: Long, playerId: String) =
+        UberStateBatchUpdateMessage(this).updateUberStates(worldId, playerId)
 
     private suspend fun UberStateBatchUpdateMessage.updateUberStates(worldId: Long, playerId: String) {
         val updates = updates.map {
-            UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to if (it.value == -1.0) 0.0 else it.value
+            UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to rezero(it.value)
         }.toMap()
 
         val (results, multiverseId) = newSuspendedTransaction {
             val world = World.findById(worldId) ?: error("Inconsistent multiverse state")
-            val result = updates.mapValues { (uberId, value) ->
-                server.sync.aggregateState(world, uberId, value)
-            } to world.universe.multiverse.id.value
+            val result = server.sync.aggregateStates(world, updates) to world.universe.multiverse.id.value
             world.universe.multiverse.updateCompletions(world.universe)
             result
         }

@@ -3,6 +3,7 @@ package wotw.server.api
 import wotw.io.messages.protobuf.UberId
 import wotw.server.api.UberStateSyncStrategy.NotificationGroup.DIFFERENT
 import wotw.server.sync.ShareScope
+import wotw.util.MultiMap
 import kotlin.math.max
 import kotlin.math.min
 
@@ -42,19 +43,21 @@ data class UberStateSyncStrategy(val aggregation: (Double, Double) -> Double,
 }
 
 private typealias UberStateRegistration = Pair<Collection<UberId>, UberStateSyncStrategy?>
-class AggregationStrategyRegistry(private val strategies: MutableMap<UberId, UberStateSyncStrategy> = mutableMapOf()){
+class AggregationStrategyRegistry(private val strategies: MultiMap<UberId, UberStateSyncStrategy> = MultiMap()){
     fun register(vararg registrations: UberStateRegistration): AggregationStrategyRegistry{
-        strategies.putAll(registrations.flatMap{ (ids, strategy) ->
+        registrations.flatMap{ (ids, strategy) ->
             val mappedStrategy = strategy ?: UberStateSyncStrategy.MAX
             ids.map { it to mappedStrategy }
-        })
+        }.forEach { (id, strat) ->
+            strategies.add(id, strat)
+        }
         return this
     }
 
-    fun getStrategy(uberId: UberId) = strategies[uberId]
+    fun getStrategies(uberId: UberId) = strategies[uberId]
     fun getSyncedStates() = strategies.keys.toSet()
 
-    operator fun plus(other: AggregationStrategyRegistry) = AggregationStrategyRegistry((strategies + other.strategies).toMutableMap())
+    operator fun plus(other: AggregationStrategyRegistry) = AggregationStrategyRegistry(strategies + other.strategies)
 }
 
 fun sync(vararg ids: Int, strategy: UberStateSyncStrategy? = null): UberStateRegistration =

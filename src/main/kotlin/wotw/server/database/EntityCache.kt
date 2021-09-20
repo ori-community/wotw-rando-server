@@ -6,7 +6,6 @@ import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.database.model.WorldMembership
 import wotw.server.database.model.WorldMemberships
@@ -19,10 +18,17 @@ open class Cache<KEY : Any, ENTITY : Any>(
 
     protected data class CacheEntry<T>(var entity: T, var lastAccess: Long)
 
-    protected val cache: MutableMap<KEY, CacheEntry<ENTITY>> = Collections.synchronizedMap(hashMapOf())
+    protected val cache: MutableMap<KEY, CacheEntry<ENTITY?>> = Collections.synchronizedMap(hashMapOf())
 
     suspend fun get(key: KEY) = cache.getOrPut(key) {
         CacheEntry(retrieve(key) ?: throw NotFoundException(), currentTimeMillis())
+    }.let {
+        it.lastAccess = currentTimeMillis()
+        it.entity ?: throw NotFoundException()
+    }
+
+    suspend fun getOrNull(key: KEY) = cache.getOrPut(key) {
+        CacheEntry(retrieve(key), currentTimeMillis())
     }.let {
         it.lastAccess = currentTimeMillis()
         it.entity
@@ -38,7 +44,9 @@ open class Cache<KEY : Any, ENTITY : Any>(
 
         expired.forEach {
             try {
-                save(it.key, it.value.entity)
+                it.value.entity?.also { entity ->
+                    save(it.key, entity)
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -67,7 +75,7 @@ class PlayerUniversePopulationCache : Cache<Pair<String, Long>, Set<String>>({ (
                 }
             }
             val world = it.toEntity(World.Companion)
-            if(world != null){
+            if (world != null) {
                 val affectedWorldIds = world.id.value
                 val affectedPlayerIds = world.universe.worlds.flatMap { it.members }.map { it.id.value }
                 affectedPlayerIds.forEach {
