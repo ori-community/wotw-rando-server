@@ -309,7 +309,7 @@ class WotwBackendServer {
                                 logger.debug("WotwBackendServer: Could not deserialize UDP packet from connection $connectionId")
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            logger.debug(e)
                         }
                     }
                 }
