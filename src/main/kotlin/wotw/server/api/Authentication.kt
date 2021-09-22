@@ -25,10 +25,7 @@ import wotw.server.main.WotwBackendServer
 import java.util.*
 
 const val DISCORD_OAUTH = "discordOAuth"
-const val SESSION_AUTH = "sessionid"
 const val JWT_AUTH = "jwt"
-
-data class UserSession(val user: String)
 
 class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
@@ -56,7 +53,6 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
 
                     call.response.cookies.appendExpired("authRedir")
-                    call.sessions.set(UserSession(user.id.value))
 
                     if (redir == null)
                         call.respondText("Hi ${user.name}! Your ID is ${user.id.value}")
@@ -71,20 +67,8 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
             }
         }
-        authenticate(SESSION_AUTH) {
-            route("/logout") {
-                get("/") {
-                    val redir = call.request.queryParameters["redir"]
-                    call.sessions.clear(SESSION_AUTH)
-                    when {
-                        redir != null -> call.respondRedirect(redir)
-                        else -> call.respondText("you have been logged out!")
-                    }
-                }
-            }
-        }
 
-        authenticate(JWT_AUTH, SESSION_AUTH) {
+        authenticate(JWT_AUTH) {
             route("/tokens") {
                 post<TokenRequest>("/") { request ->
                     val principal = wotwPrincipal()
@@ -99,24 +83,6 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         } ?: this
                     })
 
-                }
-            }
-        }
-
-        route("/sessions") {
-            post<String>("/") {
-                val user = handleOAuthToken(it)
-                call.sessions.set(UserSession(user.id.value))
-                call.respondText(call.response.cookies[SESSION_AUTH]?.value ?: "")
-            }
-            //FIXME needs to be removed once client stuff gets figured out
-            post<String>("/uid") {
-                call.sessions.set(UserSession(it))
-                call.respondText(call.response.cookies[SESSION_AUTH]?.value ?: "")
-            }
-            authenticate(SESSION_AUTH) {
-                delete {
-                    call.sessions.clear(SESSION_AUTH)
                 }
             }
         }
