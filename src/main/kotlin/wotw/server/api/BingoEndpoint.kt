@@ -36,7 +36,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
         userboardWebsocket()
 
-        authenticate(SESSION_AUTH, JWT_AUTH) {
+        authenticate(JWT_AUTH) {
             get("bingo/{multiverse_id}") {
                 val multiverseId =
                     call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Cannot parse multiverse_id")

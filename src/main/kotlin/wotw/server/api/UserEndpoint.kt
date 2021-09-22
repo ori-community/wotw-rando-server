@@ -12,7 +12,7 @@ import wotw.server.util.put
 
 class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
-        authenticate(SESSION_AUTH, JWT_AUTH) {
+        authenticate(JWT_AUTH) {
             route("users") {
                 get("/me/info") {
                     val user = newSuspendedTransaction { authenticatedUser() }

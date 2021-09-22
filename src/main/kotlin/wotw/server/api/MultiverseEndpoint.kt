@@ -70,7 +70,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 server.userService.generateMultiverseInfo(multiverse)
             })
         }
-        authenticate(SESSION_AUTH, JWT_AUTH) {
+        authenticate(JWT_AUTH) {
             post("multiverses") {
                 wotwPrincipal().require(Scope.MULTIVERSE_CREATE)
                 val multiverse = newSuspendedTransaction {

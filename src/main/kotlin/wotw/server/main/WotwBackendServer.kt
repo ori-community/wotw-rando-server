@@ -220,22 +220,6 @@ class WotwBackendServer {
                             validateJwt(jwtCredential)
                         }
                     }
-                    session<UserSession>(SESSION_AUTH) {
-                        challenge {
-                            call.respond(HttpStatusCode.Unauthorized)
-                        }
-                        validate { session ->
-                            newSuspendedTransaction {
-                                User.findById(session.user)?.id?.value
-                            }?.let { WotwUserPrincipal(it, Scope.ALL) }
-                        }
-                    }
-                }
-
-                install(Sessions) {
-                    cookie<UserSession>(SESSION_AUTH, directorySessionStorage(File(".sessions"), cached = true)) {
-                        cookie.path = "/"
-                    }
                 }
 
                 routing {
