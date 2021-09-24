@@ -53,16 +53,16 @@ fun generatePool() = mutableListOf(
         threshold("Wellspring Wheel Room Access", 37858, 8487, 2, hideValue=true),
         threshold("Pools Water Dash Fight Room", 5377, 53480, 4, hideValue=true)
         ),
-    group(
-        "Buy # Weapon Upgrade[s]",
-        bool("Exploding Spike", 1, 1074),
-        bool("Shock Smash", 1, 1098),
-        bool("Static Star", 1, 1106),
-        bool("Charge Blaze", 1, 1115),
-        bool("Sentry Speed", 1, 1116),
-        countGoal = { it.nextTriangular(1, 5, 2) },
-        maxRepeats = 1
-    ),
+    // group(
+    //     "Buy # Weapon Upgrade[s]",
+    //     bool("Exploding Spike", 1, 1074),
+    //     bool("Shock Smash", 1, 1098),
+    //     bool("Static Star", 1, 1106),
+    //     bool("Charge Blaze", 1, 1115),
+    //     bool("Sentry Speed", 1, 1116),
+    //     countGoal = { it.nextTriangular(1, 5, 2) },
+    //     maxRepeats = 1
+    // ),
     group("Break # Wellspring Blob[s]",
         bool("wellspringGroupDescriptor.lanternAndCreepA", 53632, 2522),
         bool("waterMillStateGroupDescriptor.waterMillEntranceDoorUberStateDescriptor", 37858, 23644),
@@ -77,19 +77,19 @@ fun generatePool() = mutableListOf(
         subsetGoal = false,
         maxRepeats = 1
     ),
-    group(
-        "Buy # Item[s] from Twillen",
-        bool("Overcharge", 2, 1),
-        bool("TripleJump", 2, 2),
-        bool("Wingclip", 2, 3),
-        bool("Swap", 2, 5),
-        bool("LightHarvest", 2, 19),
-        bool("Vitality", 2, 22),
-        bool("Energy", 2, 26),
-        bool("Finesse", 2, 40),
-        countGoal = {it.nextTriangular(2, 8, 3)},
-        maxRepeats = 1
-        ),
+    // group(
+    //     "Buy # Item[s] from Twillen",
+    //     bool("Overcharge", 2, 1),
+    //     bool("TripleJump", 2, 2),
+    //     bool("Wingclip", 2, 3),
+    //     bool("Swap", 2, 5),
+    //     bool("LightHarvest", 2, 19),
+    //     bool("Vitality", 2, 22),
+    //     bool("Energy", 2, 26),
+    //     bool("Finesse", 2, 40),
+    //     countGoal = {it.nextTriangular(2, 8, 3)},
+    //     maxRepeats = 1
+    //     ),
     group(
         "Break # Willow Heart[s]",
         bool("Wind Spinners", 16155,42976),
