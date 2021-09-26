@@ -59,7 +59,7 @@ data class PresetFile(
     val webConn: Boolean,
     val hard: Boolean,
     val spawnLoc: JsonElement,
-    val headerArgs: Map<String, String>,
+    val headerArgs: List<String>,
 ) {
     private val spawnLocString: String = if (spawnLoc is JsonPrimitive) {
         spawnLoc.content.lowercase() // Random → random
@@ -95,6 +95,14 @@ data class PresetFile(
     }
 
     fun toPreset(name: String): Preset {
+        val argMap = hashMapOf<String, String>()
+
+        headerArgs.forEach {
+            val parts = it.split("=")
+            val value = parts.getOrNull(1) ?: "true"
+            argMap[parts[0]] = value
+        }
+
         return Preset(
             worlds,
             presets,
@@ -109,7 +117,7 @@ data class PresetFile(
             name = name,
             wrapper = false,
             spawnLoc = spawnLocString,
-            headerArgs = headerArgs,
+            headerArgs = argMap,
         )
     }
 
