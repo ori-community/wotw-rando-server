@@ -23,7 +23,7 @@ data class VerseProperties(val isMulti: Boolean = false, val isCoop: Boolean = f
 data class HeaderArgDef(val name: String, val default: String, val type: String, val description: List<String>)
 
 @Serializable
-data class HeaderFileEntry(val headerName: String, val name: String?, val description: List<String>?, val params: List<HeaderArgDef>)
+data class HeaderFileEntry(val headerName: String, val hidden: Boolean, val name: String?, val description: List<String>?, val params: List<HeaderArgDef>)
 
 
 enum class SeedgenDifficulty(val level: Int) {
