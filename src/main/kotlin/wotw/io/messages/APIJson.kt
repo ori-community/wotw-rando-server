@@ -20,10 +20,10 @@ data class BingoGenProperties(
 data class VerseProperties(val isMulti: Boolean = false, val isCoop: Boolean = false)
 
 @Serializable
-data class HeaderArgDef(val name: String, val default: String, val type: String, val description: List<String>)
+data class HeaderParameterDef(val name: String, val default: String, val type: String, val description: List<String>)
 
 @Serializable
-data class HeaderFileEntry(val headerName: String, val hidden: Boolean, val name: String?, val description: List<String>?, val params: List<HeaderArgDef>)
+data class HeaderFileEntry(val headerName: String, val hidden: Boolean, val name: String?, val description: List<String>?, val params: List<HeaderParameterDef>)
 
 
 enum class SeedgenDifficulty(val level: Int) {
@@ -59,7 +59,7 @@ data class PresetFile(
     val webConn: Boolean,
     val hard: Boolean,
     val spawnLoc: JsonElement,
-    val headerArgs: List<String>,
+    val headerArgs: Map<String, String>,
 ) {
     private val spawnLocString: String = if (spawnLoc is JsonPrimitive) {
         spawnLoc.content.lowercase() // Random → random
@@ -131,7 +131,7 @@ data class Preset(
     val name: String = "",
     val wrapper: Boolean = false,
     val spawnLoc: String = "MarshSpawn.Main",
-    val headerArgs: List<String> = emptyList(),
+    val headerArgs: Map<String, String> = emptyMap(),
 ) {
     val difficultyEnum: SeedgenDifficulty
         get() = SeedgenDifficulty.valueOf(difficulty.uppercase())
@@ -174,7 +174,7 @@ data class SeedGenConfig(
     val seed: String? = null,
     val spawn: String? = null,
     val customHeaders: List<String>? = null,
-    val headerArgs: List<String>? = null,
+    val headerArgs: Map<String, String>? = null,
 )
 
 @Serializable

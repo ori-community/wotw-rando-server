@@ -28,7 +28,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         val (type, default) = if (info.contains(":")) {
                             info.split(":", limit = 2)
                         } else listOf("string", info)
-                        HeaderArgDef(
+                        HeaderParameterDef(
                             name,
                             default,
                             type,
