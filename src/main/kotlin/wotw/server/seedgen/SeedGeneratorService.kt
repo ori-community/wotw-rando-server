@@ -1,5 +1,6 @@
 package wotw.server.seedgen
 
+import io.ktor.html.*
 import kotlinx.coroutines.future.await
 import wotw.io.messages.SeedGenConfig
 import wotw.server.exception.ServerConfigurationException
@@ -107,8 +108,10 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         }
 
         if (!config.headerArgs.isNullOrEmpty()) {
-            command += "--args"
-            command += config.headerArgs
+            config.headerArgs.map { "${it.key}=${it.value}" }.forEach {
+                command += "--args"
+                command += it
+            }
         }
 
         command += "--"
