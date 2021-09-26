@@ -167,8 +167,8 @@ fun generatePool() = mutableListOf(
     ),
     group(
         "Complete # Escape[s]",
-        bool("The Wellspring", 37858, 12379),
-        threshold("Baur's Reach", 28895, 29098, 3, hideValue=true),
+        threshold("The Wellspring", 37858, 10720, 7, hideValue = true),
+        threshold("Baur's Reach", 28895, 29098, 3, hideValue = true),
 //        threshold("Windtorn Ruins", 10289, 19890, 3, hideValue=true, countOnly = true),
         maxRepeats = 1
     ),
@@ -832,7 +832,7 @@ object pickupsIn {
         bool("InnerWellspring.BlueMoonSeed", 14019, 24142),
         bool("InnerWellspring.SwimOre", 37858, 32932),
         bool("InnerWellspring.EscapeRevisitEX", 37858, 56444),
-        bool("InnerWellspring.WaterEscape", 37858, 12379),
+        threshold("InnerWellspring.WaterEscapeState", 37858, 10720, 7),
         countGoal = { it.nextTriangular(5, 34, 18) },
         subsetGoal = false
     )
