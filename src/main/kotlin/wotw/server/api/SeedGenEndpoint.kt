@@ -23,16 +23,26 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val lines = it.readText().split(System.lineSeparator())
                 val descrLines = lines.filter { it.startsWith("/// ") }.map { it.substringAfter("/// ") }
                 val params = lines.mapIndexedNotNull { i, s ->
-                    if(s.startsWith("!!parameter ")) {
+                    if (s.startsWith("!!parameter ")) {
                         val (name, info) = s.substringAfter("!!parameter ").split(" ", limit = 2)
-                        val (type, default) = if(info.contains(":")) {
+                        val (type, default) = if (info.contains(":")) {
                             info.split(":", limit = 2)
                         } else listOf("string", info)
-                        HeaderArgDef(name, default, type, lines.subList(0,i).takeLastWhile { it.startsWith("//// ") }.map{ it.substringAfter("//// ")})
+                        HeaderArgDef(
+                            name,
+                            default,
+                            type,
+                            lines.subList(0, i).takeLastWhile { it.startsWith("//// ") }
+                                .map { it.substringAfter("//// ") })
                     } else null
                 }
-
-                HeaderFileEntry(it.name.substringAfterLast("/").substringBeforeLast("."), descrLines.firstOrNull(), descrLines, params)
+                HeaderFileEntry(
+                    it.name.substringAfterLast("/").substringBeforeLast("."),
+                    lines.firstOrNull()?.startsWith("#hide") == true,
+                    descrLines.firstOrNull(),
+                    descrLines,
+                    params
+                )
             }?.toList() ?: emptyList()
             call.respond(result)
         }
@@ -56,10 +66,11 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val result = server.seedGeneratorService.generate("seed-${seed.id.value}", config)
 
             if (result.isSuccess) {
-                call.respond(HttpStatusCode.Created, SeedGenResponse(
-                    seedId = seed.id.value,
-                    worldList = config.multiNames?: emptyList(),
-                )
+                call.respond(
+                    HttpStatusCode.Created, SeedGenResponse(
+                        seedId = seed.id.value,
+                        worldList = config.multiNames ?: emptyList(),
+                    )
                 )
             } else {
                 call.respondText(
@@ -73,16 +84,17 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
     fun seedFile(seedId: String, player: String? = null): File {
         var pathString = "${System.getenv("SEED_DIR")}${File.separator}seed-${seedId}"
-        if(player != null){
+        if (player != null) {
             val sanitized = server.seedGeneratorService.sanitizedPlayerName(player)
             pathString += "${File.separator}$sanitized"
         }
         pathString += ".wotwr"
-        val file =  Path.of(pathString).toFile()
-        if(!file.exists() || file.isDirectory)
+        val file = Path.of(pathString).toFile()
+        if (!file.exists() || file.isDirectory)
             throw NotFoundException()
         return file
     }
+
     fun seedFile(seed: Seed) = seedFile(seed.id.value.toString())
 }
 
