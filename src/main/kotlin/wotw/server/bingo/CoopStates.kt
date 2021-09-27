@@ -639,7 +639,7 @@ val unsortedCoop = listOf(
     UberId(58674, 9239),      // _petrifiedForestGroup.leafPileB
     UberId(7228, 4034),      // desertAGroup.secretWall
     UberId(937, 10140),      // kwolokGroupDescriptor.secretWallA
-    UberId(937, 22716),      // kwolokGroupDescriptor.pressurePlatePuzzle
+    // UberId(937, 22716),      // kwolokGroupDescriptor.pressurePlatePuzzle, syncing this braks the puzzle
     UberId(937, 32165),      // kwolokGroupDescriptor.door
     UberId(937, 40225),      // kwolokGroupDescriptor.stompableFloor
     UberId(937, 42245),      // kwolokGroupDescriptor.recedingWaterSetup
