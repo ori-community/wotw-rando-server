@@ -6,6 +6,7 @@ import wotw.io.messages.SeedGenConfig
 import wotw.server.exception.ServerConfigurationException
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.CompletableFuture
+import wotw.server.util.logger
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -27,14 +28,14 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         validate(config)
         val commandString = buildSeedGenCommand(fileName, config)
 
-        println("Generating seed using command:")
-        println(commandString.joinToString(" "))
+        logger().info("Generating seed using command:")
+        logger().info(commandString.joinToString(" "))
         val timeout = System.getenv("SEEDGEN_TIMEOUT")?.toLongOrNull() ?: 30000
 
         val processBuilder = ProcessBuilder(*commandString)
             .directory(File(seedgenExec.substringBeforeLast(File.separator)))
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
-            .redirectError(ProcessBuilder.Redirect.INHERIT)
+            .redirectError(ProcessBuilder.Redirect.PIPE)
 
         var handle: Process? = null
 
@@ -55,8 +56,13 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             process.inputStream.readAllBytes()
 
             val err = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
+            val exitCode = process.waitFor()
 
-            if (process.waitFor() != 0)
+            err.lines().forEach {
+                logger().info(it)
+            }
+
+            if (exitCode != 0)
                 Result.failure(Exception(err))
             else
                 Result.success("yay")
