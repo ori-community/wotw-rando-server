@@ -42,6 +42,9 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             isCustomName = true
                         }
                     }
+
+                    server.connections.notifyNicknameChanged(wotwPrincipal().userId)
+
                     call.respond(user)
                 }
 

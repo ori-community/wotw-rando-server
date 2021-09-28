@@ -189,5 +189,14 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         }
     }
 
+    suspend fun notifyNicknameChanged(playerId: String) {
+        newSuspendedTransaction {
+            val user = User.findById(playerId)
+            user?.currentMultiverse?.id?.value?.let {
+                broadcastMultiverseInfoMessage(multiverseId = it)
+            }
+        }
+    }
+
     // endregion
 }
