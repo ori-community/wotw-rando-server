@@ -20,6 +20,7 @@ import wotw.server.database.model.World
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
+import java.util.concurrent.CancellationException
 
 class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
@@ -94,7 +95,9 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     server.connections.unregisterObserverConnection(socketConnection, null, playerId)
                 }
                 onError {
-                    logger().error(it)
+                    if (it !is CancellationException) {
+                        logger().error(it)
+                    }
                     server.connections.unregisterObserverConnection(socketConnection, null, playerId)
                     this@webSocket.close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "an error occurred"))
                 }
