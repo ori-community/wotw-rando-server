@@ -20,8 +20,8 @@ class User(id: EntityID<String>) : StringEntity(id) {
     var avatarId by Users.avatarId
     val games by Multiverse via GameStates
 
-    val latestMultiverse: Multiverse?
+    val currentMultiverse: Multiverse?
         get() = WorldMembership.find {
             WorldMemberships.playerId eq id.value
-        }.sortedByDescending { it.id.value }.firstOrNull()?.world?.universe?.multiverse
+        }.firstOrNull()?.world?.universe?.multiverse
 }
