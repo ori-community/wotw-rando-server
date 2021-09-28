@@ -47,6 +47,14 @@ class World(id: EntityID<Long>) : LongEntity(id) {
                     (Universes.multiverseId eq multiverseId) and (WorldMemberships.playerId eq playerId)
                 }.map { World.wrapRow(it) }
 
+        fun findAll(playerId: String) =
+            Worlds
+                .innerJoin(WorldMemberships)
+                .innerJoin(Universes)
+                .select {
+                    WorldMemberships.playerId eq playerId
+                }.map { World.wrapRow(it) }
+
         fun new(universe: Universe, player: User) =
             GameState.new {
                 this.multiverse = universe.multiverse
@@ -71,7 +79,7 @@ object WorldMemberships : LongIdTable() {
     val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
 
     init {
-        uniqueIndex(worldId, playerId)
+        uniqueIndex(playerId)
     }
 }
 

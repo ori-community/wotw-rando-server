@@ -174,7 +174,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     suspend inline fun <reified T : Any> toObservers(multiverseId: Long, playerId: String, vararg messages: T) {
         var conns: Set<ClientConnection> = playerObserverConnections[multiverseId to playerId]
         if (newSuspendedTransaction {
-                User.findById(playerId)?.latestMultiverse?.id?.value == multiverseId
+                User.findById(playerId)?.currentMultiverse?.id?.value == multiverseId
             })
             conns = conns + playerObserverConnections[null to playerId]
 

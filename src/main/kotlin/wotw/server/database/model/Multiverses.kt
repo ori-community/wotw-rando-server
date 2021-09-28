@@ -154,18 +154,16 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     }
 
     fun removePlayerFromWorlds(player: User, newWorld: World? = null) {
-        val existingWorlds = World.findAll(this.id.value, player.id.value)
+        val existingWorlds = World.findAll(player.id.value).filter { it != newWorld }
         existingWorlds.forEach {
-            if (it != newWorld) {
-                it.members = SizedCollection(it.members.minus(player))
+            it.members = SizedCollection(it.members.minus(player))
 
-                if (it.members.count() == 0L) {
-                    it.delete()
-                }
+            if (it.members.count() == 0L) {
+                it.delete()
+            }
 
-                if (it.universe.worlds.empty()) {
-                    it.universe.delete()
-                }
+            if (it.universe.worlds.empty()) {
+                it.universe.delete()
             }
         }
     }

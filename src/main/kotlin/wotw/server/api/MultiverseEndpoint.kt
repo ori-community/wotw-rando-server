@@ -200,7 +200,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val (_worldId, multiverseId, worldName, worldMembers, multiverseInfoMessage) = newSuspendedTransaction {
                         val world = WorldMembership.find {
                             WorldMemberships.playerId eq playerId
-                        }.sortedByDescending { it.id.value }.firstOrNull()?.world
+                        }.firstOrNull()?.world
 
                         world?.id?.value then world?.universe?.multiverse?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.let { server.userService.generateMultiverseInfoMessage(it) }
                     }
