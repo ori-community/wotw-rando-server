@@ -20,16 +20,6 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     call.respond(server.userService.generateUserInfo(user))
                 }
-            }
-
-            route("users") {
-                get("/me") {
-                    val user = newSuspendedTransaction {
-                        authenticatedUser()
-                    }
-                    wotwPrincipal().require(Scope.USER_INFO_READ)
-                    call.respond(user)
-                }
 
                 put<String>("/me/nickname") {
                     if(it.isBlank())
@@ -45,7 +35,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     server.connections.notifyNicknameChanged(wotwPrincipal().userId)
 
-                    call.respond(user)
+                    call.respond(server.userService.generateUserInfo(user))
                 }
 
             }
