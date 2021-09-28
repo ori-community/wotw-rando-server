@@ -7,7 +7,7 @@ import wotw.server.exception.UnauthorizedException
 import wotw.util.EventBus
 import kotlin.reflect.KClass
 
-class ClientSocketProtocolBuilder(val socketConnection: ClientConnection, internal val eventBus: EventBus) {
+class ClientSocketProtocolBuilder(val socketConnection: ClientConnection, private val eventBus: EventBus) {
     var errorHandler: (suspend (Throwable) -> Unit)? = null
         private set
     var closeHandler: (suspend (ClosedReceiveChannelException) -> Unit)? = null
@@ -17,7 +17,7 @@ class ClientSocketProtocolBuilder(val socketConnection: ClientConnection, intern
     val principalOrNull: WotwUserPrincipal?
         get() = socketConnection.principal
     val principal: WotwUserPrincipal
-        get() = socketConnection.principal ?: throw UnauthorizedException()
+        get() = principalOrNull ?: throw UnauthorizedException()
 
     fun afterAuthenticated(block: suspend () -> Unit) {
         afterAuthenticatedHandler = block

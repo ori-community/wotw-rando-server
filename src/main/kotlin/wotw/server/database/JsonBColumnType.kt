@@ -26,7 +26,7 @@ class JsonbColumnType<T : Any>(
     }
 
     override fun valueFromDB(value: Any): Any {
-        return if (value is PGobject) parse(value.value) else value
+        return if (value is PGobject) value.value!! else value
     }
 
     override fun valueToString(value: Any?): String = when (value) {

@@ -10,7 +10,7 @@ import io.ktor.network.sockets.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.serialization.SerializationException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
@@ -20,11 +20,9 @@ import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.util.EventBus
 import java.lang.Exception
-import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
-import kotlin.experimental.xor
 import kotlin.text.String
 
 // ktor WHYYYY
@@ -78,9 +76,9 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
     }
 
     suspend fun listen(errorHandler: (suspend (Throwable) -> Unit)?, afterAuthenticatedHandler: (suspend () -> Unit)?) {
-        for (frame in webSocket.incoming) {
-            if (frame is Frame.Binary) {
-                try {
+        try {
+            for (frame in webSocket.incoming) {
+                if (frame is Frame.Binary) {
                     val message = Packet.deserialize(frame.data) ?: continue
 
                     if (message is AuthenticateMessage) {
@@ -121,15 +119,16 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
                         webSocket.close()
                         return
                     }
-                } catch (e: SerializationException) {
-                    e.printStackTrace()
-                    errorHandler?.invoke(e)
                 }
             }
-        }
 
-        udpId?.let {
-            ClientConnectionUDPRegistry.unregister(it)
+            throw ClosedReceiveChannelException("Channel closed")
+        } catch (e: Throwable) {
+            udpId?.let {
+                ClientConnectionUDPRegistry.unregister(it)
+            }
+
+            throw e
         }
     }
 
@@ -152,7 +151,19 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
 
                 WotwBackendServer.udpSocket?.let {
                     logger().trace("ClientConnection: Sending packet of type ${message::class.qualifiedName} to $udpAddress")
-                    it.send(Datagram(ByteReadPacket(UdpPacket.serialize(UdpPacket.fromPacketData(null, binaryData, udpKey))), udpAddress!!))
+                    it.send(
+                        Datagram(
+                            ByteReadPacket(
+                                UdpPacket.serialize(
+                                    UdpPacket.fromPacketData(
+                                        null,
+                                        binaryData,
+                                        udpKey
+                                    )
+                                )
+                            ), udpAddress!!
+                        )
+                    )
                 }
             } else {
                 webSocket.send(Frame.Binary(true, binaryData))
