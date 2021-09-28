@@ -124,7 +124,7 @@ class WotwBackendServer {
     val userEndpoint = UserEndpoint(this)
     val userService = UserService(this)
 
-    val connections = ConnectionRegistry()
+    val connections = ConnectionRegistry(this)
     val sync = StateSynchronization(this)
     val seedGeneratorService = SeedGeneratorService(this)
 

@@ -4,12 +4,13 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
 import wotw.server.io.ClientConnection
+import wotw.server.main.WotwBackendServer
 import wotw.server.sync.ShareScope
 import wotw.server.util.logger
 import wotw.util.MultiMap
 import java.util.*
 
-class ConnectionRegistry {
+class ConnectionRegistry(val server: WotwBackendServer) {
     val logger = logger()
 
     data class PlayerConnection(val clientConnection: ClientConnection, val multiverseId: Long?)
@@ -47,10 +48,34 @@ class ConnectionRegistry {
         playerObserverConnections[multiverseId to playerId] += socket
     }
 
-    fun registerMultiverseConn(socket: ClientConnection, playerId: String, multiverseId: Long? = null) =
-        run { playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId) }
+    private suspend fun broadcastMultiverseInfoMessage(multiverseId: Long) {
+        newSuspendedTransaction {
+            val multiverse = Multiverse.findById(multiverseId)
+            if (multiverse != null) {
+                toPlayers(
+                    multiverse.players.map { it.id.value },
+                    multiverseId,
+                    false,
+                    server.userService.generateMultiverseInfoMessage(multiverse)
+                )
+            }
+        }
+    }
 
-    fun unregisterMultiverseConn(playerId: String) = playerMultiverseConnections.remove(playerId)
+    suspend fun registerMultiverseConn(socket: ClientConnection, playerId: String, multiverseId: Long? = null) =
+        run {
+            playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId)
+            if (multiverseId != null) {
+                broadcastMultiverseInfoMessage(multiverseId)
+            }
+        }
+
+    suspend fun unregisterMultiverseConn(playerId: String) = run {
+        val playerConnection = playerMultiverseConnections.remove(playerId)
+        playerConnection?.multiverseId?.let {
+            broadcastMultiverseInfoMessage(it)
+        }
+    }
 
     fun unregisterAllObserverConnections(socket: ClientConnection, multiverseId: Long) {
         multiverseObserverConnections[multiverseId].removeIf { it.socketConnection == socket }
