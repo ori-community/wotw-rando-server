@@ -12,6 +12,7 @@ import io.ktor.client.*
 import io.ktor.features.*
 import io.ktor.html.*
 import io.ktor.http.*
+import io.ktor.http.cio.websocket.*
 import io.ktor.http.content.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
@@ -47,6 +48,7 @@ import wotw.server.services.UserService
 import wotw.server.sync.StateSynchronization
 import wotw.server.util.logger
 import java.io.File
+import java.time.Duration
 
 class WotwBackendServer {
     companion object {
@@ -137,6 +139,8 @@ class WotwBackendServer {
             connectors += cmd.connectors
             module {
                 install(WebSockets) {
+                    pingPeriod = Duration.ofSeconds(10)
+                    timeout = Duration.ofSeconds(10)
                     maxFrameSize = Long.MAX_VALUE
                 }
 
