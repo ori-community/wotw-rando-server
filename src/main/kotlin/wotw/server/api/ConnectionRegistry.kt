@@ -53,7 +53,10 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             val multiverse = Multiverse.findById(multiverseId)
             if (multiverse != null) {
                 toPlayers(
-                    multiverse.players.map { it.id.value },
+                    (
+                        multiverse.players.map { it.id.value } +
+                        multiverseObserverConnections[multiverseId].map { it.playerId ?: "" }.filter { it != "" }
+                    ).distinct(),
                     multiverseId,
                     false,
                     server.userService.generateMultiverseInfoMessage(multiverse)
