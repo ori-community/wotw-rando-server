@@ -52,15 +52,16 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         newSuspendedTransaction {
             val multiverse = Multiverse.findById(multiverseId)
             if (multiverse != null) {
+                val message = server.userService.generateMultiverseInfoMessage(multiverse)
+
                 toPlayers(
-                    (
-                        multiverse.players.map { it.id.value } +
-                        multiverseObserverConnections[multiverseId].map { it.playerId ?: "" }.filter { it != "" }
-                    ).distinct(),
+                    multiverse.players.map { it.id.value },
                     multiverseId,
                     false,
-                    server.userService.generateMultiverseInfoMessage(multiverse)
+                    message,
                 )
+
+                toObservers(multiverseId, spectatorsOnly = false, message)
             }
         }
     }
