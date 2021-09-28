@@ -161,6 +161,7 @@ class WotwBackendServer {
                 }*/
                 install(CORS) {
                     method(HttpMethod.Options)
+                    method(HttpMethod.Put)
                     allowNonSimpleContentTypes = true
                     allowCredentials = true
                     header(HttpHeaders.Authorization)
