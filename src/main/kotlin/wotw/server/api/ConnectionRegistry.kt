@@ -48,21 +48,19 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         playerObserverConnections[multiverseId to playerId] += socket
     }
 
-    private suspend fun broadcastMultiverseInfoMessage(multiverseId: Long) {
-        newSuspendedTransaction {
-            val multiverse = Multiverse.findById(multiverseId)
-            if (multiverse != null) {
-                val message = server.userService.generateMultiverseInfoMessage(multiverse)
+    suspend fun broadcastMultiverseInfoMessage(multiverseId: Long) {
+        val multiverse = Multiverse.findById(multiverseId)
+        if (multiverse != null) {
+            val message = server.userService.generateMultiverseInfoMessage(multiverse)
 
-                toPlayers(
-                    multiverse.players.map { it.id.value },
-                    multiverseId,
-                    false,
-                    message,
-                )
+            toPlayers(
+                multiverse.players.map { it.id.value },
+                multiverseId,
+                false,
+                message,
+            )
 
-                toObservers(multiverseId, spectatorsOnly = false, message)
-            }
+            toObservers(multiverseId, spectatorsOnly = false, message)
         }
     }
 
@@ -70,14 +68,18 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         run {
             playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId)
             if (multiverseId != null) {
-                broadcastMultiverseInfoMessage(multiverseId)
+                newSuspendedTransaction {
+                    broadcastMultiverseInfoMessage(multiverseId)
+                }
             }
         }
 
     suspend fun unregisterMultiverseConn(playerId: String) = run {
         val playerConnection = playerMultiverseConnections.remove(playerId)
         playerConnection?.multiverseId?.let {
-            broadcastMultiverseInfoMessage(it)
+            newSuspendedTransaction {
+                broadcastMultiverseInfoMessage(it)
+            }
         }
     }
 

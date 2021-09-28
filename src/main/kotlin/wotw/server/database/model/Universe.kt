@@ -64,10 +64,6 @@ class World(id: EntityID<Long>) : LongEntity(id) {
                     this.name = player.name + "'s world"
                 }
                 this.world = world
-                WorldMembership.new {
-                    this.player = player
-                    this.world = world
-                }
                 uberStateData = UberStateMap()
             }.world
     }
