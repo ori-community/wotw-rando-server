@@ -267,7 +267,6 @@ val pickupIds = mapOf(
     "InnerWellspring.SwimOre" to UberId(37858, 32932),
     "InnerWellspring.EscapeRevisitEX" to UberId(37858, 56444),
     "InnerWellspring.WaterEscape" to UberId(37858, 12379),
-    "InnerWellspring.WaterEscapeState" to UberId(37858, 10720),
     "PoolsApproach.CurrentEX" to UberId(945, 10682),
     "PoolsApproach.AboveWheelEX" to UberId(945, 14530),
     "PoolsApproach.MillPathHC" to UberId(945, 37243),
@@ -672,10 +671,11 @@ val worldStateAggregationRegistry by lazy {
             sync(questIds.values),
             sync(pickupIds.values),
             sync(unsortedCoop),
-            sync(37858, 8487).on(threshold = 5f), //Wellspring fight room
+            sync(37858, 8487).on(threshold = 5f), // Wellspring fight room
             sync(5377, 53480).on(threshold = 4f), // pools fight room 2
             sync(9593, 25130).on(threshold = 3f), // double jump lizard fight
             sync(945, 58403).on(threshold = 7f),  // kwolok fight
+            sync(37858, 10720).on(threshold = 2f), // Wellspring escape
         )
     }
 }
