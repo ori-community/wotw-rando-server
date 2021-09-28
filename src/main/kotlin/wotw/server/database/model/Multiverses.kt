@@ -11,6 +11,8 @@ import wotw.server.bingo.Line
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.jsonb
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 import kotlin.math.ceil
 import kotlin.to
 
@@ -153,19 +155,26 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }.sortedByDescending { it.rank }
     }
 
-    fun removePlayerFromWorlds(player: User, newWorld: World? = null) {
+    fun removePlayerFromWorlds(player: User, newWorld: World? = null): HashSet<Long> {
         val existingWorlds = World.findAll(player.id.value).filter { it != newWorld }
+        val affectedMultiverseIds = hashSetOf<Long>()
+
         existingWorlds.forEach {
-            it.members = SizedCollection(it.members.minus(player))
+            if (it.members.contains(player)) {
+                affectedMultiverseIds.add(it.universe.multiverse.id.value)
+                it.members = SizedCollection(it.members.minus(player))
 
-            if (it.members.count() == 0L) {
-                it.delete()
-            }
+                if (it.members.empty()) {
+                    it.delete()
+                }
 
-            if (it.universe.worlds.empty()) {
-                it.universe.delete()
+                if (it.universe.worlds.empty()) {
+                    it.universe.delete()
+                }
             }
         }
+
+        return affectedMultiverseIds
     }
 
     companion object : LongEntityClass<Multiverse>(Multiverses)

@@ -10,6 +10,7 @@ import io.ktor.routing.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.transactions.inTopLevelTransaction
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.UberStateMap
 import wotw.server.bingo.coopStates
@@ -109,9 +110,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             }
                             universe
                         }
-                    val world = World.new(universe, player)
 
-                    multiverse.removePlayerFromWorlds(player, world)
+                    val world = World.new(universe, player)
+                    multiverse.removePlayerFromWorlds(player, world).forEach {
+                        server.connections.broadcastMultiverseInfoMessage(it)
+                    }
+                    world?.members = SizedCollection(player)
 
                     server.userService.generateMultiverseInfoMessage(multiverse)
                 }
@@ -141,9 +145,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                         ?: throw NotFoundException("World does not exist!")
-                    world.members = SizedCollection(world.members + player)
 
-                    multiverse.removePlayerFromWorlds(player, world)
+                    multiverse.removePlayerFromWorlds(player, world).forEach {
+                        server.connections.broadcastMultiverseInfoMessage(it)
+                    }
+                    world.members = SizedCollection(world.members + player)
 
                     server.userService.generateMultiverseInfoMessage(multiverse)
                 }
@@ -165,7 +171,9 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val multiverse =
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
-                    multiverse.removePlayerFromWorlds(player)
+                    multiverse.removePlayerFromWorlds(player).forEach {
+                        server.connections.broadcastMultiverseInfoMessage(it)
+                    }
 
                     if (!multiverse.spectators.contains(player)) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
