@@ -268,10 +268,16 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 onClose {
-                    server.connections.unregisterMultiverseConn(playerId)
+                    logger.info("WebSocket for player $playerId disconnected (close)")
+                    if (playerId != "") {
+                        server.connections.unregisterMultiverseConn(playerId)
+                    }
                 }
                 onError {
-                    server.connections.unregisterMultiverseConn(playerId)
+                    logger.info("WebSocket for player $playerId disconnected (error)")
+                    if (playerId != "") {
+                        server.connections.unregisterMultiverseConn(playerId)
+                    }
                 }
             }
         }
