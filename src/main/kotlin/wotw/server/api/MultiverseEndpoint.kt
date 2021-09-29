@@ -112,7 +112,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
 
                     val world = World.new(universe, player)
-                    multiverse.removePlayerFromWorlds(player, world).forEach {
+                    multiverse.removePlayerFromWorlds(player, world).filter { it != multiverseId }.forEach {
                         server.connections.broadcastMultiverseInfoMessage(it)
                     }
                     world?.members = SizedCollection(player)
@@ -146,10 +146,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                         ?: throw NotFoundException("World does not exist!")
 
-                    multiverse.removePlayerFromWorlds(player, world).forEach {
+                    val affectedMultiverseIds = multiverse.removePlayerFromWorlds(player, world)
+                    world.members = SizedCollection(world.members + player)
+
+                    affectedMultiverseIds.filter { it != multiverseId }.forEach {
                         server.connections.broadcastMultiverseInfoMessage(it)
                     }
-                    world.members = SizedCollection(world.members + player)
 
                     server.userService.generateMultiverseInfoMessage(multiverse)
                 }
@@ -171,12 +173,14 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val multiverse =
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
-                    multiverse.removePlayerFromWorlds(player).forEach {
-                        server.connections.broadcastMultiverseInfoMessage(it)
-                    }
+                    val affectedMultiverseIds = multiverse.removePlayerFromWorlds(player)
 
                     if (!multiverse.spectators.contains(player)) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
+                    }
+
+                    affectedMultiverseIds.filter { it != multiverseId }.forEach {
+                        server.connections.broadcastMultiverseInfoMessage(it)
                     }
 
                     server.userService.generateMultiverseInfoMessage(multiverse) to player.id.value
