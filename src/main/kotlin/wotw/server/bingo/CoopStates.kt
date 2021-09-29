@@ -1,10 +1,7 @@
 package wotw.server.bingo
 
 import wotw.io.messages.protobuf.UberId
-import wotw.server.api.AggregationStrategyRegistry
-import wotw.server.api.across
-import wotw.server.api.on
-import wotw.server.api.sync
+import wotw.server.api.*
 import wotw.server.sync.ShareScope
 
 fun coopStates() = (
@@ -73,7 +70,6 @@ val corruptedHeartIds = mapOf(
 )
 
 val questIds = mapOf(
-    "The Silent Teeth" to UberId(937, 34641),
     "The Missing Key " to UberId(48248, 51645),
     "Into the Burrows" to UberId(48248, 18458),
     "The Lost Compass" to UberId(14019, 20667),
@@ -676,6 +672,7 @@ val worldStateAggregationRegistry by lazy {
             sync(9593, 25130).on(threshold = 3f), // double jump lizard fight
             sync(945, 58403).on(threshold = 7f),  // kwolok fight
             sync(37858, 10720).on(threshold = 2f), // Wellspring escape
+            sync(937, 34641).with(UberStateSyncStrategy.MIN).on(threshold = 4f), // Prevent Silent Teeth quest from syncing value=5
         )
     }
 }
