@@ -14,7 +14,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(JWT_AUTH) {
             route("users") {
                 get("/me/info") {
-                    val userInfo = newSuspendedTransaction { server.userService.generateUserInfo(authenticatedUser()) }
+                    val userInfo = newSuspendedTransaction { server.infoMessagesService.generateUserInfo(authenticatedUser()) }
                     wotwPrincipal().require(Scope.USER_INFO_READ)
 
                     call.respond(userInfo)
@@ -26,7 +26,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     wotwPrincipal().require(Scope.USER_INFO_WRITE)
                     val userInfo = newSuspendedTransaction {
-                        server.userService.generateUserInfo(
+                        server.infoMessagesService.generateUserInfo(
                             authenticatedUser().apply {
                                 name = it
                                 isCustomName = true
