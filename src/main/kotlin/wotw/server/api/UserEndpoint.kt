@@ -6,7 +6,6 @@ import io.ktor.features.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.protobuf.UserInfo
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.put
 
@@ -15,10 +14,10 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(JWT_AUTH) {
             route("users") {
                 get("/me/info") {
-                    val user = newSuspendedTransaction { authenticatedUser() }
+                    val userInfo = newSuspendedTransaction { server.userService.generateUserInfo(authenticatedUser()) }
                     wotwPrincipal().require(Scope.USER_INFO_READ)
 
-                    call.respond(server.userService.generateUserInfo(user))
+                    call.respond(userInfo)
                 }
 
                 put<String>("/me/nickname") {
@@ -26,16 +25,18 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         throw BadRequestException("Nickname may not be blank!")
 
                     wotwPrincipal().require(Scope.USER_INFO_WRITE)
-                    val user = newSuspendedTransaction {
-                        authenticatedUser().apply {
-                            name = it
-                            isCustomName = true
-                        }
+                    val userInfo = newSuspendedTransaction {
+                        server.userService.generateUserInfo(
+                            authenticatedUser().apply {
+                                name = it
+                                isCustomName = true
+                            }
+                        )
                     }
 
-                    server.connections.notifyNicknameChanged(wotwPrincipal().userId)
+                    server.connections.notifyNicknameChanged(userInfo.id)
 
-                    call.respond(server.userService.generateUserInfo(user))
+                    call.respond(userInfo)
                 }
 
             }
