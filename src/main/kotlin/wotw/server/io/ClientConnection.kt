@@ -94,7 +94,7 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
 
                                 val userInfo = newSuspendedTransaction {
                                     val user = User.findById(it.userId)!!
-                                    UserInfo(user.id.value, user.name, user.avatarId, null)
+                                    UserInfo(user.id.value, user.name, user.avatarId, null, user.currentMultiverse?.id?.value)
                                 }
 
                                 logger().info("ClientConnection: User ${userInfo.name} (${userInfo.id}) authenticated a WebSocket connection")
