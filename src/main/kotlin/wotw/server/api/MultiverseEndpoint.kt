@@ -115,6 +115,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                     world?.members = SizedCollection(player)
 
+                    multiverse.refresh(true)
+
                     server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
                 }
 
