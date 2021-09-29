@@ -52,15 +52,14 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
             val worldId =
                 call.parameters["world_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable WorldID")
-            val (world, members) = newSuspendedTransaction {
+            val worldInfo = newSuspendedTransaction {
                 val multiverse =
                     Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
                 val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                     ?: throw NotFoundException("World does not exist!")
-                world to world.members.map { server.userService.generateUserInfo(it) }
+                server.userService.generateWorldInfo(world)
             }
-            println(members)
-            call.respond(WorldInfo(worldId, world.name, members))
+            call.respond(worldInfo)
         }
         get("multiverses/{multiverse_id}") {
             val multiverseId =
