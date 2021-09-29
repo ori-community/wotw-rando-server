@@ -17,14 +17,16 @@ data class UserInfo(
 data class WorldInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val name: String,
-    @ProtoNumber(3) val members: List<UserInfo>
+    @ProtoNumber(3) val color: String,
+    @ProtoNumber(4) val members: List<UserInfo>
 )
 
 @Serializable
 data class UniverseInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val name: String,
-    @ProtoNumber(3) val worlds: List<WorldInfo>
+    @ProtoNumber(3) val color: String,
+    @ProtoNumber(4) val worlds: List<WorldInfo>,
 )
 
 @Serializable
