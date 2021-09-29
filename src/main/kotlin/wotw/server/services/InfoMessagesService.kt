@@ -10,7 +10,7 @@ import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.main.WotwBackendServer
 
-class UserService(private val server: WotwBackendServer) {
+class InfoMessagesService(private val server: WotwBackendServer) {
     val COLORS = arrayOf(
         "#1565c0",
         "#388e3c",
