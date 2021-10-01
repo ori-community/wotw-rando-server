@@ -608,7 +608,6 @@ val unsortedCoop = listOf(
     UberId(5377, 35751),      // lumaPoolsStateGroup.bubbleMakerUnblockedB
     UberId(5377, 3831),      // lumaPoolsStateGroup.breakableSecretWallA
     UberId(5377, 4463),      // lumaPoolsStateGroup.breakableWallB
-    UberId(5377, 53480),      // lumaPoolsStateGroup.arenaBByteStateSerialized
     UberId(5377, 56302),      // lumaPoolsStateGroup.secretWallA
     UberId(5377, 57453),      // lumaPoolsStateGroup.bubbleMakerUnblocked
     UberId(5377, 58278),      // lumaPoolsStateGroup.bubbleMakerUnblockedB
