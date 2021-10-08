@@ -70,6 +70,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     HttpStatusCode.Created, SeedGenResponse(
                         seedId = seed.id.value,
                         worldList = config.multiNames ?: emptyList(),
+                        warnings = result.getOrNull()?.ifBlank { null },
                     )
                 )
             } else {

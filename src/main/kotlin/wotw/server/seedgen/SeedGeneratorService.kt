@@ -65,7 +65,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             if (exitCode != 0)
                 Result.failure(Exception(err))
             else
-                Result.success("yay")
+                Result.success(err)
         }
 
         return try {
