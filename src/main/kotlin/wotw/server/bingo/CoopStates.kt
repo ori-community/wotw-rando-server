@@ -648,7 +648,6 @@ val unsortedCoop = listOf(
     UberId(945, 55795),      // lagoonStateGroup.breakableWallA
     UberId(9593, 17659),      // inkwaterMarshStateGroup.stompableFloor
     UberId(9593, 23319),      // inkwaterMarshStateGroup.breakableWall
-    UberId(9593, 25130),      // inkwaterMarshStateGroup.lizardMultiWaveArenaInt
     UberId(9593, 26238),      // inkwaterMarshStateGroup.lanternAndCreepB
     UberId(9593, 34704),      // inkwaterMarshStateGroup.secretWallA
     UberId(9593, 47420),      // inkwaterMarshStateGroup.secretWallA
