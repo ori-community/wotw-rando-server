@@ -665,12 +665,12 @@ val worldStateAggregationRegistry by lazy {
             sync(questIds.values),
             sync(pickupIds.values),
             sync(unsortedCoop),
-            sync(37858, 8487).on(threshold = 5f), // Wellspring fight room
-            sync(5377, 53480).on(threshold = 4f), // pools fight room 2
-            sync(9593, 25130).on(threshold = 3f), // double jump lizard fight
-            sync(945, 58403).on(threshold = 7f),  // kwolok fight
-            sync(37858, 10720).on(threshold = 2f), // Wellspring escape
-            sync(937, 34641).with(UberStateSyncStrategy.MIN).on(threshold = 4f), // Prevent Silent Teeth quest from syncing value=5
+            sync(37858, 8487).on(threshold = 5), // Wellspring fight room
+            sync(5377, 53480).on(threshold = 4), // pools fight room 2
+            sync(9593, 25130).on(threshold = 3), // double jump lizard fight
+            sync(945, 58403).on(threshold = 7),  // kwolok fight
+            sync(37858, 10720).on(threshold = 2), // Wellspring escape
+            sync(937, 34641).with(UberStateSyncStrategy.MIN).on(threshold = 4), // Prevent Silent Teeth quest from syncing value=5
         )
     }
 }
