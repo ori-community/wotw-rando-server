@@ -12,8 +12,8 @@ import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.UberStateMap
-import wotw.server.bingo.coopStates
 import wotw.server.bingo.multiStates
+import wotw.server.bingo.worldStateAggregationRegistry
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
 import wotw.server.io.handleClientSocket
@@ -238,7 +238,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     } ?: "Mystery User"
 
                     val states = multiStates()
-                        .plus(coopStates())
+                        .plus(worldStateAggregationRegistry.getSyncedStates())
                         .plus(initData)  // don't sync new data
                     socketConnection.sendMessage(InitGameSyncMessage(states.map {
                         UberId(zerore(it.group), zerore(it.state))
@@ -262,8 +262,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                 }
                 onMessage(UberStateBatchUpdateMessage::class) {
-                    logger.info(updates.toString())
-
                     if (worldId != 0L && playerId.isNotEmpty()) {
                         updateUberStates(worldId, playerId)
                     }

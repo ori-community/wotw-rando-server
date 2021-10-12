@@ -4,11 +4,6 @@ import wotw.io.messages.protobuf.UberId
 import wotw.server.api.*
 import wotw.server.sync.ShareScope
 
-fun coopStates() = (
-        tpIds.values + /*ksDoorIds.values +*/ safeMaxLevers + seedQuestStates + corruptedHeartIds.values +
-                questIds.values + pickupIds.values + unsortedCoop
-        )
-
 fun multiStates() = (0..2000).map { UberId(12, it) }
 val tpIds = mapOf(
     "savePedestalMidnightBurrows" to UberId(24922, 42531),
@@ -652,7 +647,7 @@ val unsortedCoop = listOf(
     UberId(9593, 34704),      // inkwaterMarshStateGroup.secretWallA
     UberId(9593, 47420),      // inkwaterMarshStateGroup.secretWallA
     UberId(9593, 59418),      // inkwaterMarshStateGroup.enemyRoom
-    UberId(9593, 9229)      // inkwaterMarshStateGroup.lanternAndCreepA
+    UberId(9593, 9229),      // inkwaterMarshStateGroup.lanternAndCreepA
 )
 
 val worldStateAggregationRegistry by lazy {
