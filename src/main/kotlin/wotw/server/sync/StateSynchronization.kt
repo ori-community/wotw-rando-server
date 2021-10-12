@@ -53,7 +53,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
 
                 val oldValue = data[uberId.group to uberId.state]
                 if (!strategy.trigger(oldValue, value))
-                    return@map uberId to  AggregationResult(value, strategy, oldValue, false)
+                    return@map uberId to AggregationResult(value, strategy, oldValue, false)
 
                 val newValue = oldValue?.let { strategy.aggregation(it, value) } ?: value
                 data[uberId.group to uberId.state] = newValue

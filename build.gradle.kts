@@ -5,9 +5,9 @@ buildscript {
 }
 
 val kotlin_version = "1.5.30"
-val ktor_version = "1.6.3"
+val ktor_version = "1.6.4"
 val logback_version = "1.2.6"
-val exposed_version = "0.34.2"
+val exposed_version = "0.35.2"
 val kotlinx_html_version = "0.7.1"
 val serialization_version = "1.2.2"
 
