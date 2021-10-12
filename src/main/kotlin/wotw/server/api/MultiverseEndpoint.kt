@@ -262,6 +262,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                 }
                 onMessage(UberStateBatchUpdateMessage::class) {
+                    logger.info(updates.toString())
+
                     if (worldId != 0L && playerId.isNotEmpty()) {
                         updateUberStates(worldId, playerId)
                     }
