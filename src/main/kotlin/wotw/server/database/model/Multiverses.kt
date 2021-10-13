@@ -89,7 +89,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 completions[it.first.x to it.first.y]?.map { it.id.value } ?: emptyList()
         }
 
-        return BingoBoard(goals.map{ PositionedBingoSquare(it.first, it.second) }, board.size)
+        return BingoBoard(goals.map{ PositionedBingoSquare(it.first, it.second) }, board.size, board.config?.lockout ?: false)
     }
 
     fun fillCompletionData(syncedBoard: BingoBoard): BingoBoard {

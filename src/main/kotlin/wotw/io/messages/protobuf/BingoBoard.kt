@@ -8,7 +8,10 @@ import kotlin.math.max
 //We just send partial updates and merge state client-side
 
 @Serializable
-data class BingoData(val board: BingoBoard, val universes: List<BingoUniverseInfo>)
+data class BingoData(
+    val board: BingoBoard,
+    val universes: List<BingoUniverseInfo>,
+)
 
 @Serializable
 data class PositionedBingoSquare(
@@ -18,11 +21,13 @@ data class PositionedBingoSquare(
 @Serializable
 data class BingoBoard(
     @ProtoNumber(1) val squares: List<PositionedBingoSquare> = emptyList(),
-    @ProtoNumber(2) val size: Int = -1) {
+    @ProtoNumber(2) val size: Int = -1,
+    @ProtoNumber(3) val lockout: Boolean = false,
+) {
 
     operator fun get(position: Position) = squares.first { it.position == position }.square
     fun merge(other: BingoBoard) =
-        BingoBoard(squares + other.squares, max(size, other.size))
+        BingoBoard(squares + other.squares, max(size, other.size), lockout || other.lockout)
     operator fun plus(other: BingoBoard) = merge(other)
 }
 
