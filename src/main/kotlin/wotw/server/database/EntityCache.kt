@@ -38,8 +38,8 @@ open class Cache<KEY : Any, ENTITY : Any>(
         val entity = cache.remove(key)
     }
 
-    suspend fun purge(after: Long) {
-        val expired = cache.filter { it.value.lastAccess > after }
+    suspend fun purge(before: Long) {
+        val expired = cache.filter { it.value.lastAccess < before }
         cache -= expired.keys
 
         expired.forEach {

@@ -10,6 +10,8 @@ import wotw.server.bingo.BingoCard
 import wotw.server.bingo.Line
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.jsonb
+import wotw.server.sync.ShareScope
+import wotw.server.sync.StateCache
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
@@ -40,9 +42,9 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val members
         get() = players + spectators
 
-    fun updateCompletions(universe: Universe) {
+    suspend fun updateCompletions(universe: Universe) {
         val board = board ?: return
-        val state = universeStates[universe]?.uberStateData ?: UberStateMap.empty
+        val state = StateCache.get(ShareScope.UNIVERSE to universe.id.value)//universeStates[universe]?.uberStateData ?: UberStateMap.empty
         val completions = events.filter { it.universe == universe }.map { it.x to it.y }
 
         for (x in 1..board.size) {
@@ -63,9 +65,10 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }
     }
 
-    fun createSyncableBoard(universe: Universe?, spectator: Boolean = false): BingoBoard {
+    suspend fun createSyncableBoard(universe: Universe?, spectator: Boolean = false): BingoBoard {
         val board = board ?: return BingoBoard()
-        val state = universeStates[universe]?.uberStateData ?: UberStateMap.empty
+
+        val state = if(universe != null) StateCache.get(ShareScope.UNIVERSE to universe.id.value) else UberStateMap.empty//universeStates[universe]?.uberStateData ?: UberStateMap.empty
 
         var goals = board.goals.map { (position, goal) ->
             Position(position.first, position.second) to BingoSquare(
@@ -76,8 +79,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }
         goals = if (spectator) {
             //spectator board: show everything anyone can see
-            goals.filter { states.any { s -> board.goalVisible(it.first.x to it.first.y, s.uberStateData) } }
-
+            goals.filter { states.any { s -> board.goalVisible(it.first.x to it.first.y, StateCache.get(ShareScope.WORLD to s.id.value)) } }
         } else {
             goals.filter { board.goalVisible(it.first.x to it.first.y, state) }
         }

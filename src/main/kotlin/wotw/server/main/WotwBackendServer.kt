@@ -45,8 +45,11 @@ import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.services.InfoMessagesService
 import wotw.server.sync.StateSynchronization
+import wotw.server.util.Every
+import wotw.server.util.Scheduler
 import wotw.server.util.logger
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 class WotwBackendServer {
     companion object {
@@ -129,9 +132,20 @@ class WotwBackendServer {
     val seedGeneratorService = SeedGeneratorService(this)
 
     val populationCache = PlayerUniversePopulationCache()
+    val cacheScheduler = Scheduler{
+        sync.purgeCache(120)
+    }
+    val shutdownHook = Thread{
+        cacheScheduler.stop()
+        runBlocking {
+            sync.purgeCache(-1)
+        }
+    }
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)
+        cacheScheduler.scheduleExecution(Every(2, TimeUnit.MINUTES))
+        Runtime.getRuntime().addShutdownHook(shutdownHook)
         val env = applicationEngineEnvironment {
             config = cmd.config
             connectors += cmd.connectors
@@ -148,15 +162,6 @@ class WotwBackendServer {
                 install(CallLogging) {
                     level = Level.INFO
                 }
-                /*install(Compression) {
-                    gzip {
-                        condition {
-                            request.uri.startsWith("http") && !request.uri.startsWith("https")
-                                    || request.headers[HttpHeaders.Referrer]?.startsWith("https://wotw.orirando.com/") == true
-                                    || request.headers[HttpHeaders.Referrer]?.startsWith("https://discord.com/oauth2/authorize") == true
-                        }
-                    }
-                }*/
                 install(CORS) {
                     method(HttpMethod.Options)
                     method(HttpMethod.Put)

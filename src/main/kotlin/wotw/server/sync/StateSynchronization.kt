@@ -1,6 +1,8 @@
 package wotw.server.sync
 
+import kotlinx.html.currentTimeMillis
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.transactions.transaction
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.api.UberStateSyncStrategy
@@ -15,30 +17,37 @@ import wotw.server.util.zerore
 import java.util.*
 import kotlin.to
 
-class StateSynchronization(private val server: WotwBackendServer) {
-    val aggregationStrategies: MutableMap<Long, AggregationStrategyRegistry> = Collections.synchronizedMap(hashMapOf())
-
+object StateCache : Cache<Pair<ShareScope, Long>, UberStateMap>(
+    { StateCache.obtainState(it)?.uberStateData },
+    { k, v -> StateCache.obtainState(k)?.uberStateData = v }
+) {
     private fun obtainState(key: Pair<ShareScope, Long>): GameState? = when (key.first) {
         ShareScope.WORLD -> GameState.findWorldState(key.second)
         ShareScope.UNIVERSE -> GameState.findUniverseState(key.second)
         ShareScope.MULTIVERSE -> GameState.findMultiverseState(key.second)
         else -> null
     }
+}
+
+class StateSynchronization(private val server: WotwBackendServer) {
+    val aggregationStrategies: MutableMap<Long, AggregationStrategyRegistry> = Collections.synchronizedMap(hashMapOf())
 
     //Requires active transaction
-    suspend fun aggregateState(world: World, uberId: UberId, value: Double): Collection<Pair<UberId, AggregationResult>> = aggregateStates(world, mapOf(uberId to value))
-    suspend fun aggregateStates(world: World, states: Map<UberId, Double>): Collection<Pair<UberId, AggregationResult>> {
+    suspend fun aggregateState(
+        world: World,
+        uberId: UberId,
+        value: Double
+    ): Collection<Pair<UberId, AggregationResult>> = aggregateStates(world, mapOf(uberId to value))
+
+    suspend fun aggregateStates(
+        world: World,
+        states: Map<UberId, Double>
+    ): Collection<Pair<UberId, AggregationResult>> {
         val universe = world.universe
         val multiverse = universe.multiverse
         val strategies = aggregationStrategies.getOrPut(multiverse.id.value) {
             multiverse.generateStateAggregationRegistry()
         }
-
-        val stateCache = Cache<Pair<ShareScope, Long>, UberStateMap>(
-            {obtainState(it)?.uberStateData},
-            {k,v -> obtainState(k)?.uberStateData = v}
-        )
-
         val result = mutableListOf<Pair<UberId, AggregationResult>>()
 
         result += states.flatMap { (uberId, value) ->
@@ -48,8 +57,11 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     ShareScope.UNIVERSE -> universe
                     ShareScope.MULTIVERSE -> multiverse
                     else -> null
-                }?.id?.value ?: return@map uberId to  AggregationResult(value, strategy)
-                val data = stateCache.getOrNull(strategy.scope to id) ?: return@map uberId to AggregationResult(value, strategy)
+                }?.id?.value ?: return@map uberId to AggregationResult(value, strategy)
+                val data = StateCache.getOrNull(strategy.scope to id) ?: return@map uberId to AggregationResult(
+                    value,
+                    strategy
+                )
 
                 val oldValue = data[uberId.group to uberId.state]
                 if (!strategy.trigger(oldValue, value))
@@ -61,9 +73,10 @@ class StateSynchronization(private val server: WotwBackendServer) {
             }
         }
 
-        stateCache.purge(-1)
+        //stateCache.purge(-1)
         return result
     }
+
     suspend fun syncStates(gameId: Long, playerId: String, uberId: UberId, updates: Collection<AggregationResult>) =
         syncStates(gameId, playerId, updates.map { uberId to it })
 
@@ -155,6 +168,12 @@ class StateSynchronization(private val server: WotwBackendServer) {
             players.forEach { playerId ->
                 server.connections.toObservers(gameId, playerId, board)
             }
+        }
+    }
+
+    suspend fun purgeCache(seconds: Int) {
+        newSuspendedTransaction {
+            StateCache.purge(currentTimeMillis() - 1000 * seconds)
         }
     }
 
