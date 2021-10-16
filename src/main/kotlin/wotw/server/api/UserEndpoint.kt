@@ -23,6 +23,8 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 put<String>("/me/nickname") {
                     if(it.isBlank())
                         throw BadRequestException("Nickname may not be blank!")
+                    if(it.length > 32)
+                        throw BadRequestException("Nickname too long!")
 
                     wotwPrincipal().require(Scope.USER_INFO_WRITE)
                     val userInfo = newSuspendedTransaction {
