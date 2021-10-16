@@ -28,7 +28,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val userInfo = newSuspendedTransaction {
                         server.infoMessagesService.generateUserInfo(
                             authenticatedUser().apply {
-                                name = it
+                                name = it.take(24)
                                 isCustomName = true
                             }
                         )
