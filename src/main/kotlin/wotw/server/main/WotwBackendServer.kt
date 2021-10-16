@@ -133,7 +133,7 @@ class WotwBackendServer {
 
     val populationCache = PlayerUniversePopulationCache()
     val cacheScheduler = Scheduler{
-        sync.purgeCache(120)
+         sync.purgeCache(60)
     }
     val shutdownHook = Thread{
         cacheScheduler.stop()
@@ -144,7 +144,7 @@ class WotwBackendServer {
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)
-        cacheScheduler.scheduleExecution(Every(2, TimeUnit.MINUTES))
+        cacheScheduler.scheduleExecution(Every(30, TimeUnit.SECONDS))
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         val env = applicationEngineEnvironment {
             config = cmd.config

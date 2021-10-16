@@ -21,16 +21,19 @@ object StateCache : Cache<Pair<ShareScope, Long>, UberStateMap>(
     { StateCache.obtainState(it)?.uberStateData },
     { k, v -> StateCache.obtainState(k)?.uberStateData = v }
 ) {
-    private fun obtainState(key: Pair<ShareScope, Long>): GameState? = when (key.first) {
-        ShareScope.WORLD -> GameState.findWorldState(key.second)
-        ShareScope.UNIVERSE -> GameState.findUniverseState(key.second)
-        ShareScope.MULTIVERSE -> GameState.findMultiverseState(key.second)
-        else -> null
+    private suspend fun obtainState(key: Pair<ShareScope, Long>): GameState? = newSuspendedTransaction {
+        when (key.first) {
+            ShareScope.WORLD -> GameState.findWorldState(key.second)
+            ShareScope.UNIVERSE -> GameState.findUniverseState(key.second)
+            ShareScope.MULTIVERSE -> GameState.findMultiverseState(key.second)
+            else -> null
+        }
     }
 }
 
 class StateSynchronization(private val server: WotwBackendServer) {
-    val aggregationStrategies: MutableMap<Long, AggregationStrategyRegistry> = Collections.synchronizedMap(hashMapOf())
+    val aggregationStrategies: MutableMap<Long, AggregationStrategyRegistry> =
+        Collections.synchronizedMap(hashMapOf())
 
     //Requires active transaction
     suspend fun aggregateState(
@@ -152,7 +155,6 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     )
                 )
             }
-
             Triple(
                 syncBingoUniversesMessage, SyncBoardMessage(
                     multiverse.createSyncableBoard(null, true),
@@ -172,9 +174,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
     }
 
     suspend fun purgeCache(seconds: Int) {
-        newSuspendedTransaction {
-            StateCache.purge(currentTimeMillis() - 1000 * seconds)
-        }
+        StateCache.purge(currentTimeMillis() - 1000 * seconds)
     }
 
     data class AggregationResult(

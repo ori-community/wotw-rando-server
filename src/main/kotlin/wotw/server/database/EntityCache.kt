@@ -39,16 +39,18 @@ open class Cache<KEY : Any, ENTITY : Any>(
     }
 
     suspend fun purge(before: Long) {
-        val expired = cache.filter { it.value.lastAccess < before }
-        cache -= expired.keys
+        newSuspendedTransaction {
+            val expired = cache.filter { it.value.lastAccess < before }
+            cache -= expired.keys
 
-        expired.forEach {
-            try {
-                it.value.entity?.also { entity ->
-                    save(it.key, entity)
+            expired.forEach {
+                try {
+                    it.value.entity?.also { entity ->
+                        save(it.key, entity)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
