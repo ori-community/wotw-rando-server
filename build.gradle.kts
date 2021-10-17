@@ -4,15 +4,15 @@ buildscript {
     }
 }
 
-val kotlin_version = "1.5.30"
+val kotlin_version = "1.5.31"
 val ktor_version = "1.6.4"
 val logback_version = "1.2.6"
 val exposed_version = "0.35.2"
 val kotlinx_html_version = "0.7.1"
-val serialization_version = "1.2.2"
+val serialization_version = "1.3.0"
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "1.5.30"
+    id("org.jetbrains.kotlin.jvm") version "1.5.31"
     kotlin("plugin.serialization") version "1.5.10"
 }
 
@@ -27,7 +27,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
 
-    implementation("io.github.classgraph:classgraph:4.8.116")
+    implementation("io.github.classgraph:classgraph:4.8.126")
 
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("io.ktor:ktor-websockets:$ktor_version")
@@ -38,6 +38,12 @@ dependencies {
     implementation("io.ktor:ktor-auth-jwt:$ktor_version")
     implementation("io.ktor:ktor-server-sessions:$ktor_version")
     implementation("io.ktor:ktor-network:$ktor_version")
+
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt"){
+        version {
+            strictly("1.5.2-native-mt")
+        }
+    }
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
 
