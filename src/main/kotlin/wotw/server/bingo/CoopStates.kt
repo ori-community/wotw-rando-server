@@ -521,7 +521,7 @@ val unsortedCoop = listOf(
     UberId(20120, 60960),      // windsweptWastesGroupDescriptor.bombableWallD
     UberId(20120, 9095),      // windsweptWastesGroupDescriptor.breakableWall
     UberId(21786, 59922),      // swampStateGroup.breakableBridgeBroken
-    UberId(21786, 10467),      // swampStateGroup.attackableSwitchA
+    // UberId(21786, 10467),      // swampStateGroup.attackableSwitchA
     UberId(21786, 11343),      // swampStateGroup.breakableWallA
     UberId(21786, 22091),      // swampStateGroup.pushBlockState
     UberId(21786, 22570),      // swampStateGroup.breakableWallA
@@ -533,13 +533,13 @@ val unsortedCoop = listOf(
     UberId(21786, 33430),      // swampStateGroup.creepDoor
     UberId(21786, 34008),      // swampStateGroup.breakableWallB
     UberId(21786, 35166),      // swampStateGroup.creepDoorA
-    UberId(21786, 35350),      // swampStateGroup.attackableSwitchC
+    // UberId(21786, 35350),      // swampStateGroup.attackableSwitchC ()
     UberId(21786, 35598),      // swampStateGroup.enemyArenaComplete
     UberId(21786, 35925),      // swampStateGroup.breakableWallA
     UberId(21786, 40424),      // swampStateGroup.breakableWall
     UberId(21786, 41817),      // swampStateGroup.doorBState
     UberId(21786, 44253),      // swampStateGroup.secretWall
-    UberId(21786, 45648),      // swampStateGroup.attackableSwitchB
+    // UberId(21786, 45648),      // swampStateGroup.attackableSwitchB
     UberId(21786, 50691),      // swampStateGroup.doorAState
     UberId(21786, 53932),      // swampStateGroup.creepDoorA
     UberId(21786, 61900),      // swampStateGroup.stompableFloor
