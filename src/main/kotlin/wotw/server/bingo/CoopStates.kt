@@ -5,6 +5,7 @@ import wotw.server.api.*
 import wotw.server.sync.ShareScope
 
 fun multiStates() = (0..2000).map { UberId(12, it) }
+
 val tpIds = mapOf(
     "savePedestalMidnightBurrows" to UberId(24922, 42531),
     "savePedestalInkwaterMarsh" to UberId(21786, 10185),
@@ -62,6 +63,17 @@ val corruptedHeartIds = mapOf(
     "Redirect Puzzle" to UberId(16155, 65277),
     "Boulder Escape Heart" to UberId(16155, 41488),
     "Lower Left Heart" to UberId(16155, 60752),
+)
+
+val spiritTrialIds = mapOf(
+    "Baur's Reach" to UberId(44964, 23661),
+    "Windswept Wastes" to UberId(44964, 30767),
+    "Inkwater Marsh" to UberId(44964, 45951),
+    "Kwolok's Hollow" to UberId(44964, 25545),
+    "Luma Pools" to UberId(44964, 54686),
+    "Mouldwood Depths" to UberId(44964, 28552),
+    "Silent Woods" to UberId(44964, 22703),
+    "The Wellspring" to UberId(44964, 11512),
 )
 
 val questIds = mapOf(
@@ -659,6 +671,7 @@ val worldStateAggregationRegistry by lazy {
             sync(corruptedHeartIds.values),
             sync(questIds.values),
             sync(pickupIds.values),
+            sync(spiritTrialIds.values),
             sync(unsortedCoop),
             sync(37858, 8487).on(threshold = 5), // Wellspring fight room
             sync(5377, 53480).on(threshold = 4), // pools fight room 2
