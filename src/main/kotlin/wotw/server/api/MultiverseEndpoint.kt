@@ -5,12 +5,15 @@ import io.ktor.auth.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
+import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.MultiverseCreationConfig
 import wotw.io.messages.protobuf.*
+import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.bingo.UberStateMap
 import wotw.server.bingo.multiStates
 import wotw.server.bingo.worldStateAggregationRegistry
@@ -72,8 +75,14 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(JWT_AUTH) {
             post("multiverses") {
                 wotwPrincipal().require(Scope.MULTIVERSE_CREATE)
+                val props = call.receiveOrNull<MultiverseCreationConfig>()
                 val multiverse = newSuspendedTransaction {
-                    Multiverse.new {}
+                    Multiverse.new {
+                        if (props?.seedId != null)
+                            seed = Seed.findById(props.seedId) ?: throw NotFoundException()
+                        if (props?.bingo != null)
+                            board = BingoBoardGenerator().generateBoard(props)
+                    }
                 }
                 call.respondText("${multiverse.id.value}", status = HttpStatusCode.Created)
             }
@@ -89,13 +98,17 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val multiverse =
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
-                    if (multiverse.spectators.contains(player)) {
-                        throw ConflictException("You cannot join this multiverse because you are spectating")
-                    }
 
-                    val universe =
+                    if (multiverse.spectators.contains(player))
+                        throw ConflictException("You cannot join this multiverse because you are spectating")
+
+                    val world =
                         if (universeId != null) {
-                            Universe.findById(universeId) ?: throw NotFoundException("Universe does not exist!")
+                            if (multiverse.seed != null)
+                                throw ConflictException("Cannot manually create or remove worlds from seed-linked universes")
+                            val universe =
+                                Universe.findById(universeId) ?: throw NotFoundException("Universe does not exist!")
+                            World.new(universe, player.name + "'s World")
                         } else {
                             val universe = Universe.new {
                                 name = "${player.name}'s Universe"
@@ -106,10 +119,23 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 this.universe = universe
                                 this.uberStateData = UberStateMap()
                             }
-                            universe
+                            if (multiverse.seed != null) {
+                                val worlds =
+                                    server.seedGeneratorService.filesForSeed(multiverse.seed?.id.toString() ?: "")
+                                val first = worlds.firstOrNull()
+                                if (first != null) {
+                                    val world = World.new(universe, first.nameWithoutExtension)
+                                    worlds.drop(1).forEach {
+                                        World.new(universe, it.nameWithoutExtension)
+                                    }
+                                    world
+                                } else {
+                                    throw ConflictException("This seed cannot be attached to online games")
+                                }
+                            } else
+                                World.new(universe, player.name + "'s World")
                         }
 
-                    val world = World.new(universe, player)
                     multiverse.removePlayerFromWorlds(player, world).filter { it != multiverseId }.forEach {
                         server.connections.broadcastMultiverseInfoMessage(it)
                     }
@@ -162,7 +188,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(HttpStatusCode.OK)
             }
 
-            post("multiverses/{multiverse_id}/spectate") {
+            post("multiverses/{multiverse_id}/spectators") {
                 val multiverseId =
                     call.parameters["multiverse_id"]?.toLongOrNull()
                         ?: throw BadRequestException("Unparsable MultiverseID")
@@ -214,7 +240,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             WorldMemberships.playerId eq playerId
                         }.firstOrNull()?.world
 
-                        world?.id?.value then world?.universe?.multiverse?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.let { server.infoMessagesService.generateMultiverseInfoMessage(it) }
+                        world?.id?.value then world?.universe?.multiverse?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.let {
+                            server.infoMessagesService.generateMultiverseInfoMessage(
+                                it
+                            )
+                        }
                     }
 
                     if (multiverseId == null || _worldId == null) {

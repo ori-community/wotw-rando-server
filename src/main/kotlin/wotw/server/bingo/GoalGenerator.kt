@@ -1,8 +1,6 @@
 package wotw.server.bingo
 
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import wotw.io.messages.BingoGenProperties
+import wotw.io.messages.MultiverseCreationConfig
 import java.time.Instant
 import kotlin.random.Random
 
@@ -1052,17 +1050,17 @@ object pickupsIn {
 }
 
 class BingoBoardGenerator {
-    fun generateBoard(props: BingoGenProperties? = null): BingoCard {
-        val random = Random(props?.seed?.hashCode() ?: Instant.now().epochSecond.toInt())
+    fun generateBoard(props: MultiverseCreationConfig? = null): BingoCard {
+        val random = Random(props?.seedId?.hashCode() ?: Instant.now().epochSecond.toInt())
         val pool = generatePool()
         val counts = (pool.map {it to 0}).toMap().toMutableMap()
 
         val config = GeneratorConfig(random)
 
         val discoverySquares = (1..5).flatMap{x -> (1..5).map { x to it }}
-            .shuffled(random).take(props?.discovery ?: 0).toSet()
+            .shuffled(random).take(props?.bingo?.discovery ?: 0).toSet()
 
-        val card = BingoCard(config = BingoConfig(discovery = discoverySquares, lockout =  props?.lockout ?: false, manualSquareCompletion = props?.manualGoalCompletion ?: false))
+        val card = BingoCard(config = BingoConfig(discovery = discoverySquares, lockout =  props?.bingo?.lockout ?: false, manualSquareCompletion = props?.bingo?.manualGoalCompletion ?: false))
         for (x in (1..5).shuffled(random))
             for (y in (1..5).shuffled(random)) {
                 var generatedGoal: BingoGoal? = null
@@ -1084,6 +1082,6 @@ class BingoBoardGenerator {
 
 fun main(){
     println(System.currentTimeMillis())
-    println(Json{allowStructuredMapKeys = true}.encodeToString(BingoBoardGenerator().generateBoard(BingoGenProperties("roastbeef", 2, true))))
+    //println(Json{allowStructuredMapKeys = true}.encodeToString(BingoBoardGenerator().generateBoard(BingoGenProperties("roastbeef", 2, true))))
     println(System.currentTimeMillis())
 }

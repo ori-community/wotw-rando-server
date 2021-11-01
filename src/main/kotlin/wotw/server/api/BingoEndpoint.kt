@@ -11,7 +11,8 @@ import io.ktor.routing.*
 import io.ktor.util.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.BingoGenProperties
+import wotw.io.messages.BingoConfig
+import wotw.io.messages.MultiverseCreationConfig
 import wotw.io.messages.protobuf.BingoData
 import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.database.model.Multiverse
@@ -62,16 +63,6 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                     call.respond(boardData)
                 }
-            }
-
-            post("bingo") {
-                val props = call.receiveOrNull<BingoGenProperties>()
-                val multiverse = newSuspendedTransaction {
-                    Multiverse.new {
-                        board = BingoBoardGenerator().generateBoard(props)
-                    }
-                }
-                call.respondText("${multiverse.id.value}", status = HttpStatusCode.Created)
             }
         }
 

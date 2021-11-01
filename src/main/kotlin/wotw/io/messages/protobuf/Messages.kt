@@ -35,6 +35,7 @@ data class MultiverseInfoMessage(
     @ProtoNumber(2) val universes: List<UniverseInfo>,
     @ProtoNumber(3) val hasBingoBoard: Boolean,
     @ProtoNumber(4) val spectators: List<UserInfo>,
+    @ProtoNumber(5) val seedId: Long? = null,
 )
 
 @Serializable

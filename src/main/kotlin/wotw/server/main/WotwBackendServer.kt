@@ -39,6 +39,7 @@ import wotw.server.api.*
 import wotw.server.database.PlayerUniversePopulationCache
 import wotw.server.database.model.*
 import wotw.server.exception.AlreadyExistsException
+import wotw.server.exception.ConflictException
 import wotw.server.exception.ForbiddenException
 import wotw.server.exception.UnauthorizedException
 import wotw.server.io.ClientConnectionUDPRegistry
@@ -113,7 +114,8 @@ class WotwBackendServer {
                 Users,
                 WorldMemberships,
                 BingoEvents,
-                Spectators
+                Spectators,
+                Seeds
             )
         }
 
@@ -183,6 +185,9 @@ class WotwBackendServer {
                         call.respond(HttpStatusCode.InternalServerError)
                     }
                     exception<AlreadyExistsException> { _ ->
+                        call.respond(HttpStatusCode.Conflict)
+                    }
+                    exception<ConflictException> { _ ->
                         call.respond(HttpStatusCode.Conflict)
                     }
                     exception<UnauthorizedException> { _ ->
