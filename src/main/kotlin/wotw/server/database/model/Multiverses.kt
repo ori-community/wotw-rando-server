@@ -65,7 +65,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }
     }
 
-    suspend fun createSyncableBoard(universe: Universe?, spectator: Boolean = false): BingoBoard {
+    suspend fun createSyncableBoard(universe: Universe?, spectator: Boolean = false, forceAllVisible: Boolean = false): BingoBoard {
         val board = board ?: return BingoBoard()
 
         val state = if(universe != null) StateCache.get(ShareScope.UNIVERSE to universe.id.value) else UberStateMap.empty//universeStates[universe]?.uberStateData ?: UberStateMap.empty
@@ -77,14 +77,18 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                     .map { (text, completed) -> BingoGoal(text, completed) }
             )
         }
-        goals = if (spectator) {
-            //spectator board: show everything anyone can see
-            goals.filter { states.any { s ->
-                val world = s.world
-                world != null && board.goalVisible(it.first.x to it.first.y, StateCache.get(ShareScope.WORLD to world.id.value))
-            } }
-        } else {
-            goals.filter { board.goalVisible(it.first.x to it.first.y, state) }
+        goals = when {
+            forceAllVisible -> goals
+            spectator -> {
+                //spectator board: show everything anyone can see
+                goals.filter { states.any { s ->
+                    val world = s.world
+                    world != null && board.goalVisible(it.first.x to it.first.y, StateCache.get(ShareScope.WORLD to world.id.value))
+                } }
+            }
+            else -> {
+                goals.filter { board.goalVisible(it.first.x to it.first.y, state) }
+            }
         }
 
 
