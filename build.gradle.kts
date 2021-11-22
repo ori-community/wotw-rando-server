@@ -4,12 +4,12 @@ buildscript {
     }
 }
 
-val kotlin_version = "1.5.31"
+val kotlin_version = "1.6.0"
 val ktor_version = "1.6.4"
 val logback_version = "1.2.6"
 val exposed_version = "0.36.1"
 val kotlinx_html_version = "0.7.1"
-val serialization_version = "1.3.0"
+val serialization_version = "1.3.1"
 
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.5.31"
@@ -27,7 +27,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
 
-    implementation("io.github.classgraph:classgraph:4.8.126")
+    implementation("io.github.classgraph:classgraph:4.8.132")
 
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("io.ktor:ktor-websockets:$ktor_version")
