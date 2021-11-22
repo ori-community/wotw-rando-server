@@ -502,6 +502,14 @@ val safeMaxLevers = listOf(
     UberId(21786, 55881),  // swampStateGroup.elevatorDown
 )
 
+val furnaces = listOf(
+    UberId(28895, 27787),  // baursReachGroup.firePedestalBooleanUberState
+    UberId(28895, 43977),  // baursReachGroup.firePedestal
+    UberId(28895, 30566),  // baursReachGroup.firePedestalBooleanUberState
+    UberId(28895, 61789),  // baursReachGroup.firePedestalBooleanUberState
+    UberId(28895, 46293),  // baursReachGroup.firePedestalBooleanUberState
+)
+
 val unsortedCoop = listOf(
 
     UberId(10289, 3804),      // windtornRuinsGroup.openedDesertRuins
@@ -563,19 +571,15 @@ val unsortedCoop = listOf(
     UberId(26019, 1274),      // convertedSetupsGymGroup.secretWallA
     UberId(28895, 17510),      // baursReachGroup.breakableWallA
     UberId(28895, 20731),      // baursReachGroup.breakableRockWall
-    UberId(28895, 27787),      // baursReachGroup.firePedestalBooleanUberState
-    UberId(28895, 30566),      // baursReachGroup.firePedestalBooleanUberState
     UberId(28895, 30794),      // baursReachGroup.breakableWall
     UberId(28895, 34098),      // baursReachGroup.breakableWall
     UberId(28895, 37287),      // baursReachGroup.grenadeSwitchA
     UberId(28895, 38120),      // baursReachGroup.breakableRocksE
     UberId(28895, 42209),      // baursReachGroup.enemyArenaComplete
-    UberId(28895, 43977),      // baursReachGroup.firePedestal
     UberId(28895, 48757),      // baursReachGroup.grenadeSwitchA
     UberId(28895, 49329),      // baursReachGroup.breakyBridge
     UberId(28895, 58337),      // baursReachGroup.doorOpened
     UberId(28895, 59394),      // baursReachGroup.grenadeSwitchA
-    UberId(28895, 61789),      // baursReachGroup.firePedestalBooleanUberState
     UberId(28895, 7616),      // baursReachGroup.breakableRocksA
     UberId(28895, 8664),      // baursReachGroup.stompableFloorA
     UberId(28895, 8934),      // baursReachGroup.breakableWallB
@@ -673,6 +677,7 @@ val worldStateAggregationRegistry by lazy {
             sync(pickupIds.values),
             sync(spiritTrialIds.values),
             sync(unsortedCoop),
+            sync(furnaces).with(UberStateSyncStrategy.ALWAYS_OVERWRITE),
             sync(37858, 8487).on(threshold = 5), // Wellspring fight room
             sync(5377, 53480).on(threshold = 4), // pools fight room 2
             sync(9593, 25130).on(threshold = 3), // double jump lizard fight
