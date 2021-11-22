@@ -28,7 +28,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         var pathString = "${System.getenv("SEED_DIR")}${File.separator}seed-${seedId}"
         val dir = Path.of(pathString).toFile()
         if(dir.exists() && dir.isDirectory){
-            return dir.listFiles(FilenameFilter { _, name -> name.endsWith(".wotwr") })?.toList() ?: emptyList()
+            return dir.listFiles { _, name -> name.endsWith(".wotwr") }?.toList() ?: emptyList()
         }
         pathString += ".wotwr"
         val file = Path.of(pathString).toFile()

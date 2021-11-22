@@ -120,13 +120,13 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 this.uberStateData = UberStateMap()
                             }
                             if (multiverse.seed != null) {
-                                val worlds =
+                                val seedFiles =
                                     server.seedGeneratorService.filesForSeed(multiverse.seed?.id.toString() ?: "")
-                                val first = worlds.firstOrNull()
+                                val first = seedFiles.firstOrNull()
                                 if (first != null) {
-                                    val world = World.new(universe, first.nameWithoutExtension)
-                                    worlds.drop(1).forEach {
-                                        World.new(universe, it.nameWithoutExtension)
+                                    val world = World.new(universe, first.nameWithoutExtension, first.nameWithoutExtension)
+                                    seedFiles.drop(1).forEach {
+                                        World.new(universe, it.nameWithoutExtension, it.nameWithoutExtension)
                                     }
                                     world
                                 } else {
@@ -139,7 +139,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     multiverse.removePlayerFromWorlds(player, world).filter { it != multiverseId }.forEach {
                         server.connections.broadcastMultiverseInfoMessage(it)
                     }
-                    world?.members = SizedCollection(player)
+                    world.members = SizedCollection(player)
 
                     multiverse.refresh(true)
 

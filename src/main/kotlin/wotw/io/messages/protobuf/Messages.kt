@@ -18,7 +18,8 @@ data class WorldInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val color: String,
-    @ProtoNumber(4) val members: List<UserInfo>
+    @ProtoNumber(4) val members: List<UserInfo>,
+    @ProtoNumber(5) val seedFile: String? = null,
 )
 
 @Serializable
