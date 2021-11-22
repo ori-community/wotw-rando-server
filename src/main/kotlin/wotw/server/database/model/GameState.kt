@@ -15,8 +15,8 @@ import wotw.server.api.across
 import wotw.server.api.notify
 import wotw.server.api.sync
 import wotw.server.bingo.UberStateMap
-import wotw.server.bingo.universeStateAggregationRegistry
-import wotw.server.bingo.worldStateAggregationRegistry
+import wotw.server.sync.universeStateAggregationRegistry
+import wotw.server.sync.worldStateAggregationRegistry
 import wotw.server.database.jsonb
 import wotw.server.sync.ShareScope
 

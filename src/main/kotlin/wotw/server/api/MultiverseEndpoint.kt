@@ -15,8 +15,8 @@ import wotw.io.messages.MultiverseCreationConfig
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.bingo.UberStateMap
-import wotw.server.bingo.multiStates
-import wotw.server.bingo.worldStateAggregationRegistry
+import wotw.server.sync.multiStates
+import wotw.server.sync.worldStateAggregationRegistry
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
 import wotw.server.io.handleClientSocket
