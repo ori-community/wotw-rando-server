@@ -1,4 +1,4 @@
-package wotw.server.bingo
+package wotw.server.sync
 
 import wotw.io.messages.protobuf.UberId
 import wotw.server.api.*
