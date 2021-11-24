@@ -625,6 +625,7 @@ fun generatePool() = mutableListOf(
     group( "Pull # levers",
         bool("swampStateGroup.elevatorDown", 21786, 55881),
         bool("convertedSetupsGymGroup.leverAndDoor", 26019, 23382),
+        bool("waterMillStateGroupDescriptor.bottomDoorLever", 37858, 9487),
         bool("waterMillStateGroupDescriptor.wheelLever", 37858, 34433),
         bool("waterMillStateGroupDescriptor.recedingWater", 37858, 31187),
         bool("baursReachGroup.leverSetup", 28895, 62198),
