@@ -201,3 +201,4 @@ dbconfig.properties
 /gradlew
 /gradlew.bat
 .sessions/
+/http

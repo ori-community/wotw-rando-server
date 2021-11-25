@@ -1,13 +1,17 @@
 package wotw.server.seedgen
 
+import io.ktor.features.*
 import io.ktor.html.*
 import kotlinx.coroutines.future.await
 import wotw.io.messages.SeedGenConfig
+import wotw.server.database.model.Seed
 import wotw.server.exception.ServerConfigurationException
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.CompletableFuture
 import wotw.server.util.logger
 import java.io.File
+import java.io.FilenameFilter
+import java.nio.file.Path
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -20,6 +24,32 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
     val invalidCharacterRegex = Regex("[^a-zA-Z0-9_]")
     fun sanitizedPlayerName(player: String) = player.replace(invalidCharacterRegex, "_")
 
+    fun filesForSeed(seedId: String): List<File> {
+        var pathString = "${System.getenv("SEED_DIR")}${File.separator}seed-${seedId}"
+        val dir = Path.of(pathString).toFile()
+        if(dir.exists() && dir.isDirectory){
+            return dir.listFiles { _, name -> name.endsWith(".wotwr") }?.toList() ?: emptyList()
+        }
+        pathString += ".wotwr"
+        val file = Path.of(pathString).toFile()
+        if (!file.exists() || file.isDirectory)
+            return emptyList()
+        return listOf(file)
+    }
+
+    fun seedFile(seedId: String, player: String? = null): File {
+        var pathString = "${System.getenv("SEED_DIR")}${File.separator}seed-${seedId}"
+        if (File(pathString).isDirectory && player != null) {
+            val sanitized = server.seedGeneratorService.sanitizedPlayerName(player)
+            pathString += "${File.separator}$sanitized"
+        }
+        pathString += ".wotwr"
+        val file = Path.of(pathString).toFile()
+        if (!file.exists() || file.isDirectory)
+            throw NotFoundException()
+        return file
+    }
+    fun seedFile(seed: Seed) = seedFile(seed.id.value.toString())
 
     fun validate(config: SeedGenConfig) {
     }
@@ -64,8 +94,9 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
 
             if (exitCode != 0)
                 Result.failure(Exception(err))
-            else
+            else{
                 Result.success(err)
+            }
         }
 
         return try {

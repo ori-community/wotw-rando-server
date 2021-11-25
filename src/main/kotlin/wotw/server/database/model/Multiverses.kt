@@ -19,13 +19,13 @@ import kotlin.math.ceil
 import kotlin.to
 
 object Multiverses : LongIdTable("multiverse") {
-    override val primaryKey = PrimaryKey(id)
     val seed = reference("seed", Seeds).nullable()
     val board = jsonb("board", BingoCard.serializer()).nullable()
 }
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var board by Multiverses.board
+    var seed by Seed optionalReferencedOn Multiverses.seed
     val universes by Universe referrersOn Universes.multiverseId
     val worlds: Collection<World>
         get() = universes.flatMap { it.worlds }
@@ -65,7 +65,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }
     }
 
-    suspend fun createSyncableBoard(universe: Universe?, spectator: Boolean = false): BingoBoard {
+    suspend fun createSyncableBoard(universe: Universe?, spectator: Boolean = false, forceAllVisible: Boolean = false): BingoBoard {
         val board = board ?: return BingoBoard()
 
         val state = if(universe != null) StateCache.get(ShareScope.UNIVERSE to universe.id.value) else UberStateMap.empty//universeStates[universe]?.uberStateData ?: UberStateMap.empty
@@ -77,14 +77,18 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                     .map { (text, completed) -> BingoGoal(text, completed) }
             )
         }
-        goals = if (spectator) {
-            //spectator board: show everything anyone can see
-            goals.filter { states.any { s ->
-                val world = s.world
-                world != null && board.goalVisible(it.first.x to it.first.y, StateCache.get(ShareScope.WORLD to world.id.value))
-            } }
-        } else {
-            goals.filter { board.goalVisible(it.first.x to it.first.y, state) }
+        goals = when {
+            forceAllVisible -> goals
+            spectator -> {
+                //spectator board: show everything anyone can see
+                goals.filter { states.any { s ->
+                    val world = s.world
+                    world != null && board.goalVisible(it.first.x to it.first.y, StateCache.get(ShareScope.WORLD to world.id.value))
+                } }
+            }
+            else -> {
+                goals.filter { board.goalVisible(it.first.x to it.first.y, state) }
+            }
         }
 
 
@@ -169,11 +173,12 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 affectedMultiverseIds.add(it.universe.multiverse.id.value)
                 it.members = SizedCollection(it.members.minus(player))
 
-                if (it.members.empty()) {
+                //Do not delete empty worlds in universes which are attached to a seed
+                if (it.members.empty() && it.universe.multiverse.seed == null) {
                     it.delete()
                 }
 
-                if (it.universe.worlds.empty()) {
+                if (it.universe.worlds.all { it.members.empty() } && newWorld?.universe != it.universe) {
                     it.universe.delete()
                 }
             }

@@ -1,17 +1,17 @@
 package wotw.server.api
 
 import io.ktor.application.*
+import io.ktor.auth.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.*
+import wotw.io.messages.protobuf.UserInfo
 import wotw.server.database.model.Seed
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
-import java.io.File
-import java.nio.file.Path
 import kotlin.io.path.Path
 
 class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -55,50 +55,80 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val result = presetMap.map { it.value.fullResolve(presetMap).toPreset(it.key) }
             call.respond(result)
         }
-        get("seeds/{id}/{player?}") {
-            val id = call.parameters["id"] ?: throw BadRequestException("No Seed ID found")
-            val player = call.parameters["player"]
-            call.respond(seedFile(id, player).readBytes())
+        get("seeds/{id}/config") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
+            val config = newSuspendedTransaction { Seed.findById(id)?.generatorConfig ?: throw NotFoundException() }
+            call.respond(config)
         }
-        post<SeedGenConfig>("seeds") { config ->
 
-            val seed = newSuspendedTransaction { Seed.new {} }
-            val result = server.seedGeneratorService.generate("seed-${seed.id.value}", config)
+        get("seeds/{id}"){
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
+            val seedInfo = newSuspendedTransaction {
+                val seed = Seed.findById(id) ?: throw NotFoundException()
+                SeedInfo(
+                    seed.id.value,
+                    seed.name,
+                    server.seedGeneratorService.filesForSeed(id.toString()).map { it.nameWithoutExtension },
+                    seed.creator?.let{UserInfo(it.id.value, it.name, it.avatarId, null, null)},
+                    seed.generatorConfig
+                )
+            }
+            call.respond(seedInfo)
+        }
+        get("seeds/{id}/files") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
+            newSuspendedTransaction { Seed.findById(id) ?: throw NotFoundException() }
+            call.respond(server.seedGeneratorService.filesForSeed(id.toString()).map { it.nameWithoutExtension })
+        }
+        get("seeds/{id}/files/{file}") {
+            val id = call.parameters["id"] ?: throw BadRequestException("No Seed ID found")
+            val player = call.parameters["file"] ?: throw BadRequestException("No Seed-file found!")
+            call.respond(server.seedGeneratorService.seedFile(id, player).readBytes())
+        }
+        authenticate(JWT_AUTH, optional = true) {
+            post<SeedGenConfig>("seeds") { config ->
 
-            if (result.isSuccess) {
-                call.respond(
-                    HttpStatusCode.Created, SeedGenResponse(
-                        result = SeedGenResult(
-                            seedId = seed.id.value,
-                            worldList = config.multiNames ?: emptyList(),
-                        ),
-                        warnings = result.getOrNull()?.ifBlank { null },
+                val seed = newSuspendedTransaction {
+                    Seed.new {
+                        generatorConfig = config
+                        creator = authenticatedUserOrNull()
+                        name = config.seed ?: "Unknown!"
+                    }
+                }
+                val result = server.seedGeneratorService.generate("seed-${seed.id.value}", config)
+
+                if (result.isSuccess) {
+                    if(config.seed == null){
+                        val lines = server.seedGeneratorService.filesForSeed(seed.id.value.toString()).first().readLines()
+                        if(lines.size > 3){
+                            newSuspendedTransaction {
+                                seed.name = lines[lines.size - 3].substringAfter("Seed: ")
+                                seed.generatorConfig = seed.generatorConfig.copy(seed = seed.name)
+                            }
+                        }
+                    }
+
+                    call.respond(
+                        HttpStatusCode.Created, SeedGenResponse(
+                            result = SeedGenResult(
+                                seedId = seed.id.value,
+                                files = server.seedGeneratorService.filesForSeed(seed.id.value.toString())
+                                    .map { it.nameWithoutExtension },
+                            ),
+                            warnings = result.getOrNull()?.ifBlank { null },
+                        )
                     )
-                )
-            } else {
-                call.respondText(
-                    result.exceptionOrNull()?.message ?: "Unknown seedgen error",
-                    ContentType.Text.Plain,
-                    HttpStatusCode.InternalServerError
-                )
+                } else {
+                    call.respondText(
+                        result.exceptionOrNull()?.message ?: "Unknown seedgen error",
+                        ContentType.Text.Plain,
+                        HttpStatusCode.InternalServerError
+                    )
+                }
             }
         }
     }
 
-    fun seedFile(seedId: String, player: String? = null): File {
-        var pathString = "${System.getenv("SEED_DIR")}${File.separator}seed-${seedId}"
-        if (player != null) {
-            val sanitized = server.seedGeneratorService.sanitizedPlayerName(player)
-            pathString += "${File.separator}$sanitized"
-        }
-        pathString += ".wotwr"
-        val file = Path.of(pathString).toFile()
-        if (!file.exists() || file.isDirectory)
-            throw NotFoundException()
-        return file
-    }
-
-    fun seedFile(seed: Seed) = seedFile(seed.id.value.toString())
 }
 
 

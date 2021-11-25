@@ -5,15 +5,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import wotw.io.messages.protobuf.UserInfo
 import kotlin.math.max
-
-@Serializable
-data class BingoGenProperties(
-    val seed: String? = null,
-    val discovery: Int? = null,
-    val lockout: Boolean? = false,
-    val manualGoalCompletion: Boolean? = false
-)
 
 @Serializable
 @Deprecated("Kept around for historical preservation of monuments")
@@ -171,6 +164,15 @@ enum class GoalMode(private val displayName: String, private val description: St
 }
 
 @Serializable
+data class SeedInfo(
+    val id: Long,
+    val name: String,
+    val files: List<String>,
+    val creator: UserInfo?,
+    val config: SeedGenConfig,
+)
+
+@Serializable
 data class SeedGenConfig(
     val flags: List<String> = emptyList(),
     val headers: List<String> = emptyList(),
@@ -186,9 +188,22 @@ data class SeedGenConfig(
 )
 
 @Serializable
+data class BingoConfig(
+    val discovery: Int? = null,
+    val lockout: Boolean? = false,
+    val manualGoalCompletion: Boolean? = false
+)
+
+@Serializable
+data class MultiverseCreationConfig(
+    val seedId: Long? = null,
+    val bingo: BingoConfig? = null,
+)
+
+@Serializable
 data class SeedGenResult(
     val seedId: Long,
-    val worldList: List<String> = emptyList(),
+    val files: List<String> = emptyList(),
 )
 
 @Serializable

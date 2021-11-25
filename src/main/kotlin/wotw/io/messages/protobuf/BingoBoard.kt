@@ -32,6 +32,12 @@ data class BingoBoard(
 }
 
 @Serializable
+data class BingothonBoard(val cards: List<BingothonGoal>, val disc_squares: Set<Int>)
+@Serializable
+data class BingothonGoal(val completed: Boolean, val name: String)
+
+
+@Serializable
 data class Position(
     @ProtoNumber(1) val x: Int,
     @ProtoNumber(2) val y: Int

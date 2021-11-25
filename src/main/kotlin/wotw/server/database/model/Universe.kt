@@ -10,7 +10,7 @@ import org.jetbrains.exposed.sql.select
 import wotw.server.bingo.UberStateMap
 
 object Universes : LongIdTable() {
-    val multiverseId = reference("multiverse_id", Multiverses)
+    val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val name = varchar("name", 255)
 }
 
@@ -26,13 +26,15 @@ class Universe(id: EntityID<Long>) : LongEntity(id) {
 }
 
 object Worlds : LongIdTable() {
-    val universeId = reference("universe_id", Universes)
+    val universeId = reference("universe_id", Universes, ReferenceOption.CASCADE)
     val name = varchar("name", 255)
+    val seedFile = varchar("seed_file", 255).nullable()
 }
 
 class World(id: EntityID<Long>) : LongEntity(id) {
     var universe by Universe referencedOn Worlds.universeId
     var name by Worlds.name
+    var seedFile by Worlds.seedFile
     var members by User via WorldMemberships
 
     companion object : LongEntityClass<World>(Worlds) {
@@ -55,17 +57,18 @@ class World(id: EntityID<Long>) : LongEntity(id) {
                     WorldMemberships.playerId eq playerId
                 }.map { World.wrapRow(it) }
 
-        fun new(universe: Universe, player: User) =
+        fun new(universe: Universe, name: String, seedFile: String? = null) =
             GameState.new {
                 this.multiverse = universe.multiverse
                 this.universe = universe
                 val world = World.new {
                     this.universe = universe
-                    this.name = player.name + "'s world"
+                    this.name = name
+                    this.seedFile = seedFile
                 }
                 this.world = world
                 uberStateData = UberStateMap()
-            }.world
+            }.world!!
     }
 }
 

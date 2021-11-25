@@ -7,7 +7,6 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
 object BingoEvents : LongIdTable("events") {
-    override val primaryKey = PrimaryKey(id)
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val universeId = reference("world_id", Universes, ReferenceOption.CASCADE)
     val time = long("timestamp")

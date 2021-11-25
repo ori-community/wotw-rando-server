@@ -18,7 +18,8 @@ data class WorldInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val color: String,
-    @ProtoNumber(4) val members: List<UserInfo>
+    @ProtoNumber(4) val members: List<UserInfo>,
+    @ProtoNumber(5) val seedFile: String?,
 )
 
 @Serializable
@@ -35,6 +36,7 @@ data class MultiverseInfoMessage(
     @ProtoNumber(2) val universes: List<UniverseInfo>,
     @ProtoNumber(3) val hasBingoBoard: Boolean,
     @ProtoNumber(4) val spectators: List<UserInfo>,
+    @ProtoNumber(5) val seedId: Long?,
 )
 
 @Serializable
