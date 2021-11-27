@@ -82,8 +82,8 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             spectator -> {
                 //spectator board: show everything anyone can see
                 goals.filter { states.any { s ->
-                    val world = s.world
-                    world != null && board.goalVisible(it.first.x to it.first.y, StateCache.get(ShareScope.WORLD to world.id.value))
+                    val u = s.universe
+                    u != null && board.goalVisible(it.first.x to it.first.y, StateCache.get(ShareScope.UNIVERSE to u.id.value))
                 } }
             }
             else -> {
