@@ -333,6 +333,7 @@ fun generatePool() = mutableListOf(
         bool("Fronkey Walk Floor", 21786, 61900),
         bool("Den Shrine Access", 21786, 6994),
         bool("Bash Area Access", 937, 40225),
+        bool("Log next to Baur", 28895, 49329),
         bool("windsweptWastesGroupDescriptor.bombableWallD", 20120, 60960),
         bool("lumaPoolsStateGroup.breakableWallA", 5377, 26170),
         bool("lumaPoolsStateGroup.breakableWallB", 5377, 4463),
