@@ -5,11 +5,12 @@ buildscript {
 }
 
 val kotlin_version = "1.6.0"
-val ktor_version = "1.6.4"
-val logback_version = "1.2.6"
+val ktor_version = "1.6.7"
+val logback_version = "1.2.10"
 val exposed_version = "0.36.1"
 val kotlinx_html_version = "0.7.1"
-val serialization_version = "1.3.1"
+val serialization_version = "1.3.2"
+val krontab_version = "0.7.0"
 
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.5.31"
@@ -26,8 +27,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
+    implementation("dev.inmo:krontab:$krontab_version")
 
-    implementation("io.github.classgraph:classgraph:4.8.132")
+    implementation("io.github.classgraph:classgraph:4.8.138")
 
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("io.ktor:ktor-websockets:$ktor_version")
@@ -39,7 +41,7 @@ dependencies {
     implementation("io.ktor:ktor-server-sessions:$ktor_version")
     implementation("io.ktor:ktor-network:$ktor_version")
 
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt"){
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt"){
         version {
             strictly("1.5.2-native-mt")
         }
@@ -53,9 +55,9 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-java-time:$exposed_version")
 
 
-    implementation("com.zaxxer:HikariCP:5.0.0")
+    implementation("com.zaxxer:HikariCP:5.0.1")
 
-    implementation("org.postgresql:postgresql:42.2.23")
+    implementation("org.postgresql:postgresql:42.3.1")
 
     implementation("dev.kord:kord-core:0.7.4")
 }
