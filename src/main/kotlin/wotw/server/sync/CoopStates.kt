@@ -682,6 +682,7 @@ val worldStateAggregationRegistry by lazy {
             sync(5377, 53480).on(threshold = 4), // pools fight room 2
             sync(9593, 25130).on(threshold = 3), // double jump lizard fight
             sync(945, 58403).on(threshold = 7),  // kwolok fight
+            sync(18793, 26713).on(threshold = 7),  // mora fight
             sync(37858, 10720).on(threshold = 2), // Wellspring escape
             sync(937, 34641).with(UberStateSyncStrategy.MIN).on(threshold = 4), // Prevent Silent Teeth quest from syncing value=5
         )
