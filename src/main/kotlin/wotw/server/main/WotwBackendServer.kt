@@ -184,7 +184,6 @@ class WotwBackendServer {
                     method(HttpMethod.Options)
                     method(HttpMethod.Put)
                     allowNonSimpleContentTypes = true
-                    allowCredentials = true
                     header(HttpHeaders.Authorization)
                     header(HttpHeaders.AccessControlAllowOrigin)
                     header(HttpHeaders.Origin)
