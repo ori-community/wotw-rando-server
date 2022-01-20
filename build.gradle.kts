@@ -30,6 +30,7 @@ dependencies {
     implementation("dev.inmo:krontab:$krontab_version")
 
     implementation("io.github.classgraph:classgraph:4.8.138")
+    implementation("io.sentry:sentry:5.5.2")
 
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("io.ktor:ktor-websockets:$ktor_version")
