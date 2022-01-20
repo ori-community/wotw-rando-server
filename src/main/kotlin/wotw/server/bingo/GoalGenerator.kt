@@ -151,7 +151,7 @@ fun generatePool() = mutableListOf(
         threshold("Silent Woods", 44964, 22703, threshold = 2, hideValue = true),
         threshold("The Wellspring", 44964, 11512, threshold = 2, hideValue = true),
         countGoal = { it.nextTriangular(1, 4, 1) },
-        maxRepeats = 2
+        maxRepeats = 1
     ),
     oneof(
         group("Find # Key Item[s]",
@@ -826,7 +826,8 @@ fun generatePool() = mutableListOf(
         bool("keystone room", 5377, 15754),
         bool("left waterdash room", 5377, 24765),
         bool("right waterdash room", 5377, 58278),
-        countGoal = { it.nextTriangular(1, 3, 2)},
+        countGoal = { it.nextTriangular(1, 5, 2)},
+        subsetGoal = false
     ),
 )
 
