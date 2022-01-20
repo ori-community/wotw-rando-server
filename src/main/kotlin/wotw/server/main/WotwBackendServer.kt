@@ -22,6 +22,7 @@ import io.ktor.routing.*
 import io.ktor.serialization.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.util.*
 import io.ktor.util.network.*
 import io.ktor.util.pipeline.*
 import io.ktor.utils.io.core.*
@@ -62,9 +63,15 @@ class WotwBackendServer {
                 root.level = ch.qos.logback.classic.Level.valueOf(System.getenv("LOG_LEVEL"))
             }
 
-            if (System.getenv("SENTRY_DSN").isNotEmpty()) {
+            if (System.getenv("SENTRY_DSN") != null) {
                 Sentry.init { options ->
                     options.dsn = System.getenv("SENTRY_DSN")
+                    options.enableUncaughtExceptionHandler = false
+                }
+
+                Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+                    logger().error(throwable)
+                    Sentry.captureException(throwable)
                 }
                 logger().info("Error tracking enabled")
             }
