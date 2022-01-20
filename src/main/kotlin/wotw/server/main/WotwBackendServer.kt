@@ -26,6 +26,7 @@ import io.ktor.util.network.*
 import io.ktor.util.pipeline.*
 import io.ktor.utils.io.core.*
 import io.ktor.websocket.*
+import io.sentry.Sentry
 import kotlinx.coroutines.*
 import kotlinx.html.*
 import org.jetbrains.exposed.sql.Database
@@ -60,6 +61,14 @@ class WotwBackendServer {
                 val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
                 root.level = ch.qos.logback.classic.Level.valueOf(System.getenv("LOG_LEVEL"))
             }
+
+            if (System.getenv("SENTRY_DSN").isNotEmpty()) {
+                Sentry.init { options ->
+                    options.dsn = System.getenv("SENTRY_DSN")
+                }
+                logger().info("Error tracking enabled")
+            }
+
             WotwBackendServer().start(args)
         }
 
