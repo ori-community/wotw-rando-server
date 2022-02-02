@@ -235,7 +235,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
                     )
 
-                    val (_worldId, multiverseId, worldName, worldMembers, multiverseInfoMessage) = newSuspendedTransaction {
+                    val (_worldId, multiverseId, worldName, worldMembers, multiverseInfoMessage, multiversePlayerIds) = newSuspendedTransaction {
                         val world = WorldMembership.find {
                             WorldMemberships.playerId eq playerId
                         }.firstOrNull()?.world
@@ -244,7 +244,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             server.infoMessagesService.generateMultiverseInfoMessage(
                                 it
                             )
-                        }
+                        } then (world?.universe?.multiverse?.members?.map { it.id.value } ?: emptyList())
                     }
 
                     if (multiverseId == null || _worldId == null) {
@@ -284,6 +284,16 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     if (multiverseInfoMessage != null) {
                         socketConnection.sendMessage(multiverseInfoMessage)
+                    }
+
+                    // Check if all players are online
+                    val allPlayersOnline = multiversePlayerIds.all {
+                        server.connections.playerMultiverseConnections[it]?.multiverseId == multiverseId
+                    }
+                    if (allPlayersOnline && multiversePlayerIds.count() >= 2) {
+                        server.connections.toPlayers(multiversePlayerIds, multiverseId, false, PrintTextMessage(
+                            text = "All ${multiversePlayerIds.count()} players are connected!", frames = 600, ypos = 3f
+                        ))
                     }
                 }
                 onMessage(UberStateUpdateMessage::class) {
