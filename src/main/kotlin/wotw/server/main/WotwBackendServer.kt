@@ -36,6 +36,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+import wotw.io.messages.protobuf.PrintTextMessage
 import wotw.io.messages.protobuf.UdpPacket
 import wotw.server.api.*
 import wotw.server.database.PlayerUniversePopulationCache
@@ -153,7 +154,15 @@ class WotwBackendServer {
     val cacheScheduler = Scheduler{
          sync.purgeCache(60)
     }
-    val shutdownHook = Thread{
+    val shutdownHook = Thread {
+        runBlocking {
+            connections.toAll(false, PrintTextMessage(
+                text = "Server is going down for maintenance.\nWill be back shortly. Or not. OriShrug",
+                ypos = -2f,
+                frames = 600,
+            ))
+        }
+
         cacheScheduler.stop()
         runBlocking {
             sync.purgeCache(-1)

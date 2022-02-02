@@ -127,6 +127,21 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         toPlayers(targets, multiverseId, unreliable, *messages)
     }
 
+    suspend inline fun <reified T : Any> toAll(
+        unreliable: Boolean = false,
+        vararg messages: T
+    ) {
+        playerMultiverseConnections.values.forEach {
+            for (message in messages) {
+                try {
+                    it.clientConnection.sendMessage(message, unreliable)
+                } catch (e: Throwable) {
+                    logger.error(e.message, e)
+                }
+            }
+        }
+    }
+
     suspend inline fun <reified T : Any> toPlayers(
         players: Iterable<String>,
         multiverseId: Long? = null,
