@@ -18,6 +18,8 @@ class Universe(id: EntityID<Long>) : LongEntity(id) {
     var multiverse by Multiverse referencedOn Universes.multiverseId
     var name by Universes.name
     val worlds by World referrersOn Worlds.universeId
+    val members
+        get() = worlds.flatMap { it.members }.toSet()
 
     val state: GameState?
         get() = GameState.findUniverseState(id.value)
