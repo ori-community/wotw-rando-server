@@ -108,12 +108,26 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 throw ConflictException("Cannot manually create or remove worlds from seed-linked universes")
                             val universe =
                                 Universe.findById(universeId) ?: throw NotFoundException("Universe does not exist!")
+
+                            server.connections.toPlayers((multiverse.players - universe.members).map { it.id.value }, multiverseId, false, PrintTextMessage(
+                                text = "${player.name} joined this game in another universe", frames = 180, ypos = -2f,
+                            ))
+
+                            server.connections.toPlayers(universe.members.map { it.id.value }, multiverseId, false, PrintTextMessage(
+                                text = "${player.name} joined a new world in your universe", frames = 180, ypos = -2f,
+                            ))
+
                             World.new(universe, player.name + "'s World")
                         } else {
                             val universe = Universe.new {
                                 name = "${player.name}'s Universe"
                                 this.multiverse = multiverse
                             }
+
+                            server.connections.toPlayers(multiverse.players.map { it.id.value }, multiverseId, false, PrintTextMessage(
+                                text = "${player.name} joined this game in a new universe", frames = 180, ypos = -2f,
+                            ))
+
                             GameState.new {
                                 this.multiverse = multiverse
                                 this.universe = universe
@@ -172,11 +186,25 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                         ?: throw NotFoundException("World does not exist!")
 
-                    val affectedMultiverseIds = multiverse.removePlayerFromWorlds(player, world)
-                    world.members = SizedCollection(world.members + player)
+                    if (!world.members.contains(player)) {
+                        val affectedMultiverseIds = multiverse.removePlayerFromWorlds(player, world)
+                        world.members = SizedCollection(world.members + player)
 
-                    affectedMultiverseIds.filter { it != multiverseId }.forEach {
-                        server.connections.broadcastMultiverseInfoMessage(it)
+                        affectedMultiverseIds.filter { it != multiverseId }.forEach {
+                            server.connections.broadcastMultiverseInfoMessage(it)
+                        }
+
+                        server.connections.toPlayers((multiverse.players - world.universe.members).map { it.id.value }, multiverseId, false, PrintTextMessage(
+                            text = "${player.name} joined this game in another universe", frames = 180, ypos = -2f,
+                        ))
+
+                        server.connections.toPlayers((world.universe.members - world.members).map { it.id.value }, multiverseId, false, PrintTextMessage(
+                            text = "${player.name} joined your universe in another world", frames = 180, ypos = -2f,
+                        ))
+
+                        server.connections.toPlayers(world.members.map { it.id.value }, multiverseId, false, PrintTextMessage(
+                            text = "${player.name} joined your world", frames = 180, ypos = -2f,
+                        ))
                     }
 
                     server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
@@ -203,6 +231,10 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     if (!multiverse.spectators.contains(player)) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
+
+                        server.connections.toPlayers(multiverse.players.map { it.id.value }, multiverseId, false, PrintTextMessage(
+                            text = "${player.name} is now spectating this game", frames = 180, ypos = -2f,
+                        ))
                     }
 
                     affectedMultiverseIds.filter { it != multiverseId }.forEach {

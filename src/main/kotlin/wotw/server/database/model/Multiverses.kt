@@ -38,7 +38,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val worldStates
         get() = states.mapNotNull { it.world?.let{world -> world to it}}.toMap()
     val players
-        get() = worlds.flatMap { it.members }
+        get() = worlds.flatMap { it.members }.toSet()
     val members
         get() = players + spectators
 
