@@ -244,7 +244,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             server.infoMessagesService.generateMultiverseInfoMessage(
                                 it
                             )
-                        } then (world?.universe?.multiverse?.members?.map { it.id.value } ?: emptyList())
+                        } then (world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList())
                     }
 
                     if (multiverseId == null || _worldId == null) {
