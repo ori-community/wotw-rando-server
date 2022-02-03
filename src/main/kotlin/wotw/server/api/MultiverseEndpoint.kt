@@ -324,7 +324,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                     if (allPlayersOnline && multiversePlayerIds.count() >= 2) {
                         server.connections.toPlayers(multiversePlayerIds, multiverseId, false, PrintTextMessage(
-                            text = "All ${multiversePlayerIds.count()} players are connected!", frames = 600, ypos = 3f
+                            text = "All ${multiversePlayerIds.count()} players are connected!", frames = 240, ypos = -2f
                         ))
                     }
                 }
