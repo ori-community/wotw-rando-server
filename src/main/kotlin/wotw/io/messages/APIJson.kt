@@ -79,7 +79,7 @@ data class PresetFile(
             if (difficultyEnum.level > other.difficultyEnum.level) difficulty else other.difficulty,
             goalmodes + other.goalmodes,
             headerList + other.headerList,
-            spoilers or other.spoilers,
+            spoilers and other.spoilers,
             webConn or other.webConn,
             hard or other.hard,
             spawnLoc,
