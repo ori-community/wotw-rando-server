@@ -142,6 +142,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     suspend fun unregisterRemoteTrackerBroadcaster(endpointId: String) {
         remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
         remoteTrackerEndpoints[endpointId]?.broadcasterConnection = null
+        deleteRemoteTrackerEndpointIfUnused(endpointId)
     }
 
     suspend fun registerRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection): Boolean {
@@ -155,6 +156,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     fun unregisterRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection) {
         remoteTrackerEndpoints[endpointId]?.listeners?.remove(clientConnection)
+        deleteRemoteTrackerEndpointIfUnused(endpointId)
     }
 
     fun deleteRemoteTrackerEndpointIfUnused(endpointId: String) {
