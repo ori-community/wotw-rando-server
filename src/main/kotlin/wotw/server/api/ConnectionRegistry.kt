@@ -168,8 +168,10 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     }
 
     suspend inline fun <reified T : Any> broadcastRemoteTrackerMessage(endpointId: String, message: T) {
-        remoteTrackerEndpoints[endpointId]?.listeners?.forEach {
-            it.sendMessage(message)
+        remoteTrackerEndpoints[endpointId]?.listeners?.let {
+            ArrayList(it).forEach {
+                it.sendMessage(message)
+            }
         }
     }
     // endregion
