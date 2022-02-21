@@ -2,6 +2,7 @@ package wotw.server.api
 
 import io.ktor.features.*
 import io.ktor.http.cio.websocket.*
+import kotlinx.coroutines.isActive
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.RequestFullUpdate
 import wotw.server.database.model.Multiverse
@@ -31,11 +32,15 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         MultiMap<Long, MultiverseObserverConnection>(Collections.synchronizedMap(hashMapOf()))
 
     data class RemoteTrackerEndpoint(
-        val broadcasterConnection: ClientConnection,
+        var broadcasterConnection: ClientConnection?,
         val listeners: MutableList<ClientConnection> = Collections.synchronizedList(emptyList())
     )
 
+    // endpointId => RemoteTrackerEndpoint
     val remoteTrackerEndpoints: MutableMap<String, RemoteTrackerEndpoint> = Collections.synchronizedMap(hashMapOf())
+
+    // userId => endpointId
+    val remoteTrackerEndpointIds: MutableMap<String, String> = Collections.synchronizedMap(hashMapOf())
 
     /*
     * A Map (MultiverseId?, PlayerId) -> WebSocketConnection
@@ -109,24 +114,34 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         multiverseObserverConnections[multiverseId].filter { it.playerId == playerId }.map { it.spectating = spectating }
     }
 
-    fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection): String {
+    suspend fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection, userId: String, reusePreviousEndpointId: Boolean): String {
         var endpointId: String
-        do {
-            endpointId = randomString(16)
-        } while (!remoteTrackerEndpoints.containsKey(endpointId))
 
-        remoteTrackerEndpoints[endpointId] = RemoteTrackerEndpoint(
-            clientConnection
-        )
+        if (
+            reusePreviousEndpointId &&
+            remoteTrackerEndpointIds.containsKey(userId) &&
+            remoteTrackerEndpoints.containsKey(remoteTrackerEndpointIds[userId])
+        ) {
+            endpointId = remoteTrackerEndpointIds[userId]!!
+
+            remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
+            remoteTrackerEndpoints[endpointId]?.broadcasterConnection = clientConnection
+        } else {
+            do {
+                endpointId = randomString(16)
+            } while (!remoteTrackerEndpoints.containsKey(endpointId))
+
+            remoteTrackerEndpoints[endpointId] = RemoteTrackerEndpoint(
+                clientConnection
+            )
+        }
 
         return endpointId
     }
 
-    suspend fun unregisterRemoteTrackerEndpoint(endpointId: String) {
-        remoteTrackerEndpoints[endpointId]?.listeners?.forEach {
-            it.webSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Endpoint closed"))
-        }
-        remoteTrackerEndpoints.remove(endpointId)
+    suspend fun unregisterRemoteTrackerBroadcaster(endpointId: String) {
+        remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
+        remoteTrackerEndpoints[endpointId]?.broadcasterConnection = null
     }
 
     suspend fun registerRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection): Boolean {
@@ -140,6 +155,14 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     fun unregisterRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection) {
         remoteTrackerEndpoints[endpointId]?.listeners?.remove(clientConnection)
+    }
+
+    fun deleteRemoteTrackerEndpointIfUnused(endpointId: String) {
+        remoteTrackerEndpoints[endpointId]?.let {
+            if (it.broadcasterConnection == null && it.listeners.isEmpty()) {
+                remoteTrackerEndpoints.remove(endpointId)
+            }
+        }
     }
 
     suspend inline fun <reified T : Any> broadcastRemoteTrackerMessage(endpointId: String, message: T) {

@@ -34,14 +34,19 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 var endpointId: String? = null
 
                 afterAuthenticated {
-                    principalOrNull?.hasScope(Scope.MULTIVERSE_CONNECT) ?: this@webSocket.close(
-                        CloseReason(
-                            CloseReason.Codes.VIOLATED_POLICY,
-                            "You are not allowed to connect with these credentials!"
+                    if (!principal.hasScope(Scope.MULTIVERSE_CONNECT))
+                        this@webSocket.close(
+                            CloseReason(
+                                CloseReason.Codes.VIOLATED_POLICY,
+                                "You are not allowed to connect with these credentials!"
+                            )
                         )
-                    )
 
-                    endpointId = server.connections.registerRemoteTrackerEndpoint(this.socketConnection)
+                    endpointId = server.connections.registerRemoteTrackerEndpoint(
+                        this.socketConnection,
+                        principal.userId,
+                        call.request.queryParameters["reconnect"] == "true",
+                    )
 
                     this.socketConnection.sendMessage(SetTrackerEndpointId(endpointId!!))
                 }
@@ -55,13 +60,13 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 onClose {
                     logger.info("Remote tracker WebSocket $endpointId disconnected (close, ${closeReason.await()})")
                     if (endpointId != null) {
-                        server.connections.unregisterRemoteTrackerEndpoint(endpointId!!)
+                        server.connections.unregisterRemoteTrackerBroadcaster(endpointId!!)
                     }
                 }
                 onError {
                     logger.info("Remote tracker WebSocket $endpointId disconnected (error, ${closeReason.await()})")
                     if (endpointId != null) {
-                        server.connections.unregisterRemoteTrackerEndpoint(endpointId!!)
+                        server.connections.unregisterRemoteTrackerBroadcaster(endpointId!!)
                     }
                 }
             }
