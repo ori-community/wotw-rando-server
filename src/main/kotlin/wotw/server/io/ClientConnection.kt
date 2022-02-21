@@ -138,8 +138,8 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
         }
     }
 
-    suspend inline fun <reified T : Any> sendMessage(message: T, unreliable: Boolean = false) {
-        if (principal != null) {
+    suspend inline fun <reified T : Any> sendMessage(message: T, unreliable: Boolean = false, ignoreAuthentication: Boolean = false) {
+        if (principal != null || ignoreAuthentication) {
             val binaryData =
                 Packet.serialize(message) ?: throw IOException("Cannot serialize object: $message | ${message::class}")
 

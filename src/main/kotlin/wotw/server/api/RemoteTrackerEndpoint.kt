@@ -1,30 +1,15 @@
 package wotw.server.api
 
-import io.ktor.application.*
-import io.ktor.auth.*
-import io.ktor.features.*
-import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
-import io.ktor.request.*
-import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
-import org.jetbrains.exposed.sql.SizedCollection
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.MultiverseCreationConfig
-import wotw.io.messages.protobuf.*
-import wotw.server.bingo.BingoBoardGenerator
-import wotw.server.bingo.UberStateMap
-import wotw.server.sync.multiStates
-import wotw.server.sync.worldStateAggregationRegistry
-import wotw.server.database.model.*
-import wotw.server.exception.ConflictException
+import wotw.io.messages.protobuf.ResetTracker
+import wotw.io.messages.protobuf.SetTrackerEndpointId
+import wotw.io.messages.protobuf.TrackerFlagsUpdate
+import wotw.io.messages.protobuf.TrackerUpdate
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
-import wotw.server.util.rezero
-import wotw.server.util.then
-import wotw.server.util.zerore
 
 class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
     val logger = logger()
@@ -51,7 +36,19 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     this.socketConnection.sendMessage(SetTrackerEndpointId(endpointId!!))
                 }
 
-                onMessage(Any::class) {
+                onMessage(TrackerUpdate::class) {
+                    if (endpointId != null) {
+                        server.connections.broadcastRemoteTrackerMessage(endpointId!!, this)
+                    }
+                }
+
+                onMessage(ResetTracker::class) {
+                    if (endpointId != null) {
+                        server.connections.broadcastRemoteTrackerMessage(endpointId!!, this)
+                    }
+                }
+
+                onMessage(TrackerFlagsUpdate::class) {
                     if (endpointId != null) {
                         server.connections.broadcastRemoteTrackerMessage(endpointId!!, this)
                     }

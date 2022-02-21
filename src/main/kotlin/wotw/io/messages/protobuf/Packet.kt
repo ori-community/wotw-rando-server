@@ -68,7 +68,7 @@ data class Packet(
 
         inline fun <reified T : Any> from(obj: T): Packet {
             val id = ids.inverse[typeOf<T>()]
-                ?: throw SerializationException("No packet-id known for ${obj::class.qualifiedName}, known values: ${ids.inverse.keys}")
+                ?: throw SerializationException("No packet-id known for ${typeOf<T>()}, known values: ${ids.inverse.keys}")
             val serializer = serializer(typeOf<T>())
             return Packet(id, protoBuf.encodeToByteArray(serializer, obj))
         }

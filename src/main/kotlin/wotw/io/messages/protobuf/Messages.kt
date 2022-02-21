@@ -143,7 +143,7 @@ data class AuthenticatedMessage(
 @Serializable
 data class TrackerUpdate(
     @ProtoNumber(1) val id: String,
-    @ProtoNumber(2) val value: Int,
+    @ProtoNumber(2) val value: Int = 0,
 )
 
 @Serializable
