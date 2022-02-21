@@ -156,3 +156,8 @@ data class TrackerFlagsUpdate(
 
 @Serializable
 class RequestFullUpdate()
+
+@Serializable
+data class SetTrackerEndpointId(
+    @ProtoNumber(1) val endpointId: String,
+)

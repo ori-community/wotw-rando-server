@@ -42,6 +42,8 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     )
 
                     endpointId = server.connections.registerRemoteTrackerEndpoint(this.socketConnection)
+
+                    this.socketConnection.sendMessage(SetTrackerEndpointId(endpointId))
                 }
 
                 onMessage(Any::class) {
