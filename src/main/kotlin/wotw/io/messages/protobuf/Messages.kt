@@ -139,3 +139,20 @@ data class AuthenticatedMessage(
         return result
     }
 }
+
+@Serializable
+data class TrackerUpdate(
+    @ProtoNumber(1) val id: String,
+    @ProtoNumber(2) val value: Int,
+)
+
+@Serializable
+class ResetTracker()
+
+@Serializable
+data class TrackerFlagsUpdate(
+    @ProtoNumber(1) val flags: List<String>,
+)
+
+@Serializable
+class RequestFullUpdate()

@@ -160,5 +160,6 @@ object Scope {
     const val USER_INFO_WRITE = "user.info.write"
     const val TOKEN_CREATE = "tokens.create"
     const val BOARDS_READ = "boards.read"
+    const val REMOTE_TRACKER_CREATE = "remote_tracker.create"
     const val ALL = "*"
 }

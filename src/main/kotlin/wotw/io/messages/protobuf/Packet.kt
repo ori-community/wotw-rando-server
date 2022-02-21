@@ -55,6 +55,10 @@ data class Packet(
             10 to typeOf<PlayerPositionMessage>(),
             11 to typeOf<UpdatePlayerPositionMessage>(),
             12 to typeOf<AuthenticatedMessage>(),
+            100 to typeOf<TrackerUpdate>(),
+            101 to typeOf<ResetTracker>(),
+            102 to typeOf<TrackerFlagsUpdate>(),
+            103 to typeOf<RequestFullUpdate>(),
         )
 
         fun deserialize(bytes: ByteArray): Any? {
