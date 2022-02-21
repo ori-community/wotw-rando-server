@@ -55,6 +55,11 @@ data class Packet(
             10 to typeOf<PlayerPositionMessage>(),
             11 to typeOf<UpdatePlayerPositionMessage>(),
             12 to typeOf<AuthenticatedMessage>(),
+            100 to typeOf<TrackerUpdate>(),
+            101 to typeOf<ResetTracker>(),
+            102 to typeOf<TrackerFlagsUpdate>(),
+            103 to typeOf<RequestFullUpdate>(),
+            104 to typeOf<SetTrackerEndpointId>(),
         )
 
         fun deserialize(bytes: ByteArray): Any? {
@@ -63,7 +68,7 @@ data class Packet(
 
         inline fun <reified T : Any> from(obj: T): Packet {
             val id = ids.inverse[typeOf<T>()]
-                ?: throw SerializationException("No packet-id known for ${obj::class.qualifiedName}, known values: ${ids.inverse.keys}")
+                ?: throw SerializationException("No packet-id known for ${typeOf<T>()}, known values: ${ids.inverse.keys}")
             val serializer = serializer(typeOf<T>())
             return Packet(id, protoBuf.encodeToByteArray(serializer, obj))
         }

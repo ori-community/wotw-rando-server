@@ -35,3 +35,10 @@ fun rezero(n: Int) = if (n == -1) 0 else n
 fun rezero(n: Double) = if (n == -1.0) 0.0 else n
 fun zerore(n: Int) = if (n == 0) -1 else n
 fun zerore(n: Double) = if (n == 0.0) -1.0 else n
+
+fun randomString(length: Int) : String {
+    val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+    return (1..length)
+        .map { allowedChars.random() }
+        .joinToString("")
+}

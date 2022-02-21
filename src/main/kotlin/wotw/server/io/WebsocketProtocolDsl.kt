@@ -37,7 +37,7 @@ class ClientSocketProtocolBuilder(val socketConnection: ClientConnection, privat
 }
 
 
-suspend fun WebSocketSession.handleClientSocket(block: ClientSocketProtocolBuilder.() -> Unit) {
+suspend fun WebSocketSession.handleClientSocket(block: suspend ClientSocketProtocolBuilder.() -> Unit) {
     val eventBus = EventBus()
     val builder = ClientSocketProtocolBuilder(ClientConnection(this, eventBus), eventBus)
 

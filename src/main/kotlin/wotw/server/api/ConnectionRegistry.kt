@@ -1,14 +1,20 @@
 package wotw.server.api
 
+import io.ktor.features.*
+import io.ktor.http.cio.websocket.*
+import kotlinx.coroutines.isActive
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.protobuf.RequestFullUpdate
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
 import wotw.server.io.ClientConnection
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.ShareScope
 import wotw.server.util.logger
+import wotw.server.util.randomString
 import wotw.util.MultiMap
 import java.util.*
+import kotlin.collections.HashMap
 
 class ConnectionRegistry(val server: WotwBackendServer) {
     val logger = logger()
@@ -24,6 +30,17 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     val multiverseObserverConnections =
         //       ↓ multiverseId
         MultiMap<Long, MultiverseObserverConnection>(Collections.synchronizedMap(hashMapOf()))
+
+    data class RemoteTrackerEndpoint(
+        var broadcasterConnection: ClientConnection?,
+        val listeners: MutableList<ClientConnection> = Collections.synchronizedList(mutableListOf())
+    )
+
+    // endpointId => RemoteTrackerEndpoint
+    val remoteTrackerEndpoints: MutableMap<String, RemoteTrackerEndpoint> = Collections.synchronizedMap(hashMapOf())
+
+    // userId => endpointId
+    val remoteTrackerEndpointIds: MutableMap<String, String> = Collections.synchronizedMap(hashMapOf())
 
     /*
     * A Map (MultiverseId?, PlayerId) -> WebSocketConnection
@@ -95,6 +112,65 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     fun setSpectating(multiverseId: Long, playerId: String, spectating: Boolean) {
         multiverseObserverConnections[multiverseId].filter { it.playerId == playerId }.map { it.spectating = spectating }
+    }
+
+    suspend fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection, userId: String, reusePreviousEndpointId: Boolean): String {
+        var endpointId: String
+
+        if (
+            reusePreviousEndpointId &&
+            remoteTrackerEndpointIds.containsKey(userId) &&
+            remoteTrackerEndpoints.containsKey(remoteTrackerEndpointIds[userId])
+        ) {
+            endpointId = remoteTrackerEndpointIds[userId]!!
+
+            remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
+            remoteTrackerEndpoints[endpointId]?.broadcasterConnection = clientConnection
+        } else {
+            do {
+                endpointId = randomString(16)
+            } while (remoteTrackerEndpoints.containsKey(endpointId))
+
+            remoteTrackerEndpoints[endpointId] = RemoteTrackerEndpoint(
+                clientConnection
+            )
+        }
+
+        return endpointId
+    }
+
+    suspend fun unregisterRemoteTrackerBroadcaster(endpointId: String) {
+        remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
+        remoteTrackerEndpoints[endpointId]?.broadcasterConnection = null
+        deleteRemoteTrackerEndpointIfUnused(endpointId)
+    }
+
+    suspend fun registerRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection): Boolean {
+        if (remoteTrackerEndpoints.containsKey(endpointId)) {
+            remoteTrackerEndpoints[endpointId]?.listeners?.add(clientConnection)
+            remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.sendMessage(RequestFullUpdate())
+            return true
+        }
+        return false
+    }
+
+    fun unregisterRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection) {
+        remoteTrackerEndpoints[endpointId]?.listeners?.remove(clientConnection)
+        deleteRemoteTrackerEndpointIfUnused(endpointId)
+    }
+
+    fun deleteRemoteTrackerEndpointIfUnused(endpointId: String) {
+        remoteTrackerEndpoints[endpointId]?.let {
+            if (it.broadcasterConnection == null && it.listeners.isEmpty()) {
+                remoteTrackerEndpoints.remove(endpointId)
+            }
+        }
+    }
+
+    suspend inline fun <reified T : Any> broadcastRemoteTrackerMessage(endpointId: String, message: T) {
+        remoteTrackerEndpoints[endpointId]?.listeners?.forEach {
+            it.sendMessage(message, ignoreAuthentication = true)
+        }
     }
     // endregion
 
