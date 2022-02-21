@@ -129,7 +129,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         } else {
             do {
                 endpointId = randomString(16)
-            } while (!remoteTrackerEndpoints.containsKey(endpointId))
+            } while (remoteTrackerEndpoints.containsKey(endpointId))
 
             remoteTrackerEndpoints[endpointId] = RemoteTrackerEndpoint(
                 clientConnection
