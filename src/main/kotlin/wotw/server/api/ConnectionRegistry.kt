@@ -33,7 +33,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     data class RemoteTrackerEndpoint(
         var broadcasterConnection: ClientConnection?,
-        val listeners: MutableList<ClientConnection> = Collections.synchronizedList(emptyList())
+        val listeners: MutableList<ClientConnection> = Collections.synchronizedList(mutableListOf())
     )
 
     // endpointId => RemoteTrackerEndpoint
