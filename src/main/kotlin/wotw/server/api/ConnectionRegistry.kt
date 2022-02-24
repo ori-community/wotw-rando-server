@@ -1,8 +1,6 @@
 package wotw.server.api
 
-import io.ktor.features.*
 import io.ktor.http.cio.websocket.*
-import kotlinx.coroutines.isActive
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.RequestFullUpdate
 import wotw.server.database.model.Multiverse
@@ -14,7 +12,6 @@ import wotw.server.util.logger
 import wotw.server.util.randomString
 import wotw.util.MultiMap
 import java.util.*
-import kotlin.collections.HashMap
 
 class ConnectionRegistry(val server: WotwBackendServer) {
     val logger = logger()
@@ -33,7 +30,8 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     data class RemoteTrackerEndpoint(
         var broadcasterConnection: ClientConnection?,
-        val listeners: MutableList<ClientConnection> = Collections.synchronizedList(mutableListOf())
+        val listeners: MutableList<ClientConnection> = Collections.synchronizedList(mutableListOf()),
+        var expires: Long? = null,
     )
 
     // endpointId => RemoteTrackerEndpoint
@@ -115,6 +113,8 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     }
 
     suspend fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection, userId: String, reusePreviousEndpointId: Boolean): String {
+        cleanupRemoteTrackerEndpoints()
+
         var endpointId: String
 
         if (
@@ -136,19 +136,24 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             )
         }
 
+        remoteTrackerEndpoints[endpointId]?.expires = null
+
         return endpointId
     }
 
     suspend fun unregisterRemoteTrackerBroadcaster(endpointId: String) {
         remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
         remoteTrackerEndpoints[endpointId]?.broadcasterConnection = null
-        deleteRemoteTrackerEndpointIfUnused(endpointId)
+        cleanupRemoteTrackerEndpoints()
     }
 
     suspend fun registerRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection): Boolean {
+        cleanupRemoteTrackerEndpoints()
+
         if (remoteTrackerEndpoints.containsKey(endpointId)) {
             remoteTrackerEndpoints[endpointId]?.listeners?.add(clientConnection)
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.sendMessage(RequestFullUpdate())
+            remoteTrackerEndpoints[endpointId]?.expires = null
             return true
         }
         return false
@@ -156,13 +161,17 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     fun unregisterRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection) {
         remoteTrackerEndpoints[endpointId]?.listeners?.remove(clientConnection)
-        deleteRemoteTrackerEndpointIfUnused(endpointId)
+        cleanupRemoteTrackerEndpoints()
     }
 
-    fun deleteRemoteTrackerEndpointIfUnused(endpointId: String) {
-        remoteTrackerEndpoints[endpointId]?.let {
-            if (it.broadcasterConnection == null && it.listeners.isEmpty()) {
-                remoteTrackerEndpoints.remove(endpointId)
+    private fun cleanupRemoteTrackerEndpoints() {
+        remoteTrackerEndpoints.keys.forEach { endpointId ->
+            remoteTrackerEndpoints[endpointId]?.let {
+                if (it.expires != null && it.expires!! < System.currentTimeMillis()) {
+                    remoteTrackerEndpoints.remove(endpointId)
+                } else if (it.broadcasterConnection == null && it.listeners.isEmpty()) {
+                    it.expires = System.currentTimeMillis() + 30 * 60 * 1000 // Keep the endpoint around for at least 30 minutes...
+                }
             }
         }
     }
