@@ -112,7 +112,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         multiverseObserverConnections[multiverseId].filter { it.playerId == playerId }.map { it.spectating = spectating }
     }
 
-    suspend fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection, userId: String, reusePreviousEndpointId: Boolean): String {
+    suspend fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection, userId: String, reusePreviousEndpointId: Boolean, useStaticEndpointId: Boolean): String {
         cleanupRemoteTrackerEndpoints()
 
         var endpointId: String
@@ -127,17 +127,21 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection = clientConnection
 
-            logger.info("Registered Remote Tracker endpoint $endpointId (reused) for user $userId")
+            logger.info("Reconnected broadcaster to Remote Tracker endpoint $endpointId (User $userId)")
         } else {
-            do {
-                endpointId = randomString(16)
-            } while (remoteTrackerEndpoints.containsKey(endpointId))
+            if (useStaticEndpointId) {
+                endpointId = "u-$userId"
+                logger.info("Registered Remote Tracker endpoint $endpointId (static) for user $userId")
+            } else {
+                do {
+                    endpointId = randomString(16)
+                } while (remoteTrackerEndpoints.containsKey(endpointId))
+                logger.info("Registered Remote Tracker endpoint $endpointId (new) for user $userId")
+            }
 
             remoteTrackerEndpoints[endpointId] = RemoteTrackerEndpoint(
                 clientConnection
             )
-
-            logger.info("Registered Remote Tracker endpoint $endpointId (new) for user $userId")
         }
 
         remoteTrackerEndpoints[endpointId]?.expires = null

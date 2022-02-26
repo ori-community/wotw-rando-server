@@ -31,6 +31,7 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         this.socketConnection,
                         principal.userId,
                         call.request.queryParameters["reconnect"] == "true",
+                        call.request.queryParameters["static"] == "true",
                     )
 
                     this.socketConnection.sendMessage(SetTrackerEndpointId(endpointId!!))
