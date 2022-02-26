@@ -112,7 +112,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         multiverseObserverConnections[multiverseId].filter { it.playerId == playerId }.map { it.spectating = spectating }
     }
 
-    suspend fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection, userId: String, reusePreviousEndpointId: Boolean): String {
+    suspend fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection, userId: String, reusePreviousEndpointId: Boolean, useStaticEndpointId: Boolean): String {
         cleanupRemoteTrackerEndpoints()
 
         var endpointId: String
@@ -126,11 +126,20 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection = clientConnection
-        } else {
-            do {
-                endpointId = randomString(16)
-            } while (remoteTrackerEndpoints.containsKey(endpointId))
 
+            logger.info("Reconnected broadcaster to Remote Tracker endpoint $endpointId (User $userId)")
+        } else {
+            if (useStaticEndpointId) {
+                endpointId = "u-$userId"
+                logger.info("Registered Remote Tracker endpoint $endpointId (static) for user $userId")
+            } else {
+                do {
+                    endpointId = randomString(16)
+                } while (remoteTrackerEndpoints.containsKey(endpointId))
+                logger.info("Registered Remote Tracker endpoint $endpointId (new) for user $userId")
+            }
+
+            remoteTrackerEndpointIds[userId] = endpointId
             remoteTrackerEndpoints[endpointId] = RemoteTrackerEndpoint(
                 clientConnection
             )
@@ -145,6 +154,8 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
         remoteTrackerEndpoints[endpointId]?.broadcasterConnection = null
         cleanupRemoteTrackerEndpoints()
+
+        logger.info("Unregistered broadcaster from Remote Tracker endpoint $endpointId")
     }
 
     suspend fun registerRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection): Boolean {
@@ -154,6 +165,9 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             remoteTrackerEndpoints[endpointId]?.listeners?.add(clientConnection)
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.sendMessage(RequestFullUpdate())
             remoteTrackerEndpoints[endpointId]?.expires = null
+
+            logger.info("Registered listener for Remote Tracker endpoint $endpointId")
+
             return true
         }
         return false
@@ -169,8 +183,10 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             remoteTrackerEndpoints[endpointId]?.let {
                 if (it.expires != null && it.expires!! < System.currentTimeMillis()) {
                     remoteTrackerEndpoints.remove(endpointId)
+                    logger.info("Deleted expired Remote Tracker endpoint $endpointId")
                 } else if (it.broadcasterConnection == null && it.listeners.isEmpty()) {
                     it.expires = System.currentTimeMillis() + 30 * 60 * 1000 // Keep the endpoint around for at least 30 minutes...
+                    logger.info("Marked Remote Tracker endpoint $endpointId deletable in 30 minutes from now")
                 }
             }
         }
