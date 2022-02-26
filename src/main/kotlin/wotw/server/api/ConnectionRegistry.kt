@@ -126,6 +126,8 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection = clientConnection
+
+            logger.info("Registered Remote Tracker endpoint $endpointId (reused) for user $userId")
         } else {
             do {
                 endpointId = randomString(16)
@@ -134,6 +136,8 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             remoteTrackerEndpoints[endpointId] = RemoteTrackerEndpoint(
                 clientConnection
             )
+
+            logger.info("Registered Remote Tracker endpoint $endpointId (new) for user $userId")
         }
 
         remoteTrackerEndpoints[endpointId]?.expires = null
@@ -145,6 +149,8 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.webSocket?.close()
         remoteTrackerEndpoints[endpointId]?.broadcasterConnection = null
         cleanupRemoteTrackerEndpoints()
+
+        logger.info("Unregistered broadcaster from Remote Tracker endpoint $endpointId")
     }
 
     suspend fun registerRemoteTrackerListener(endpointId: String, clientConnection: ClientConnection): Boolean {
@@ -154,6 +160,9 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             remoteTrackerEndpoints[endpointId]?.listeners?.add(clientConnection)
             remoteTrackerEndpoints[endpointId]?.broadcasterConnection?.sendMessage(RequestFullUpdate())
             remoteTrackerEndpoints[endpointId]?.expires = null
+
+            logger.info("Registered listener for Remote Tracker endpoint $endpointId")
+
             return true
         }
         return false
@@ -169,8 +178,10 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             remoteTrackerEndpoints[endpointId]?.let {
                 if (it.expires != null && it.expires!! < System.currentTimeMillis()) {
                     remoteTrackerEndpoints.remove(endpointId)
+                    logger.info("Deleted expired Remote Tracker endpoint $endpointId")
                 } else if (it.broadcasterConnection == null && it.listeners.isEmpty()) {
                     it.expires = System.currentTimeMillis() + 30 * 60 * 1000 // Keep the endpoint around for at least 30 minutes...
+                    logger.info("Marked Remote Tracker endpoint $endpointId deletable in 30 minutes from now")
                 }
             }
         }
