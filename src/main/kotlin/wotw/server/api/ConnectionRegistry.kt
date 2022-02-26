@@ -139,6 +139,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
                 logger.info("Registered Remote Tracker endpoint $endpointId (new) for user $userId")
             }
 
+            remoteTrackerEndpointIds[userId] = endpointId
             remoteTrackerEndpoints[endpointId] = RemoteTrackerEndpoint(
                 clientConnection
             )
