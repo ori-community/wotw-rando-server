@@ -181,7 +181,11 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     private fun cleanupRemoteTrackerEndpoints() {
         remoteTrackerEndpoints.keys.forEach { endpointId ->
             remoteTrackerEndpoints[endpointId]?.let {
-                if (it.expires != null && it.expires!! < System.currentTimeMillis()) {
+                if (it.expires == null) {
+                    return@let
+                }
+
+                if (it.expires!! < System.currentTimeMillis()) {
                     remoteTrackerEndpoints.remove(endpointId)
                     logger.info("Deleted expired Remote Tracker endpoint $endpointId")
                 } else if (it.broadcasterConnection == null && it.listeners.isEmpty()) {
