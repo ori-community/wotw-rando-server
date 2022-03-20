@@ -64,18 +64,19 @@ class PlayerUniversePopulationCache : Cache<Pair<String, Long>, Set<String>>({ (
         membership.world.universe.worlds.flatMap { it.members }.map { it.id.value }.toSet()
     }
 }, { _, _ -> }) {
-    suspend fun get(playerId: String, worlId: Long) = get(playerId to worlId)
+    suspend fun get(playerId: String, worldId: Long) = get(playerId to worldId)
 
     init {
         EntityHook.subscribe {
             val membership = it.toEntity(WorldMembership.Companion)
             if (membership != null) {
-                val affectedWorldIds = membership.world.id.value
+                val affectedWorldId = membership.world.id.value
                 val affectedPlayerIds = membership.world.universe.worlds.flatMap { it.members }.map { it.id.value }
                 affectedPlayerIds.forEach {
-                    invalidate(it to affectedWorldIds)
+                    invalidate(it to affectedWorldId)
                 }
             }
+
             val world = it.toEntity(World.Companion)
             if (world != null) {
                 val affectedWorldIds = world.id.value

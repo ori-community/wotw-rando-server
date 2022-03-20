@@ -55,6 +55,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 throw BadRequestException("Invalid header requested")
             }
 
+            call.response.headers.append("Content-Type", "application/vnd.ori-rando.header")
             call.respond(HttpStatusCode.OK, headerFile.toFile().readText())
         }
 
@@ -95,6 +96,8 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
         get("seeds/{id}/files/{file}") {
             val id = call.parameters["id"] ?: throw BadRequestException("No Seed ID found")
             val player = call.parameters["file"] ?: throw BadRequestException("No Seed-file found!")
+
+            call.response.headers.append("Content-Type", "application/vnd.ori-rando.seed")
             call.respond(server.seedGeneratorService.seedFile(id, player).readBytes())
         }
         authenticate(JWT_AUTH, optional = true) {
