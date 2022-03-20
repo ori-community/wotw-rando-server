@@ -55,6 +55,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 throw BadRequestException("Invalid header requested")
             }
 
+            call.response.headers.append("Content-Type", "application/vnd.ori-rando.header")
             call.respond(HttpStatusCode.OK, headerFile.toFile().readText())
         }
 
