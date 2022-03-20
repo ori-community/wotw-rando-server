@@ -46,6 +46,18 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }?.toList() ?: emptyList()
             call.respond(result)
         }
+
+        get("seedgen/headers/{name}/file") {
+            val headersDir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("headers")
+            val headerFile = headersDir.resolve(call.parameters["name"] + ".wotwrh")
+
+            if (headerFile.parent != headersDir) {
+                throw BadRequestException("Invalid header requested")
+            }
+
+            call.respond(HttpStatusCode.OK, headerFile.toFile().readText())
+        }
+
         get("seedgen/presets") {
             val dir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("presets")
             val presetMap = dir.toFile().listFiles()?.map {
