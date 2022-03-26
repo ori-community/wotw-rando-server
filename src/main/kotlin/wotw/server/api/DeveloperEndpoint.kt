@@ -26,7 +26,7 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             playerId,
                             worldId,
                             server.populationCache.get(playerId, worldId).mapNotNull {
-                                User.findById(id)?.let { user ->
+                                User.findById(it)?.let { user ->
                                     server.infoMessagesService.generateUserInfo(user)
                                 }
                             }
