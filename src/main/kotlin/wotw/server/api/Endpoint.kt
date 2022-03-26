@@ -4,9 +4,12 @@ import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.routing.*
 import io.ktor.util.pipeline.*
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.User
+import wotw.server.exception.ForbiddenException
 import wotw.server.exception.UnauthorizedException
 import wotw.server.main.WotwBackendServer
+import java.nio.channels.Pipe
 
 abstract class Endpoint(val server: WotwBackendServer) {
     fun init(routing: Route) = routing.initRouting()
@@ -35,5 +38,15 @@ abstract class Endpoint(val server: WotwBackendServer) {
 
     fun PipelineContext<Unit, ApplicationCall>.authenticatedUser(): User {
         return authenticatedUserOrNull() ?: throw UnauthorizedException()
+    }
+
+    suspend fun PipelineContext<Unit, ApplicationCall>.requireAdmin() {
+        val isAdmin = newSuspendedTransaction {
+            authenticatedUser().isAdmin
+        }
+
+        if (!isAdmin) {
+            throw ForbiddenException()
+        }
     }
 }

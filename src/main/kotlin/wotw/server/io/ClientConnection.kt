@@ -3,15 +3,14 @@ package wotw.server.io
 import com.auth0.jwt.impl.JWTParser
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
+import io.ktor.application.*
 import io.ktor.auth.jwt.*
 import io.ktor.http.cio.websocket.*
-import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.serialization.SerializationException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
 import wotw.server.api.WotwUserPrincipal
@@ -58,7 +57,7 @@ class ClientConnectionUDPRegistry() {
     }
 }
 
-class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) {
+class ClientConnection(val call: ApplicationCall, val webSocket: WebSocketSession, val eventBus: EventBus) {
     var udpId: Int? = null
     var udpAddress: NetworkAddress? = null
     val udpKey = ByteArray(16)
@@ -94,7 +93,7 @@ class ClientConnection(val webSocket: WebSocketSession, val eventBus: EventBus) 
 
                                 val userInfo = newSuspendedTransaction {
                                     val user = User.findById(it.userId)!!
-                                    UserInfo(user.id.value, user.name, user.avatarId, null, user.currentMultiverse?.id?.value)
+                                    UserInfo(user.id.value, user.name, user.avatarId, null, user.currentMultiverse?.id?.value, user.isAdmin)
                                 }
 
                                 logger().info("ClientConnection: User ${userInfo.name} (${userInfo.id}) authenticated a WebSocket connection")

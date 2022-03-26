@@ -1,5 +1,6 @@
 package wotw.server.io
 
+import io.ktor.application.*
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import wotw.server.api.WotwUserPrincipal
@@ -37,9 +38,9 @@ class ClientSocketProtocolBuilder(val socketConnection: ClientConnection, privat
 }
 
 
-suspend fun WebSocketSession.handleClientSocket(block: suspend ClientSocketProtocolBuilder.() -> Unit) {
+suspend fun WebSocketSession.handleClientSocket(call: ApplicationCall, block: suspend ClientSocketProtocolBuilder.() -> Unit) {
     val eventBus = EventBus()
-    val builder = ClientSocketProtocolBuilder(ClientConnection(this, eventBus), eventBus)
+    val builder = ClientSocketProtocolBuilder(ClientConnection(call, this, eventBus), eventBus)
 
     block(builder)
 

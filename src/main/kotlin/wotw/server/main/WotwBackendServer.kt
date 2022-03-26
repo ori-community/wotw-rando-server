@@ -145,6 +145,7 @@ class WotwBackendServer {
     val authEndpoint = AuthenticationEndpoint(this)
     val userEndpoint = UserEndpoint(this)
     val remoteTrackerEndpoint = RemoteTrackerEndpoint(this)
+    val adminEndpoint = AdminEndpoint(this)
     val infoMessagesService = InfoMessagesService(this)
 
     val connections = ConnectionRegistry(this)
@@ -268,6 +269,7 @@ class WotwBackendServer {
                         userEndpoint.init(this)
                         remoteTrackerEndpoint.init(this)
                         seedGenEndpoint.init(this)
+                        adminEndpoint.init(this)
                         get("/") {
                             call.respondText("WOTW-Backend running")
                         }
