@@ -55,6 +55,6 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         user.avatarId,
         server.connections.playerMultiverseConnections[user.id.value]?.multiverseId,
         user.currentMultiverse?.id?.value,
-        user.isAdmin,
+        user.isDeveloper,
     )
 }

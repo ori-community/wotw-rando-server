@@ -8,16 +8,15 @@ import io.ktor.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.admin.PopulationCacheContent
 import wotw.io.messages.admin.RemoteTrackerEndpointDescriptor
-import wotw.io.messages.protobuf.UserInfo
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
 
-class AdminEndpoint(server: WotwBackendServer) : Endpoint(server) {
+class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
         authenticate(JWT_AUTH) {
-            route("admin") {
+            route("dev") {
                 get("/caches/population/{world_id}/{player_id}") {
-                    requireAdmin()
+                    requireDeveloper()
 
                     val worldId = call.parameters["world_id"]?.toLong() ?: throw BadRequestException("world_id required")
                     val playerId = call.parameters["player_id"] ?: throw BadRequestException("player_id required")
@@ -38,7 +37,7 @@ class AdminEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 get("/remote-trackers") {
-                    requireAdmin()
+                    requireDeveloper()
 
                     call.respond(newSuspendedTransaction {
                         server.connections.remoteTrackerEndpoints.map {

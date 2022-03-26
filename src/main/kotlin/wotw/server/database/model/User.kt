@@ -9,7 +9,7 @@ object Users : StringIdTable("users") {
     val name = text("nickname")
     val isCustomName = bool("is_custom_name").default(false)
     val avatarId = text("avatar_id").nullable()
-    val isAdmin = bool("is_admin").default(false)
+    val isDeveloper = bool("is_developer").default(false)
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -19,7 +19,7 @@ class User(id: EntityID<String>) : StringEntity(id) {
     var name by Users.name
     var isCustomName by Users.isCustomName
     var avatarId by Users.avatarId
-    var isAdmin by Users.isAdmin
+    var isDeveloper by Users.isDeveloper
     val games by Multiverse via GameStates
 
     val currentMultiverse: Multiverse?

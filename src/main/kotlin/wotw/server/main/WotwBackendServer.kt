@@ -10,10 +10,8 @@ import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.client.*
 import io.ktor.features.*
-import io.ktor.html.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
-import io.ktor.http.content.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.request.*
@@ -29,7 +27,6 @@ import io.ktor.utils.io.core.*
 import io.ktor.websocket.*
 import io.sentry.Sentry
 import kotlinx.coroutines.*
-import kotlinx.html.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -144,7 +141,7 @@ class WotwBackendServer {
     val authEndpoint = AuthenticationEndpoint(this)
     val userEndpoint = UserEndpoint(this)
     val remoteTrackerEndpoint = RemoteTrackerEndpoint(this)
-    val adminEndpoint = AdminEndpoint(this)
+    val developerEndpoint = DeveloperEndpoint(this)
     val infoMessagesService = InfoMessagesService(this)
 
     val connections = ConnectionRegistry(this)
@@ -268,7 +265,7 @@ class WotwBackendServer {
                         userEndpoint.init(this)
                         remoteTrackerEndpoint.init(this)
                         seedGenEndpoint.init(this)
-                        adminEndpoint.init(this)
+                        developerEndpoint.init(this)
                         get("/") {
                             call.respondText("WOTW-Backend running")
                         }

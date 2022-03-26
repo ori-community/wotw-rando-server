@@ -3,7 +3,6 @@ package wotw.server.io
 import com.auth0.jwt.impl.JWTParser
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
-import io.ktor.application.*
 import io.ktor.auth.jwt.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.network.sockets.*
@@ -94,7 +93,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
 
                                 val userInfo = newSuspendedTransaction {
                                     val user = User.findById(it.userId)!!
-                                    UserInfo(user.id.value, user.name, user.avatarId, null, user.currentMultiverse?.id?.value, user.isAdmin)
+                                    UserInfo(user.id.value, user.name, user.avatarId, null, user.currentMultiverse?.id?.value, user.isDeveloper)
                                 }
 
                                 logger().info("ClientConnection: User ${userInfo.name} (${userInfo.id}) authenticated a WebSocket connection")
