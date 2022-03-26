@@ -50,7 +50,7 @@ class AdminEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                     }
                                 },
                                 it.value.listeners.map { listener ->
-                                    listener.call.request.origin.remoteHost
+                                    listener.webSocket.call.request.origin.remoteHost
                                 },
                                 it.value.expires,
                             )

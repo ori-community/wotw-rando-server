@@ -73,7 +73,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             call.respond(config)
         }
 
-        get("seeds/{id}"){
+        get("seeds/{id}") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
             val seedInfo = newSuspendedTransaction {
                 val seed = Seed.findById(id) ?: throw NotFoundException()
@@ -81,7 +81,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     seed.id.value,
                     seed.name,
                     server.seedGeneratorService.filesForSeed(id.toString()).map { it.nameWithoutExtension },
-                    seed.creator?.let{UserInfo(it.id.value, it.name, it.avatarId, null, null)},
+                    seed.creator?.let { server.infoMessagesService.generateUserInfo(it) },
                     seed.generatorConfig
                 )
             }
@@ -111,9 +111,10 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val result = server.seedGeneratorService.generate("seed-${seed.id.value}", config)
 
                 if (result.isSuccess) {
-                    if(config.seed == null){
-                        val lines = server.seedGeneratorService.filesForSeed(seed.id.value.toString()).first().readLines()
-                        if(lines.size > 3){
+                    if (config.seed == null) {
+                        val lines =
+                            server.seedGeneratorService.filesForSeed(seed.id.value.toString()).first().readLines()
+                        if (lines.size > 3) {
                             newSuspendedTransaction {
                                 seed.name = lines[lines.size - 3].substringAfter("Seed: ")
                                 seed.generatorConfig = seed.generatorConfig.copy(seed = seed.name)
