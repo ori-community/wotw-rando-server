@@ -10,7 +10,7 @@ data class UserInfo(
     @ProtoNumber(3) val avatarId: String?,
     @ProtoNumber(4) val connectedMultiverseId: Long?,
     @ProtoNumber(5) val currentMultiverseId: Long?,
-    @ProtoNumber(6) val isAdmin: Boolean,
+    @ProtoNumber(6) val isDeveloper: Boolean,
 )
 
 
