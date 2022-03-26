@@ -10,6 +10,7 @@ import io.ktor.network.sockets.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
+import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
@@ -57,7 +58,7 @@ class ClientConnectionUDPRegistry() {
     }
 }
 
-class ClientConnection(val call: ApplicationCall, val webSocket: WebSocketSession, val eventBus: EventBus) {
+class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: EventBus) {
     var udpId: Int? = null
     var udpAddress: NetworkAddress? = null
     val udpKey = ByteArray(16)
