@@ -138,7 +138,6 @@ class WotwBackendServer {
 
     }
 
-    val proxyEndpoint = ProxyEndpoint(this)
     val bingoEndpoint = BingoEndpoint(this)
     val multiverseEndpoint = MultiverseEndpoint(this)
     val seedGenEndpoint = SeedGenEndpoint(this)
@@ -272,28 +271,6 @@ class WotwBackendServer {
                         adminEndpoint.init(this)
                         get("/") {
                             call.respondText("WOTW-Backend running")
-                        }
-                    }
-                    proxyEndpoint.init(this)
-                    static("static") {
-                        resource("flex-helper.css")
-                        resource("style.css")
-                        resource("wotw-server.js")
-                        resource("wotw-server.js.map")
-                        defaultResource("index.html")
-                    }
-                    get("{...}") {
-                        call.respondHtml {
-                            head {
-                                link("/static/flex-helper.css", rel = "stylesheet")
-                                link("/static/style.css", rel = "stylesheet")
-                            }
-                            body {
-                                div {
-                                    id = "content"
-                                }
-                                script(src = "/static/wotw-server.js") {}
-                            }
                         }
                     }
                 }
