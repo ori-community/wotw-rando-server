@@ -6,6 +6,8 @@ import io.ktor.request.*
 import io.ktor.routing.*
 import io.ktor.util.pipeline.*
 import org.slf4j.LoggerFactory
+import wotw.io.messages.protobuf.PrintTextMessage
+import wotw.io.messages.protobuf.Vector2
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 
@@ -42,3 +44,11 @@ fun randomString(length: Int) : String {
         .map { allowedChars.random() }
         .joinToString("")
 }
+
+fun makeServerMessage(text: String, time: Float = 3.0f): PrintTextMessage = PrintTextMessage(
+    time = time,
+    text = text,
+    position = Vector2(0f, -2f),
+    screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+    queue = "server",
+)

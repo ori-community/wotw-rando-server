@@ -49,6 +49,7 @@ import wotw.server.sync.StateSynchronization
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.logger
+import wotw.server.util.makeServerMessage
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
@@ -154,10 +155,9 @@ class WotwBackendServer {
     }
     val shutdownHook = Thread {
         runBlocking {
-            connections.toAll(false, PrintTextMessage(
+            connections.toAll(false, makeServerMessage(
                 text = "Server is going down for maintenance.\nWill be back shortly. Or not. OriShrug",
-                ypos = -2f,
-                frames = 600,
+                time = 10f,
             ))
         }
 

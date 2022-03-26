@@ -43,12 +43,12 @@ data class MultiverseInfoMessage(
 @Serializable
 data class UberId(
     @ProtoNumber(1) val group: Int,
-    @ProtoNumber(2) val state: Int
+    @ProtoNumber(2) val state: Int,
 )
 
 @Serializable
 data class UberStateBatchUpdateMessage(
-    @ProtoNumber(1) val updates: List<UberStateUpdateMessage>
+    @ProtoNumber(1) val updates: List<UberStateUpdateMessage>,
 ) {
     constructor(vararg updates: UberStateUpdateMessage) : this(updates.toList())
 }
@@ -56,7 +56,7 @@ data class UberStateBatchUpdateMessage(
 @Serializable
 data class UberStateUpdateMessage(
     @ProtoNumber(1) val uberId: UberId,
-    @ProtoNumber(2) val value: Double
+    @ProtoNumber(2) val value: Double,
 )
 
 @Serializable
@@ -65,10 +65,59 @@ data class InitGameSyncMessage(
 )
 
 @Serializable
+data class Vector2(
+    @ProtoNumber(1) val x: Float,
+    @ProtoNumber(2) val y: Float,
+)
+
+@Serializable
 data class PrintTextMessage(
-    @ProtoNumber(1) val frames: Int,
-    @ProtoNumber(2) val ypos: Float,
-    @ProtoNumber(3) val text: String
+    @ProtoNumber(1) val time: Float,
+    @ProtoNumber(2) val text: String,
+    @ProtoNumber(3) val position: Vector2,
+    @ProtoNumber(4) val screenPosition: Int = SCREEN_POSITION_TOP_CENTER,
+    @ProtoNumber(5) val useInGameCoordinates: Boolean = false,
+    @ProtoNumber(6) val fadeInLength: Float = 0.5f,
+    @ProtoNumber(7) val fadeOutLength: Float = 0.5f,
+    @ProtoNumber(8) val alignment: Int = ALIGNMENT_CENTER,
+    @ProtoNumber(9) val horizontalAnchor: Int = HORIZONTAL_ANCHOR_CENTER,
+    @ProtoNumber(10) val verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
+    @ProtoNumber(11) val withSound: Boolean = true,
+    @ProtoNumber(12) val withBox: Boolean = true,
+    @ProtoNumber(13) val queue: String? = null,
+    @ProtoNumber(14) val prioritized: Boolean = false,
+) {
+    companion object {
+        const val SCREEN_POSITION_TOP_LEFT = 0
+        const val SCREEN_POSITION_TOP_CENTER = 1
+        const val SCREEN_POSITION_TOP_RIGHT = 2
+        const val SCREEN_POSITION_MIDDLE_LEFT = 3
+        const val SCREEN_POSITION_MIDDLE_CENTER = 4
+        const val SCREEN_POSITION_MIDDLE_RIGHT = 5
+        const val SCREEN_POSITION_BOTTOM_LEFT = 6
+        const val SCREEN_POSITION_BOTTOM_CENTER = 7
+        const val SCREEN_POSITION_BOTTOM_RIGHT = 8
+
+        const val HORIZONTAL_ANCHOR_LEFT = 0
+        const val HORIZONTAL_ANCHOR_CENTER = 1
+        const val HORIZONTAL_ANCHOR_RIGHT = 2
+
+        const val VERTICAL_ANCHOR_TOP = 0
+        const val VERTICAL_ANCHOR_MIDDLE = 1
+        const val VERTICAL_ANCHOR_BOTTOM = 2
+
+        const val ALIGNMENT_LEFT = 0
+        const val ALIGNMENT_CENTER = 1
+        const val ALIGNMENT_RIGHT = 2
+        const val ALIGNMENT_JUSTIFY = 3
+    }
+}
+
+@Serializable
+data class PrintPickupMessage(
+    @ProtoNumber(1) val time: Float,
+    @ProtoNumber(2) val text: String,
+    @ProtoNumber(3) val worldOrigin: Vector2? = null,
 )
 
 @Serializable
@@ -88,12 +137,12 @@ data class BingoUniverseInfo(
 
 @Serializable
 data class SyncBingoUniversesMessage(
-    @ProtoNumber(1) val bingoUniverses: List<BingoUniverseInfo>
+    @ProtoNumber(1) val bingoUniverses: List<BingoUniverseInfo>,
 )
 
 @Serializable
 data class RequestUpdatesMessage(
-    @ProtoNumber(1) val playerId: String
+    @ProtoNumber(1) val playerId: String,
 )
 
 @Serializable

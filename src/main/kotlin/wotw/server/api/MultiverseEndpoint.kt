@@ -21,13 +21,11 @@ import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
-import wotw.server.util.logger
-import wotw.server.util.rezero
-import wotw.server.util.then
-import wotw.server.util.zerore
+import wotw.server.util.*
 
 class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
     val logger = logger()
+
     override fun Route.initRouting() {
         post<UberStateUpdateMessage>("multiverses/{multiverse_id}/{player_id}/state") { message ->
             if (System.getenv("DEV").isNullOrBlank()) {
@@ -109,12 +107,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             val universe =
                                 Universe.findById(universeId) ?: throw NotFoundException("Universe does not exist!")
 
-                            server.connections.toPlayers((multiverse.players - universe.members).map { it.id.value }, multiverseId, false, PrintTextMessage(
-                                text = "${player.name} joined this game in another universe", frames = 180, ypos = -2f,
+                            server.connections.toPlayers((multiverse.players - universe.members).map { it.id.value }, multiverseId, false, makeServerMessage(
+                                "${player.name} joined this game in another universe",
                             ))
 
-                            server.connections.toPlayers(universe.members.map { it.id.value }, multiverseId, false, PrintTextMessage(
-                                text = "${player.name} joined a new world in your universe", frames = 180, ypos = -2f,
+                            server.connections.toPlayers(universe.members.map { it.id.value }, multiverseId, false, makeServerMessage(
+                                "${player.name} joined a new world in your universe",
                             ))
 
                             World.new(universe, player.name + "'s World")
@@ -124,8 +122,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 this.multiverse = multiverse
                             }
 
-                            server.connections.toPlayers(multiverse.players.map { it.id.value }, multiverseId, false, PrintTextMessage(
-                                text = "${player.name} joined this game in a new universe", frames = 180, ypos = -2f,
+                            server.connections.toPlayers(multiverse.players.map { it.id.value }, multiverseId, false, makeServerMessage(
+                                "${player.name} joined this game in a new universe",
                             ))
 
                             GameState.new {
@@ -194,16 +192,16 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             server.connections.broadcastMultiverseInfoMessage(it)
                         }
 
-                        server.connections.toPlayers((multiverse.players - world.universe.members).map { it.id.value }, multiverseId, false, PrintTextMessage(
-                            text = "${player.name} joined this game in another universe", frames = 180, ypos = -2f,
+                        server.connections.toPlayers((multiverse.players - world.universe.members).map { it.id.value }, multiverseId, false, makeServerMessage(
+                            "${player.name} joined this game in another universe",
                         ))
 
-                        server.connections.toPlayers((world.universe.members - world.members).map { it.id.value }, multiverseId, false, PrintTextMessage(
-                            text = "${player.name} joined your universe in another world", frames = 180, ypos = -2f,
+                        server.connections.toPlayers((world.universe.members - world.members).map { it.id.value }, multiverseId, false, makeServerMessage(
+                            "${player.name} joined your universe in another world",
                         ))
 
-                        server.connections.toPlayers(world.members.map { it.id.value }, multiverseId, false, PrintTextMessage(
-                            text = "${player.name} joined your world", frames = 180, ypos = -2f,
+                        server.connections.toPlayers(world.members.map { it.id.value }, multiverseId, false, makeServerMessage(
+                            "${player.name} joined your world",
                         ))
                     }
 
@@ -232,8 +230,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     if (!multiverse.spectators.contains(player)) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
 
-                        server.connections.toPlayers(multiverse.players.map { it.id.value }, multiverseId, false, PrintTextMessage(
-                            text = "${player.name} is now spectating this game", frames = 180, ypos = -2f,
+                        server.connections.toPlayers(multiverse.players.map { it.id.value }, multiverseId, false, makeServerMessage(
+                            "${player.name} is now spectating this game",
                         ))
                     }
 
@@ -312,7 +310,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         greeting += "\nWorld: $worldName\n" + worldMembers?.joinToString()
                     }
 
-                    socketConnection.sendMessage(PrintTextMessage(text = greeting, frames = 240, ypos = 3f))
+                    socketConnection.sendMessage(makeServerMessage(greeting))
 
                     if (multiverseInfoMessage != null) {
                         socketConnection.sendMessage(multiverseInfoMessage)
@@ -323,8 +321,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         server.connections.playerMultiverseConnections[it]?.multiverseId == multiverseId
                     }
                     if (allPlayersOnline && multiversePlayerIds.count() >= 2) {
-                        server.connections.toPlayers(multiversePlayerIds, multiverseId, false, PrintTextMessage(
-                            text = "All ${multiversePlayerIds.count()} players are connected!", frames = 240, ypos = -2f
+                        server.connections.toPlayers(multiversePlayerIds, multiverseId, false, makeServerMessage(
+                            "All ${multiversePlayerIds.count()} players are connected!",
                         ))
                     }
                 }
