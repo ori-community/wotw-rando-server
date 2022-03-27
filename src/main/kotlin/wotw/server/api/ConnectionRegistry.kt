@@ -79,8 +79,10 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         }
     }
 
-    suspend fun registerMultiverseConn(socket: ClientConnection, playerId: String, multiverseId: Long? = null) =
+    suspend fun registerMultiverseConnection(socket: ClientConnection, playerId: String, multiverseId: Long? = null) =
         run {
+            unregisterMultiverseConnection(playerId)
+
             playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId)
             if (multiverseId != null) {
                 newSuspendedTransaction {
@@ -89,7 +91,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             }
         }
 
-    suspend fun unregisterMultiverseConn(playerId: String) = run {
+    suspend fun unregisterMultiverseConnection(playerId: String) = run {
         val playerConnection = playerMultiverseConnections.remove(playerId)
         playerConnection?.multiverseId?.let {
             newSuspendedTransaction {

@@ -86,6 +86,7 @@ data class PrintTextMessage(
     @ProtoNumber(12) val withBox: Boolean = true,
     @ProtoNumber(13) val queue: String? = null,
     @ProtoNumber(14) val prioritized: Boolean = false,
+    @ProtoNumber(15) val replace: Boolean = false,
 ) {
     companion object {
         const val SCREEN_POSITION_TOP_LEFT = 0

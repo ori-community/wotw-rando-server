@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 buildscript {
     repositories {
         mavenCentral()
@@ -91,4 +93,9 @@ tasks.create<JavaExec>("run") {
     group = "application"
     main = "wotw.server.main.WotwBackendServer"
     classpath(configurations["runtimeClasspath"], jvmJar)
+}
+val compileKotlin: KotlinCompile by tasks
+
+compileKotlin.kotlinOptions {
+    languageVersion = "1.5"
 }

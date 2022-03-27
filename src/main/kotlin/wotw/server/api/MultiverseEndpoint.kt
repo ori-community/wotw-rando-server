@@ -9,18 +9,26 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import org.jetbrains.exposed.dao.EntityChange
+import org.jetbrains.exposed.dao.EntityHook
+import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.MultiverseCreationConfig
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.bingo.UberStateMap
-import wotw.server.sync.multiStates
-import wotw.server.sync.worldStateAggregationRegistry
 import wotw.server.database.model.*
+import wotw.server.database.model.BingoEvents.x
 import wotw.server.exception.ConflictException
+import wotw.server.game.GameSyncHandler
+import wotw.server.game.GameSyncHandlerSetupResult
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
+import wotw.server.sync.StateCache.invalidate
 import wotw.server.util.*
 
 class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -107,13 +115,20 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             val universe =
                                 Universe.findById(universeId) ?: throw NotFoundException("Universe does not exist!")
 
-                            server.connections.toPlayers((multiverse.players - universe.members).map { it.id.value }, multiverseId, false, makeServerMessage(
-                                "${player.name} joined this game in another universe",
-                            ))
+                            server.connections.toPlayers(
+                                (multiverse.players - universe.members).map { it.id.value },
+                                multiverseId,
+                                false,
+                                makeServerTextMessage(
+                                    "${player.name} joined this game in another universe",
+                                )
+                            )
 
-                            server.connections.toPlayers(universe.members.map { it.id.value }, multiverseId, false, makeServerMessage(
-                                "${player.name} joined a new world in your universe",
-                            ))
+                            server.connections.toPlayers(
+                                universe.members.map { it.id.value }, multiverseId, false, makeServerTextMessage(
+                                    "${player.name} joined a new world in your universe",
+                                )
+                            )
 
                             World.new(universe, player.name + "'s World")
                         } else {
@@ -122,9 +137,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 this.multiverse = multiverse
                             }
 
-                            server.connections.toPlayers(multiverse.players.map { it.id.value }, multiverseId, false, makeServerMessage(
-                                "${player.name} joined this game in a new universe",
-                            ))
+                            server.connections.toPlayers(
+                                multiverse.players.map { it.id.value }, multiverseId, false, makeServerTextMessage(
+                                    "${player.name} joined this game in a new universe",
+                                )
+                            )
 
                             GameState.new {
                                 this.multiverse = multiverse
@@ -136,7 +153,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                     server.seedGeneratorService.filesForSeed(multiverse.seed?.id.toString() ?: "")
                                 val first = seedFiles.firstOrNull()
                                 if (first != null) {
-                                    val world = World.new(universe, first.nameWithoutExtension, first.nameWithoutExtension)
+                                    val world =
+                                        World.new(universe, first.nameWithoutExtension, first.nameWithoutExtension)
                                     seedFiles.drop(1).forEach {
                                         World.new(universe, it.nameWithoutExtension, it.nameWithoutExtension)
                                     }
@@ -192,17 +210,29 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             server.connections.broadcastMultiverseInfoMessage(it)
                         }
 
-                        server.connections.toPlayers((multiverse.players - world.universe.members).map { it.id.value }, multiverseId, false, makeServerMessage(
-                            "${player.name} joined this game in another universe",
-                        ))
+                        server.connections.toPlayers(
+                            (multiverse.players - world.universe.members).map { it.id.value },
+                            multiverseId,
+                            false,
+                            makeServerTextMessage(
+                                "${player.name} joined this game in another universe",
+                            )
+                        )
 
-                        server.connections.toPlayers((world.universe.members - world.members).map { it.id.value }, multiverseId, false, makeServerMessage(
-                            "${player.name} joined your universe in another world",
-                        ))
+                        server.connections.toPlayers(
+                            (world.universe.members - world.members).map { it.id.value },
+                            multiverseId,
+                            false,
+                            makeServerTextMessage(
+                                "${player.name} joined your universe in another world",
+                            )
+                        )
 
-                        server.connections.toPlayers(world.members.map { it.id.value }, multiverseId, false, makeServerMessage(
-                            "${player.name} joined your world",
-                        ))
+                        server.connections.toPlayers(
+                            world.members.map { it.id.value }, multiverseId, false, makeServerTextMessage(
+                                "${player.name} joined your world",
+                            )
+                        )
                     }
 
                     server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
@@ -230,9 +260,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     if (!multiverse.spectators.contains(player)) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
 
-                        server.connections.toPlayers(multiverse.players.map { it.id.value }, multiverseId, false, makeServerMessage(
-                            "${player.name} is now spectating this game",
-                        ))
+                        server.connections.toPlayers(
+                            multiverse.players.map { it.id.value }, multiverseId, false, makeServerTextMessage(
+                                "${player.name} is now spectating this game",
+                            )
+                        )
                     }
 
                     affectedMultiverseIds.filter { it != multiverseId }.forEach {
@@ -252,6 +284,49 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         webSocket("game_sync/") {
             handleClientSocket() {
                 var playerId = ""
+                var syncHandler: GameSyncHandler? = null
+
+                suspend fun setupGameSync() {
+                    val setupResult = newSuspendedTransaction { syncHandler!!.setup() }
+
+                    if (setupResult == null) {
+                        logger.info("MultiverseEndpoint: game_sync: Player $playerId is not part of an active multiverse")
+                        return this@webSocket.close(
+                            CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
+                        )
+                    }
+
+                    syncHandler = GameSyncHandler(playerId, socketConnection, server)
+
+                    val multiversePlayerIds = newSuspendedTransaction {
+                        val world = World.findById(setupResult.worldId)
+                        world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList()
+                    }
+
+                    server.connections.registerMultiverseConnection(socketConnection, playerId, setupResult.multiverseId)
+
+                    // Check if all players are online
+                    val allPlayersOnline = multiversePlayerIds.all {
+                        server.connections.playerMultiverseConnections[it]?.multiverseId == setupResult.multiverseId
+                    }
+                    if (allPlayersOnline && multiversePlayerIds.count() >= 2) {
+                        server.connections.toPlayers(
+                            multiversePlayerIds, setupResult.multiverseId, false, makeServerTextMessage(
+                                "All ${multiversePlayerIds.count()} players are connected!",
+                            )
+                        )
+                    }
+                }
+
+                val entityChangeHandler: (EntityChange) -> Unit = {
+                    it.toEntity(WorldMembership.Companion)?.player?.let { player ->
+                        if (player.id.value == playerId) {
+                            launch {
+                                setupGameSync()
+                            }
+                        }
+                    }
+                }
 
                 afterAuthenticated {
                     playerId = principal.userId
@@ -263,132 +338,32 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
                     )
 
-                    val (currentWorldId, multiverseId, worldName, worldMembers, multiverseInfoMessage, multiversePlayerIds) = newSuspendedTransaction {
-                        val world = WorldMembership.find {
-                            WorldMemberships.playerId eq playerId
-                        }.firstOrNull()?.world
-
-                        world?.id?.value then world?.universe?.multiverse?.id?.value then world?.name then world?.members?.map { it.name } then world?.universe?.multiverse?.let {
-                            server.infoMessagesService.generateMultiverseInfoMessage(
-                                it
-                            )
-                        } then (world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList())
-                    }
-
-                    if (multiverseId == null || currentWorldId == null) {
-                        logger.info("MultiverseEndpoint: game_sync: Player $playerId is not part of an active multiverse")
-                        return@afterAuthenticated this@webSocket.close(
-                            CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
-                        )
-                    }
-
-                    server.connections.registerMultiverseConn(socketConnection, playerId, multiverseId)
-
-                    val initData = newSuspendedTransaction {
-                        World.findById(currentWorldId)?.universe?.multiverse?.board?.goals?.flatMap { it.value.keys }
-                            ?.map { UberId(it.first, it.second) }
-                    }.orEmpty()
-                    val userName = newSuspendedTransaction {
-                        User.find {
-                            Users.id eq playerId
-                        }.firstOrNull()?.name
-                    } ?: "Mystery User"
-
-                    val states = multiStates()
-                        .plus(worldStateAggregationRegistry.getSyncedStates())
-                        .plus(initData)  // don't sync new data
-                    socketConnection.sendMessage(InitGameSyncMessage(states.map {
-                        UberId(zerore(it.group), zerore(it.state))
-                    }))
-
-                    var greeting = "$userName - Connected to multiverse $multiverseId"
-
-                    if (worldName != null) {
-                        greeting += "\nWorld: $worldName\n" + worldMembers?.joinToString()
-                    }
-
-                    socketConnection.sendMessage(makeServerMessage(greeting))
-
-                    if (multiverseInfoMessage != null) {
-                        socketConnection.sendMessage(multiverseInfoMessage)
-                    }
-
-                    // Check if all players are online
-                    val allPlayersOnline = multiversePlayerIds.all {
-                        server.connections.playerMultiverseConnections[it]?.multiverseId == multiverseId
-                    }
-                    if (allPlayersOnline && multiversePlayerIds.count() >= 2) {
-                        server.connections.toPlayers(multiversePlayerIds, multiverseId, false, makeServerMessage(
-                            "All ${multiversePlayerIds.count()} players are connected!",
-                        ))
-                    }
+                    EntityHook.subscribe(entityChangeHandler)
                 }
 
-                onMessage(UberStateUpdateMessage::class) {
-                    server.populationCache.getOrNull(playerId)?.worldId?.let {
-                        if (playerId.isNotEmpty()) {
-                            updateUberState(it, playerId)
-                        }
-                    }
-                }
-
-                onMessage(UberStateBatchUpdateMessage::class) {
-                    server.populationCache.getOrNull(playerId)?.worldId?.let {
-                        if (playerId.isNotEmpty()) {
-                            updateUberStates(it, playerId)
-                        }
-                    }
-                }
-
-                onMessage(PlayerPositionMessage::class) {
-                    val targetPlayers = server.populationCache.get(playerId).universeMemberIds - playerId
-
-                    server.connections.toPlayers(
-                        targetPlayers,
-                        null,
-                        true,
-                        UpdatePlayerPositionMessage(playerId, x, y)
-                    )
-                }
+                onMessage(UberStateUpdateMessage::class) { syncHandler?.onUberStateUpdateMessage(this) }
+                onMessage(UberStateBatchUpdateMessage::class) { syncHandler?.onUberStateBatchUpdateMessage(this) }
+                onMessage(PlayerPositionMessage::class) { syncHandler?.onPlayerPositionMessage(this) }
 
                 onClose {
                     logger.info("WebSocket for player $playerId disconnected (close, ${closeReason.await()})")
 
                     if (playerId != "") {
-                        server.connections.unregisterMultiverseConn(playerId)
+                        server.connections.unregisterMultiverseConnection(playerId)
                     }
+
+                    EntityHook.unsubscribe(entityChangeHandler)
                 }
+
                 onError {
                     logger.info("WebSocket for player $playerId disconnected (error, ${closeReason.await()})")
                     if (playerId != "") {
-                        server.connections.unregisterMultiverseConn(playerId)
+                        server.connections.unregisterMultiverseConnection(playerId)
                     }
+
+                    EntityHook.unsubscribe(entityChangeHandler)
                 }
             }
         }
-    }
-
-    private suspend fun UberStateUpdateMessage.updateUberState(worldId: Long, playerId: String) =
-        UberStateBatchUpdateMessage(this).updateUberStates(worldId, playerId)
-
-    private suspend fun UberStateBatchUpdateMessage.updateUberStates(worldId: Long, playerId: String) {
-        val updates = updates.map {
-            UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to rezero(it.value)
-        }.toMap()
-
-        val (results, multiverseId) = newSuspendedTransaction {
-            val world = World.findById(worldId) ?: error("Inconsistent multiverse state")
-            val result = server.sync.aggregateStates(world, updates) to world.universe.multiverse.id.value
-            world.universe.multiverse.updateCompletions(world.universe)
-            result
-        }
-
-        val pc = server.connections.playerMultiverseConnections[playerId]!!
-        if (pc.multiverseId != multiverseId) {
-            server.connections.unregisterMultiverseConn(playerId)
-            server.connections.registerMultiverseConn(pc.clientConnection, playerId, multiverseId)
-        }
-        server.sync.syncMultiverseProgress(multiverseId)
-        server.sync.syncStates(multiverseId, playerId, results)
     }
 }

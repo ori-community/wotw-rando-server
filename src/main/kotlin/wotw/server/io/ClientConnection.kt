@@ -17,7 +17,7 @@ import wotw.server.api.WotwUserPrincipal
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
-import wotw.server.util.makeServerMessage
+import wotw.server.util.makeServerTextMessage
 import wotw.util.EventBus
 import java.lang.Exception
 import java.util.*
@@ -110,7 +110,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                     } else {
                         logger().debug("Received message of type ${message::class.qualifiedName} while the socket was unauthenticated")
                         sendMessage(
-                            makeServerMessage("Authentication failed.\nPlease login again in the launcher.", 10f)
+                            makeServerTextMessage("Authentication failed.\nPlease login again in the launcher.", 10f)
                         )
                         webSocket.close()
                         return

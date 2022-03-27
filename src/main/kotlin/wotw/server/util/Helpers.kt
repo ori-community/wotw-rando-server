@@ -45,10 +45,11 @@ fun randomString(length: Int) : String {
         .joinToString("")
 }
 
-fun makeServerMessage(text: String, time: Float = 3.0f): PrintTextMessage = PrintTextMessage(
+fun makeServerTextMessage(text: String, time: Float = 3.0f, replace: Boolean = false): PrintTextMessage = PrintTextMessage(
     time = time,
     text = text,
     position = Vector2(0f, -2f),
     screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
     queue = "server",
+    replace = replace,
 )

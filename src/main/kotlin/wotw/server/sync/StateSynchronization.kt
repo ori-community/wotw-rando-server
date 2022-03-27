@@ -2,7 +2,6 @@ package wotw.server.sync
 
 import kotlinx.html.currentTimeMillis
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.transactions.transaction
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.api.UberStateSyncStrategy
@@ -76,7 +75,6 @@ class StateSynchronization(private val server: WotwBackendServer) {
             }
         }
 
-        //stateCache.purge(-1)
         return result
     }
 
@@ -84,13 +82,13 @@ class StateSynchronization(private val server: WotwBackendServer) {
         syncStates(gameId, playerId, updates.map { uberId to it })
 
     suspend fun syncStates(
-        gameId: Long,
+        multiverseId: Long,
         playerId: String,
         updates: Map<UberId, Collection<AggregationResult>>
     ) =
-        syncStates(gameId, playerId, updates.entries.flatMap { (key, value) -> value.map { key to it } })
+        syncStates(multiverseId, playerId, updates.entries.flatMap { (key, value) -> value.map { key to it } })
 
-    suspend fun syncStates(gameId: Long, playerId: String, updates: Collection<Pair<UberId, AggregationResult>>) {
+    suspend fun syncStates(multiverseId: Long, playerId: String, updates: Collection<Pair<UberId, AggregationResult>>) {
         val triggered = updates.filter { it.second.triggered }
         val playerUpdates = triggered.filter {
             val strategy = it.second.strategy
@@ -108,7 +106,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         shareScopeUpdates.entries.forEach { (scope, states) ->
             if (scope !== null)
                 server.connections.sendTo(
-                    gameId, playerId, scope, false,
+                    multiverseId, playerId, scope, false,
                     *states.map { (uberId, result) ->
                         UberStateUpdateMessage(
                             UberId(zerore(uberId.group), zerore(uberId.state)),
@@ -117,7 +115,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     }.toTypedArray()
                 )
         }
-        server.connections.toPlayers(listOf(playerId), gameId, false, UberStateBatchUpdateMessage(
+        server.connections.toPlayers(listOf(playerId), multiverseId, false, UberStateBatchUpdateMessage(
             playerUpdates.map { (uberId, result) ->
                 UberStateUpdateMessage(
                     UberId(zerore(uberId.group), zerore(uberId.state)),
@@ -127,9 +125,9 @@ class StateSynchronization(private val server: WotwBackendServer) {
         ))
     }
 
-    suspend fun syncMultiverseProgress(gameId: Long) {
+    suspend fun syncMultiverseProgress(multiverseId: Long) {
         val (syncBingoUniversesMessage, spectatorBoard, stateUpdates) = newSuspendedTransaction {
-            val multiverse = Multiverse.findById(gameId) ?: return@newSuspendedTransaction null
+            val multiverse = Multiverse.findById(multiverseId) ?: return@newSuspendedTransaction null
             multiverse.board ?: return@newSuspendedTransaction null
 
             val info = multiverse.bingoUniverseInfo()
@@ -142,33 +140,38 @@ class StateSynchronization(private val server: WotwBackendServer) {
                         UberStateUpdateMessage(
                             UberId(10, 0),
                             bingoPlayerData.squares.toDouble()
-                        ), UberStateUpdateMessage(
+                        ),
+                        UberStateUpdateMessage(
                             UberId(10, 1),
                             bingoPlayerData.lines.toDouble()
-                        ), UberStateUpdateMessage(
+                        ),
+                        UberStateUpdateMessage(
                             UberId(10, 2),
                             bingoPlayerData.rank.toDouble()
                         )
-                    ), SyncBoardMessage(
+                    ),
+                    SyncBoardMessage(
                         multiverse.createSyncableBoard(world.universe),
                         true
                     )
                 )
             }
             Triple(
-                syncBingoUniversesMessage, SyncBoardMessage(
+                syncBingoUniversesMessage,
+                SyncBoardMessage(
                     multiverse.createSyncableBoard(null, true),
                     true
-                ), worldUpdates
+                ),
+                worldUpdates
             )
         } ?: return
 
-        server.connections.toObservers(gameId, message = syncBingoUniversesMessage)
-        server.connections.toObservers(gameId, true, spectatorBoard)
+        server.connections.toObservers(multiverseId, message = syncBingoUniversesMessage)
+        server.connections.toObservers(multiverseId, true, spectatorBoard)
         stateUpdates.forEach { (players, goalStateUpdate, board) ->
-            server.connections.toPlayers(players, gameId, false, goalStateUpdate)
+            server.connections.toPlayers(players, multiverseId, false, goalStateUpdate)
             players.forEach { playerId ->
-                server.connections.toObservers(gameId, playerId, board)
+                server.connections.toObservers(multiverseId, playerId, board)
             }
         }
     }
