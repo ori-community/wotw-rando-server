@@ -252,12 +252,10 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         webSocket("game_sync/") {
             handleClientSocket() {
                 var playerId = ""
-                var worldId = 0L
 
                 afterAuthenticated {
-                    playerId = principalOrNull?.userId ?: return@afterAuthenticated this@webSocket.close(
-                        CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session active!")
-                    )
+                    playerId = principal.userId
+
                     principalOrNull?.hasScope(Scope.MULTIVERSE_CONNECT) ?: this@webSocket.close(
                         CloseReason(
                             CloseReason.Codes.VIOLATED_POLICY,
@@ -265,7 +263,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
                     )
 
-                    val (_worldId, multiverseId, worldName, worldMembers, multiverseInfoMessage, multiversePlayerIds) = newSuspendedTransaction {
+                    val (currentWorldId, multiverseId, worldName, worldMembers, multiverseInfoMessage, multiversePlayerIds) = newSuspendedTransaction {
                         val world = WorldMembership.find {
                             WorldMemberships.playerId eq playerId
                         }.firstOrNull()?.world
@@ -277,18 +275,17 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         } then (world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList())
                     }
 
-                    if (multiverseId == null || _worldId == null) {
+                    if (multiverseId == null || currentWorldId == null) {
                         logger.info("MultiverseEndpoint: game_sync: Player $playerId is not part of an active multiverse")
                         return@afterAuthenticated this@webSocket.close(
                             CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
                         )
                     }
 
-                    worldId = _worldId
                     server.connections.registerMultiverseConn(socketConnection, playerId, multiverseId)
 
                     val initData = newSuspendedTransaction {
-                        World.findById(worldId)?.universe?.multiverse?.board?.goals?.flatMap { it.value.keys }
+                        World.findById(currentWorldId)?.universe?.multiverse?.board?.goals?.flatMap { it.value.keys }
                             ?.map { UberId(it.first, it.second) }
                     }.orEmpty()
                     val userName = newSuspendedTransaction {
@@ -326,18 +323,25 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         ))
                     }
                 }
+
                 onMessage(UberStateUpdateMessage::class) {
-                    if (worldId != 0L && playerId.isNotEmpty()) {
-                        updateUberState(worldId, playerId)
+                    server.populationCache.getOrNull(playerId)?.worldId?.let {
+                        if (playerId.isNotEmpty()) {
+                            updateUberState(it, playerId)
+                        }
                     }
                 }
+
                 onMessage(UberStateBatchUpdateMessage::class) {
-                    if (worldId != 0L && playerId.isNotEmpty()) {
-                        updateUberStates(worldId, playerId)
+                    server.populationCache.getOrNull(playerId)?.worldId?.let {
+                        if (playerId.isNotEmpty()) {
+                            updateUberStates(it, playerId)
+                        }
                     }
                 }
+
                 onMessage(PlayerPositionMessage::class) {
-                    val targetPlayers = server.populationCache.get(playerId, worldId) - playerId
+                    val targetPlayers = server.populationCache.get(playerId).universeMemberIds - playerId
 
                     server.connections.toPlayers(
                         targetPlayers,
@@ -349,6 +353,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 onClose {
                     logger.info("WebSocket for player $playerId disconnected (close, ${closeReason.await()})")
+
                     if (playerId != "") {
                         server.connections.unregisterMultiverseConn(playerId)
                     }
