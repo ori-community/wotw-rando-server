@@ -1,5 +1,6 @@
 package wotw.io.messages.protobuf
 
+import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 
@@ -83,45 +84,10 @@ data class PrintTextMessage(
     @ProtoNumber(10) val verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
     @ProtoNumber(11) val withSound: Boolean = true,
     @ProtoNumber(12) val withBox: Boolean = true,
-    @ProtoNumber(13) var queue: String?,
+    @ProtoNumber(13) @Required var queue: String? = null,
     @ProtoNumber(14) val prioritized: Boolean = false,
     @ProtoNumber(15) val replace: Boolean = false,
 ) {
-
-    //   W   T   F  ?????????
-    constructor(
-        time: Float,
-        text: String,
-        position: Vector2,
-        screenPosition: Int = SCREEN_POSITION_TOP_CENTER,
-        useInGameCoordinates: Boolean = false,
-        fadeInLength: Float = 0.5f,
-        fadeOutLength: Float = 0.5f,
-        alignment: Int = ALIGNMENT_CENTER,
-        horizontalAnchor: Int = HORIZONTAL_ANCHOR_CENTER,
-        verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
-        withSound: Boolean = true,
-        withBox: Boolean = true,
-        prioritized: Boolean = false,
-        replace: Boolean = false,
-    ) : this(
-        time,
-        text,
-        position,
-        screenPosition,
-        useInGameCoordinates,
-        fadeInLength,
-        fadeOutLength,
-        alignment,
-        horizontalAnchor,
-        verticalAnchor,
-        withSound,
-        withBox,
-        null,
-        prioritized,
-        replace
-    )
-
     companion object {
         const val SCREEN_POSITION_TOP_LEFT = 0
         const val SCREEN_POSITION_TOP_CENTER = 1
@@ -152,17 +118,8 @@ data class PrintTextMessage(
 data class PrintPickupMessage(
     @ProtoNumber(1) val time: Float,
     @ProtoNumber(2) val text: String,
-    @ProtoNumber(3) val worldOrigin: Vector2?,
-) {
-    constructor(
-        time: Float,
-        text: String,
-    ): this(
-        time,
-        text,
-        null,
-    )
-}
+    @ProtoNumber(3) @Required val worldOrigin: Vector2? = null,
+)
 
 @Serializable
 data class SyncBoardMessage(

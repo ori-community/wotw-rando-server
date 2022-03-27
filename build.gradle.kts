@@ -1,8 +1,8 @@
-import com.google.protobuf.gradle.generateProtoTasks
-import com.google.protobuf.gradle.id
-import com.google.protobuf.gradle.ofSourceSet
-import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
+// import com.google.protobuf.gradle.generateProtoTasks
+// import com.google.protobuf.gradle.id
+// import com.google.protobuf.gradle.ofSourceSet
+// import com.google.protobuf.gradle.protobuf
+// import com.google.protobuf.gradle.protoc
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
@@ -17,11 +17,11 @@ val logback_version = "1.2.11"
 val exposed_version = "0.37.3"
 val serialization_version = "1.3.2"
 val krontab_version = "0.7.0"
-val protobuf_version = "3.19.4"
+// val protobuf_version = "3.19.4"
 
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.6.10"
-    id("com.google.protobuf") version "0.8.18"
+    // id("com.google.protobuf") version "0.8.18"
     kotlin("plugin.serialization") version "1.6.10"
 }
 
@@ -65,15 +65,15 @@ dependencies {
 
 
     implementation("com.zaxxer:HikariCP:5.0.1")
-    implementation("com.google.protobuf:protobuf-gradle-plugin:0.8.18")
 
     implementation("org.postgresql:postgresql:42.3.3")
 
     implementation("dev.kord:kord-core:0.7.4")
 
-    protobuf(files("./src/proto"))
-    api("com.google.protobuf:protobuf-java-util:$protobuf_version")
-    api("com.google.protobuf:protobuf-kotlin:$protobuf_version")
+    // protobuf(files("./src/proto"))
+    // implementation("com.google.protobuf:protobuf-gradle-plugin:0.8.18")
+    // api("com.google.protobuf:protobuf-java-util:$protobuf_version")
+    // api("com.google.protobuf:protobuf-kotlin:$protobuf_version")
 }
 
 
@@ -105,19 +105,19 @@ compileKotlin.kotlinOptions {
     languageVersion = "1.5"
 }
 
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:$protobuf_version"
-    }
-
-    // Generates the java Protobuf-lite code for the Protobufs in this project. See
-    // https://github.com/google/protobuf-gradle-plugin#customizing-protobuf-compilation
-    // for more information.
-    generateProtoTasks {
-        ofSourceSet("main").forEach {
-            it.builtins {
-                id("kotlin")
-            }
-        }
-    }
-}
+// protobuf {
+//     protoc {
+//         artifact = "com.google.protobuf:protoc:$protobuf_version"
+//     }
+//
+//     // Generates the java Protobuf-lite code for the Protobufs in this project. See
+//     // https://github.com/google/protobuf-gradle-plugin#customizing-protobuf-compilation
+//     // for more information.
+//     generateProtoTasks {
+//         ofSourceSet("main").forEach {
+//             it.builtins {
+//                 id("kotlin")
+//             }
+//         }
+//     }
+// }
