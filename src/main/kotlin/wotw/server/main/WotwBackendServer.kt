@@ -29,7 +29,6 @@ import io.sentry.Sentry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -37,8 +36,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import wotw.io.messages.protobuf.*
-import wotw.proto.messages.UserInfoKt
-import wotw.proto.messages.userInfo
 import wotw.server.api.*
 import wotw.server.database.PlayerUniversePopulationCache
 import wotw.server.database.model.*

@@ -87,6 +87,41 @@ data class PrintTextMessage(
     @ProtoNumber(14) val prioritized: Boolean = false,
     @ProtoNumber(15) val replace: Boolean = false,
 ) {
+
+    //   W   T   F  ?????????
+    constructor(
+        time: Float,
+        text: String,
+        position: Vector2,
+        screenPosition: Int = SCREEN_POSITION_TOP_CENTER,
+        useInGameCoordinates: Boolean = false,
+        fadeInLength: Float = 0.5f,
+        fadeOutLength: Float = 0.5f,
+        alignment: Int = ALIGNMENT_CENTER,
+        horizontalAnchor: Int = HORIZONTAL_ANCHOR_CENTER,
+        verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
+        withSound: Boolean = true,
+        withBox: Boolean = true,
+        prioritized: Boolean = false,
+        replace: Boolean = false,
+    ) : this(
+        time,
+        text,
+        position,
+        screenPosition,
+        useInGameCoordinates,
+        fadeInLength,
+        fadeOutLength,
+        alignment,
+        horizontalAnchor,
+        verticalAnchor,
+        withSound,
+        withBox,
+        null,
+        prioritized,
+        replace
+    )
+
     companion object {
         const val SCREEN_POSITION_TOP_LEFT = 0
         const val SCREEN_POSITION_TOP_CENTER = 1
@@ -118,7 +153,16 @@ data class PrintPickupMessage(
     @ProtoNumber(1) val time: Float,
     @ProtoNumber(2) val text: String,
     @ProtoNumber(3) val worldOrigin: Vector2?,
-)
+) {
+    constructor(
+        time: Float,
+        text: String,
+    ): this(
+        time,
+        text,
+        null,
+    )
+}
 
 @Serializable
 data class SyncBoardMessage(
