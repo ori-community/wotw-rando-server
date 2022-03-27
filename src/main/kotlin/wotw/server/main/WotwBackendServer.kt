@@ -29,13 +29,16 @@ import io.sentry.Sentry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
-import wotw.io.messages.protobuf.UdpPacket
+import wotw.io.messages.protobuf.*
+import wotw.proto.messages.UserInfoKt
+import wotw.proto.messages.userInfo
 import wotw.server.api.*
 import wotw.server.database.PlayerUniversePopulationCache
 import wotw.server.database.model.*
@@ -47,10 +50,7 @@ import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.services.InfoMessagesService
 import wotw.server.sync.StateSynchronization
-import wotw.server.util.Every
-import wotw.server.util.Scheduler
-import wotw.server.util.logger
-import wotw.server.util.makeServerTextMessage
+import wotw.server.util.*
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 

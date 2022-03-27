@@ -13,7 +13,6 @@ data class UserInfo(
     @ProtoNumber(6) val isDeveloper: Boolean,
 )
 
-
 @Serializable
 data class WorldInfo(
     @ProtoNumber(1) val id: Long,
@@ -84,7 +83,7 @@ data class PrintTextMessage(
     @ProtoNumber(10) val verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
     @ProtoNumber(11) val withSound: Boolean = true,
     @ProtoNumber(12) val withBox: Boolean = true,
-    @ProtoNumber(13) val queue: String? = null,
+    @ProtoNumber(13) var queue: String?,
     @ProtoNumber(14) val prioritized: Boolean = false,
     @ProtoNumber(15) val replace: Boolean = false,
 ) {
@@ -118,7 +117,7 @@ data class PrintTextMessage(
 data class PrintPickupMessage(
     @ProtoNumber(1) val time: Float,
     @ProtoNumber(2) val text: String,
-    @ProtoNumber(3) val worldOrigin: Vector2? = null,
+    @ProtoNumber(3) val worldOrigin: Vector2?,
 )
 
 @Serializable

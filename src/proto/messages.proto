@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package wotw.proto.messages;
+
+message Packet {
+  int32 id = 1;
+  bytes packet = 2;
+}
+
+message UberStateBatchUpdateMessage {
+  repeated UberStateUpdateMessage updates = 1;
+}
+
+message UberStateUpdateMessage {
+  UberId state = 1;
+  double value = 2;
+}
+
+message UberId {
+  int32 group = 1;
+  int32 state = 2;
+}
+
+message Vector2 {
+  float x = 1;
+  float y = 2;
+}
+
+message PrintTextMessage {
+  float time = 1;
+  string text = 2;
+  Vector2 position = 3;
+  int32 screenPosition = 4;
+  bool useInGameCoordinates = 5;
+  float fadeInLength = 6;
+  float fadeOutLength = 7;
+  int32 alignment = 8;
+  int32 horizontalAnchor = 9;
+  int32 verticalAnchor = 10;
+  bool withSound = 11;
+  bool withBox = 12;
+  optional string queue = 13;
+  bool prioritized = 14;
+  bool replace = 15;
+}
+
+message PrintPickupMessage {
+  float time = 1;
+  string text = 2;
+  bool prioritized = 3;
+  optional Vector2 pickupPosition = 4;
+}
+
+
+message AuthenticateMessage {
+  string jwt = 1;
+}
+
+message AuthenticatedMessage {
+  UserInfo user = 1;
+  int32 udpId = 2;
+  bytes udpKey = 3;
+}
+
+message PlayerPositionMessage  {
+  float x = 1;
+  float y = 2;
+}
+
+message UpdatePlayerPositionMessage  {
+  string playerId = 1;
+  float x = 2;
+  float y = 3;
+}
+
+message UserInfo {
+  string id = 1;
+  string name = 2;
+  optional string avatarId = 3;
+}
+
+message WorldInfo {
+  int64 id = 1;
+  string name = 2;
+  repeated UserInfo members = 3;
+}
+
+message UniverseInfo {
+  int64 id = 1;
+  string name = 2;
+  repeated WorldInfo worlds = 3;
+}
+
+message MultiverseInfoMessage {
+  int64 id = 1;
+  repeated UniverseInfo universes = 2;
+  bool hasBingoBoard = 3;
+  repeated UserInfo spectators = 4;
+  optional int64 seedId = 5;
+}
+
+message UdpPacket {
+  optional int32 udpId = 1;
+  bytes encryptedPacket = 2;
+}

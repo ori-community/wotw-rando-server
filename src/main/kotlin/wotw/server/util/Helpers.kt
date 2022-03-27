@@ -53,3 +53,5 @@ fun makeServerTextMessage(text: String, time: Float = 3.0f, replace: Boolean = f
     queue = "server",
     replace = replace,
 )
+
+fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
