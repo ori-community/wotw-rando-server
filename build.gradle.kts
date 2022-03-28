@@ -50,9 +50,9 @@ dependencies {
     implementation("io.ktor:ktor-server-sessions:$ktor_version")
     implementation("io.ktor:ktor-network:$ktor_version")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt") {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt"){
         version {
-            strictly("1.5.2-native-mt")
+            strictly("1.6.0-native-mt")
         }
     }
 
