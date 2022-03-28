@@ -287,6 +287,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 var syncHandler: GameSyncHandler? = null
 
                 suspend fun setupGameSync() {
+                    syncHandler = GameSyncHandler(playerId, socketConnection, server)
+
                     val setupResult = newSuspendedTransaction { syncHandler!!.setup() }
 
                     if (setupResult == null) {
@@ -295,8 +297,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
                         )
                     }
-
-                    syncHandler = GameSyncHandler(playerId, socketConnection, server)
 
                     val multiversePlayerIds = newSuspendedTransaction {
                         val world = World.findById(setupResult.worldId)
@@ -339,6 +339,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     )
 
                     EntityHook.subscribe(entityChangeHandler)
+
+                    setupGameSync()
                 }
 
                 onMessage(UberStateUpdateMessage::class) { syncHandler?.onUberStateUpdateMessage(this) }
