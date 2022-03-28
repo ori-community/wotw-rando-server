@@ -1,4 +1,4 @@
-FROM gradle:7-jdk11 as build-jar
+FROM gradle:7-jdk17 as build-jar
 
 WORKDIR /app
 COPY . /app
@@ -6,7 +6,7 @@ COPY . /app
 RUN gradle jar
 
 
-FROM openjdk:11-slim
+FROM openjdk:17-slim
 
 WORKDIR /app
 

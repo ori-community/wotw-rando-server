@@ -78,7 +78,7 @@ dependencies {
 
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
 }
 
 val jvmJar = tasks.named<Jar>("jar") {
@@ -97,6 +97,9 @@ val jvmJar = tasks.named<Jar>("jar") {
 tasks.create<JavaExec>("run") {
     group = "application"
     main = "wotw.server.main.WotwBackendServer"
+
+    jvmArgs = listOf("-Xint")
+
     classpath(configurations["runtimeClasspath"], jvmJar)
 }
 val compileKotlin: KotlinCompile by tasks
