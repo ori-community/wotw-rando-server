@@ -98,7 +98,8 @@ tasks.create<JavaExec>("run") {
     group = "application"
     main = "wotw.server.main.WotwBackendServer"
 
-    jvmArgs = listOf("-Xint")
+    // jvmArgs = listOf("-Xint")
+    jvmArgs = listOf("-XX:CompileCommand=exclude,wotw/server/game/GameSyncHandler.onPlayerPositionMessage")
 
     classpath(configurations["runtimeClasspath"], jvmJar)
 }
