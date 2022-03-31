@@ -24,8 +24,7 @@ import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.database.model.BingoEvents.x
 import wotw.server.exception.ConflictException
-import wotw.server.game.GameSyncHandler
-import wotw.server.game.GameSyncHandlerSetupResult
+import wotw.server.game.GameConnectionHandler
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.StateCache.invalidate
@@ -150,7 +149,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             }
                             if (multiverse.seed != null) {
                                 val seedFiles =
-                                    server.seedGeneratorService.filesForSeed(multiverse.seed?.id.toString() ?: "")
+                                    server.seedGeneratorService.filesForSeed(multiverse.seed?.id?.toString() ?: "")
                                 val first = seedFiles.firstOrNull()
                                 if (first != null) {
                                     val world =
@@ -284,10 +283,10 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         webSocket("game_sync/") {
             handleClientSocket() {
                 var playerId = ""
-                var syncHandler: GameSyncHandler? = null
+                var syncHandler: GameConnectionHandler? = null
 
                 suspend fun setupGameSync() {
-                    syncHandler = GameSyncHandler(playerId, socketConnection, server)
+                    syncHandler = GameConnectionHandler(playerId, socketConnection, server)
 
                     val setupResult = newSuspendedTransaction { syncHandler!!.setup() }
 
@@ -343,9 +342,9 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     setupGameSync()
                 }
 
-                onMessage(UberStateUpdateMessage::class) { syncHandler?.onUberStateUpdateMessage(this) }
-                onMessage(UberStateBatchUpdateMessage::class) { syncHandler?.onUberStateBatchUpdateMessage(this) }
-                onMessage(PlayerPositionMessage::class) { syncHandler?.onPlayerPositionMessage(this) }
+                onMessage(UberStateUpdateMessage::class) { syncHandler?.onMessage(this) }
+                onMessage(UberStateBatchUpdateMessage::class) { syncHandler?.onMessage(this) }
+                onMessage(PlayerPositionMessage::class) { syncHandler?.onMessage(this) }
 
                 onClose {
                     logger.info("WebSocket for player $playerId disconnected (close, ${closeReason.await()})")

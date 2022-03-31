@@ -6,7 +6,7 @@ import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.api.UberStateSyncStrategy
 import wotw.server.bingo.UberStateMap
-import wotw.server.database.Cache
+import wotw.server.database.EntityCache
 import wotw.server.database.model.GameState
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
@@ -16,7 +16,7 @@ import wotw.server.util.zerore
 import java.util.*
 import kotlin.to
 
-object StateCache : Cache<Pair<ShareScope, Long>, UberStateMap>(
+object StateCache : EntityCache<Pair<ShareScope, Long>, UberStateMap>(
     { StateCache.obtainState(it)?.uberStateData },
     { k, v -> StateCache.obtainState(k)?.uberStateData = v }
 ) {

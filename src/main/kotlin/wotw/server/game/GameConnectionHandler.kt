@@ -10,46 +10,60 @@ import wotw.server.sync.worldStateAggregationRegistry
 import wotw.server.util.makeServerTextMessage
 import wotw.server.util.rezero
 import wotw.server.util.zerore
+import wotw.util.EventBus
 
-data class GameSyncHandlerSetupResult(
+data class GameConnectionHandlerSyncResult(
     val worldId: Long,
     val universeId: Long,
     val multiverseId: Long,
 )
 
-class GameSyncHandler(
+class GameConnectionHandler(
     private var playerId: String,
     private val connection: ClientConnection,
     private val server: WotwBackendServer,
 ) {
-    suspend fun onUberStateUpdateMessage(message: UberStateUpdateMessage) {
-        server.populationCache.getOrNull(playerId)?.worldId?.let {
-            if (playerId.isNotEmpty()) {
-                updateUberState(message, it, playerId)
+    private val messageEventBus = EventBus()
+    private var multiverseId: Long? = null
+
+    init {
+        messageEventBus.register(this, UberStateUpdateMessage::class) { message ->
+            server.populationCache.getOrNull(playerId)?.worldId?.let {
+                if (playerId.isNotEmpty()) {
+                    updateUberState(message, it, playerId)
+                }
             }
+        }
+
+        messageEventBus.register(this, UberStateBatchUpdateMessage::class) { message ->
+            server.populationCache.getOrNull(playerId)?.worldId?.let {
+                if (playerId.isNotEmpty()) {
+                    batchUpdateUberStates(message, it, playerId)
+                }
+            }
+        }
+
+        messageEventBus.register(this, PlayerPositionMessage::class) { message ->
+            val targetPlayers = server.populationCache.get(playerId).universeMemberIds - playerId
+
+            server.connections.toPlayers(
+                targetPlayers,
+                null,
+                true,
+                UpdatePlayerPositionMessage(playerId, message.x, message.y)
+            )
         }
     }
 
-    suspend fun onUberStateBatchUpdateMessage(message: UberStateBatchUpdateMessage) {
-        server.populationCache.getOrNull(playerId)?.worldId?.let {
-            if (playerId.isNotEmpty()) {
-                batchUpdateUberStates(message, it, playerId)
-            }
+    suspend fun onMessage(message: Any) {
+        messageEventBus.send(message)
+
+        multiverseId?.let {
+            server.gameHandlerRegistry.getHandler(it)
         }
     }
 
-    suspend fun onPlayerPositionMessage(message: PlayerPositionMessage) {
-        val targetPlayers = server.populationCache.get(playerId).universeMemberIds - playerId
-
-        server.connections.toPlayers(
-            targetPlayers,
-            null,
-            true,
-            UpdatePlayerPositionMessage(playerId, message.x, message.y)
-        )
-    }
-
-    suspend fun setup(): GameSyncHandlerSetupResult? {
+    suspend fun setup(): GameConnectionHandlerSyncResult? {
         return newSuspendedTransaction {
             val player = User.findById(playerId)
             val world = WorldMembership.find {
@@ -70,7 +84,7 @@ class GameSyncHandler(
                 .plus(worldStateAggregationRegistry.getSyncedStates())
                 .plus(bingoStates)  // don't sync new data
 
-            this@GameSyncHandler.connection.sendMessage(InitGameSyncMessage(states.map {
+            this@GameConnectionHandler.connection.sendMessage(InitGameSyncMessage(states.map {
                 UberId(zerore(it.group), zerore(it.state))
             }))
 
@@ -78,13 +92,13 @@ class GameSyncHandler(
             var greeting = "${player.name} - Connected to multiverse ${multiverse.id.value}"
             greeting += "\nWorld: ${world.name}\n" + worldMemberNames.joinToString()
 
-            this@GameSyncHandler.connection.sendMessage(makeServerTextMessage(greeting))
+            this@GameConnectionHandler.connection.sendMessage(makeServerTextMessage(greeting))
 
-            this@GameSyncHandler.connection.sendMessage(server.infoMessagesService.generateMultiverseInfoMessage(
+            this@GameConnectionHandler.connection.sendMessage(server.infoMessagesService.generateMultiverseInfoMessage(
                 multiverse
             ))
 
-            return@newSuspendedTransaction GameSyncHandlerSetupResult(
+            return@newSuspendedTransaction GameConnectionHandlerSyncResult(
                 world.id.value,
                 universe.id.value,
                 multiverse.id.value,

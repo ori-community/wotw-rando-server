@@ -5,6 +5,7 @@ import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.routing.*
 import io.ktor.util.pipeline.*
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.slf4j.LoggerFactory
 import wotw.io.messages.protobuf.PrintTextMessage
 import wotw.io.messages.protobuf.Vector2
@@ -55,3 +56,9 @@ fun makeServerTextMessage(text: String, time: Float = 3.0f, replace: Boolean = f
 )
 
 fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
+
+fun assertTransaction() {
+    assert(TransactionManager.currentOrNull() != null) {
+        "This function has to be called in an active transaction"
+    }
+}

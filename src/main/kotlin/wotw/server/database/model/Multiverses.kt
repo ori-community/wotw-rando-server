@@ -13,7 +13,6 @@ import wotw.server.database.jsonb
 import wotw.server.sync.ShareScope
 import wotw.server.sync.StateCache
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
 import kotlin.math.ceil
 import kotlin.to
@@ -21,6 +20,10 @@ import kotlin.to
 object Multiverses : LongIdTable("multiverse") {
     val seed = reference("seed", Seeds).nullable()
     val board = jsonb("board", BingoCard.serializer()).nullable()
+
+    val gameHandlerActive = bool("game_handler_active").default(false)
+    val gameHandlerType = varchar("game_handler_type", 64).default("normal")
+    val gameHandlerStateJson = jsonb("game_handler_state", { s -> s }, { s -> s }).nullable()
 }
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
@@ -32,6 +35,9 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     private val states by GameState referrersOn GameStates.multiverseId
     private val events by BingoEvent referrersOn BingoEvents.multiverseId
     var spectators by User via Spectators
+
+    var gameHandlerType by Multiverses.gameHandlerType
+    var gameHandlerStateJson by Multiverses.gameHandlerStateJson
 
     val universeStates
         get() = states.filter { it.world == null }.mapNotNull { it.universe?.let{universe -> universe to it}}.toMap()

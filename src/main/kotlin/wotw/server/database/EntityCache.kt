@@ -11,7 +11,7 @@ import wotw.server.database.model.WorldMembership
 import wotw.server.database.model.WorldMemberships
 import java.util.*
 
-open class Cache<KEY : Any, VALUE : Any>(
+open class EntityCache<KEY : Any, VALUE : Any>(
     private val retrieve: suspend (KEY) -> VALUE?,
     private val save: suspend (KEY, VALUE) -> Unit
 ) {
@@ -69,7 +69,7 @@ data class PlayerUniversePopulationCacheEntry(
     val worldMemberIds: Set<String>,
 )
 
-class PlayerUniversePopulationCache : Cache<String, PlayerUniversePopulationCacheEntry>({ playerId ->
+class PlayerUniversePopulationCache : EntityCache<String, PlayerUniversePopulationCacheEntry>({ playerId ->
     newSuspendedTransaction {
         val membership = WorldMembership.find {
             WorldMemberships.playerId eq playerId

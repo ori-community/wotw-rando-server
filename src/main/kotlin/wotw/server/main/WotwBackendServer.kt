@@ -43,6 +43,7 @@ import wotw.server.exception.AlreadyExistsException
 import wotw.server.exception.ConflictException
 import wotw.server.exception.ForbiddenException
 import wotw.server.exception.UnauthorizedException
+import wotw.server.game.GameHandlerRegistry
 import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.services.InfoMessagesService
@@ -131,7 +132,6 @@ class WotwBackendServer {
                 Seeds
             )
         }
-
     }
 
     val bingoEndpoint = BingoEndpoint(this)
@@ -148,15 +148,41 @@ class WotwBackendServer {
     val seedGeneratorService = SeedGeneratorService(this)
 
     val populationCache = PlayerUniversePopulationCache()
-    val cacheScheduler = Scheduler{
-         sync.purgeCache(60)
+    val cacheScheduler = Scheduler {
+        sync.purgeCache(60)
+
+        gameHandlerRegistry.cacheEntries.filter { cacheEntry ->
+            !cacheEntry.isDisposable().also { disposable ->
+                if (disposable) {
+                    cacheEntry.handler?.let { handler ->
+                        logger.info("Disposed handler for multiverse ${handler.multiverseId}")
+                        handler.stop()
+                    }
+                }
+            }
+        }
     }
+
     val shutdownHook = Thread {
         runBlocking {
-            connections.toAll(false, makeServerTextMessage(
-                text = "Server is going down for maintenance.\nWill be back shortly. Or not. OriShrug",
-                time = 10f,
-            ))
+            connections.toAll(
+                false, makeServerTextMessage(
+                    text = "Server is going down for maintenance.\nWill be back shortly. Or not. OriShrug",
+                    time = 10f,
+                )
+            )
+        }
+
+        runBlocking {
+            logger.info("Saving game handler states...")
+            gameHandlerRegistry.cacheEntries.forEach { cacheEntry ->
+                cacheEntry.handler?.let { handler ->
+                    logger.info("Stopping and persisting handler for multiverse ${handler.multiverseId}")
+
+                    handler.stop()
+                    handler.persistState()
+                }
+            }
         }
 
         cacheScheduler.stop()
@@ -164,6 +190,8 @@ class WotwBackendServer {
             sync.purgeCache(-1)
         }
     }
+
+    val gameHandlerRegistry = GameHandlerRegistry()
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)
@@ -273,47 +301,61 @@ class WotwBackendServer {
         }
 
         runBlocking {
+            logger.info("Loading active game handlers...")
+            newSuspendedTransaction {
+                Multiverse.find {
+                    Multiverses.gameHandlerActive eq true
+                }.forEach {
+                    logger.info("Loading game handler for game ${it.id.value}")
+                    gameHandlerRegistry.cacheAndStartHandler(it)
+                }
+            }
+
             val udpSocketBuilder = aSocket(ActorSelectorManager(Dispatchers.IO)).udp()
             udpSocket = udpSocketBuilder.bind(NetworkAddress("0.0.0.0", (System.getenv("UDP_PORT") ?: "31415").toInt()))
 
             // TODO: Move this out of main class
             udpSocket?.let {
                 launch(Dispatchers.IO + it.socketContext) {
-                    logger.info("UDP socket listening on port ${it.localAddress.port}")
-
-                    for (datagram in it.incoming) {
-                        try {
-                            val udpPacket = UdpPacket.deserialize(datagram.packet.readBytes())
-
-                            if (udpPacket.udpId == null) {
-                                logger.debug("Received UDP packet without connection ID")
-                                continue
-                            }
-
-                            val connectionId = udpPacket.udpId
-                            val connection = ClientConnectionUDPRegistry.getById(connectionId)
-
-                            if (connection == null) {
-                                logger.debug("Received UDP packet for unknown connection")
-                                continue
-                            }
-
-                            val message = udpPacket.getPacket(connection.udpKey)
-
-                            if (message != null) {
-                                connection.handleUdpMessage(datagram, message)
-                            } else {
-                                logger.debug("WotwBackendServer: Could not deserialize UDP packet from connection $connectionId")
-                            }
-                        } catch (e: Exception) {
-                            logger.debug("Failed receiving UDP packet:", e)
-                        }
-                    }
+                    handleUdpPackets(it)
                 }
             }
 
             launch {
                 embeddedServer(Netty, env).start(wait = true)
+            }
+        }
+    }
+
+    private suspend fun handleUdpPackets(udpSocket: BoundDatagramSocket) {
+        logger.info("UDP socket listening on port ${udpSocket.localAddress.port}")
+
+        for (datagram in udpSocket.incoming) {
+            try {
+                val udpPacket = UdpPacket.deserialize(datagram.packet.readBytes())
+
+                if (udpPacket.udpId == null) {
+                    logger.debug("Received UDP packet without connection ID")
+                    continue
+                }
+
+                val connectionId = udpPacket.udpId
+                val connection = ClientConnectionUDPRegistry.getById(connectionId)
+
+                if (connection == null) {
+                    logger.debug("Received UDP packet for unknown connection")
+                    continue
+                }
+
+                val message = udpPacket.getPacket(connection.udpKey)
+
+                if (message != null) {
+                    connection.handleUdpMessage(datagram, message)
+                } else {
+                    logger.debug("WotwBackendServer: Could not deserialize UDP packet from connection $connectionId")
+                }
+            } catch (e: Exception) {
+                logger.debug("Failed receiving UDP packet:", e)
             }
         }
     }

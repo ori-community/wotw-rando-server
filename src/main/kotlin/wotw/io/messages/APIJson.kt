@@ -195,9 +195,15 @@ data class BingoConfig(
 )
 
 @Serializable
+data class HideAndSeekConfig(
+    val seekerStartTimeout: Float = 30f, // 30 Seconds for now
+)
+
+@Serializable
 data class MultiverseCreationConfig(
     val seedId: Long? = null,
     val bingo: BingoConfig? = null,
+    val hideAndSeekConfig: HideAndSeekConfig? = null,
 )
 
 @Serializable
