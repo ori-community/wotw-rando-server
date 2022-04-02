@@ -89,8 +89,6 @@ class HideAndSeekGameHandler(
                 } else {
                     gameSecondsElapsed++
                 }
-
-                logger().info("secondsUntilCatchPhase: $secondsUntilCatchPhase, gameSecondsElapsed: $gameSecondsElapsed")
             }
         }
     }
