@@ -52,7 +52,7 @@ fun makeServerTextMessage(text: String, time: Float = 3.0f, replace: Boolean = f
     position = Vector2(0f, -2f),
     screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
     queue = "server",
-    replace = replace,
+    id = 0,
 )
 
 fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }

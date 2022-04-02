@@ -22,13 +22,15 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         "#6d4c41",
     )
 
-    fun generateMultiverseInfoMessage(multiverse: Multiverse) = MultiverseInfoMessage(
+    suspend fun generateMultiverseInfoMessage(multiverse: Multiverse) = MultiverseInfoMessage(
         multiverse.id.value,
         multiverse.universes.sortedBy { it.id }
             .mapIndexed { index, universe -> generateUniverseInfo(universe, COLORS[index % COLORS.size]) },
         multiverse.board != null,
         multiverse.spectators.map { generateUserInfo(it) },
-        multiverse.seed?.id?.value
+        multiverse.seed?.id?.value,
+        multiverse.gameHandlerType,
+        server.gameHandlerRegistry.getHandler(multiverse).getSerializedClientInfo()
     )
 
     fun generateUniverseInfo(universe: Universe, color: String? = null) = UniverseInfo(

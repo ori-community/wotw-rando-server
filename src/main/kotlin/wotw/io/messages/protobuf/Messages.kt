@@ -38,7 +38,37 @@ data class MultiverseInfoMessage(
     @ProtoNumber(3) val hasBingoBoard: Boolean,
     @ProtoNumber(4) val spectators: List<UserInfo>,
     @ProtoNumber(5) val seedId: Long?,
-)
+    @ProtoNumber(6) val gameHandlerType: Int,
+    @ProtoNumber(7) val gameHandlerClientInfo: ByteArray,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as MultiverseInfoMessage
+
+        if (id != other.id) return false
+        if (universes != other.universes) return false
+        if (hasBingoBoard != other.hasBingoBoard) return false
+        if (spectators != other.spectators) return false
+        if (seedId != other.seedId) return false
+        if (gameHandlerType != other.gameHandlerType) return false
+        if (!gameHandlerClientInfo.contentEquals(other.gameHandlerClientInfo)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + universes.hashCode()
+        result = 31 * result + hasBingoBoard.hashCode()
+        result = 31 * result + spectators.hashCode()
+        result = 31 * result + (seedId?.hashCode() ?: 0)
+        result = 31 * result + gameHandlerType
+        result = 31 * result + gameHandlerClientInfo.contentHashCode()
+        return result
+    }
+}
 
 @Serializable
 data class UberId(
@@ -72,21 +102,21 @@ data class Vector2(
 
 @Serializable
 data class PrintTextMessage(
-    @ProtoNumber(1) val time: Float,
-    @ProtoNumber(2) val text: String,
-    @ProtoNumber(3) val position: Vector2,
-    @ProtoNumber(4) val screenPosition: Int = SCREEN_POSITION_TOP_CENTER,
-    @ProtoNumber(5) val useInGameCoordinates: Boolean = false,
-    @ProtoNumber(6) val fadeInLength: Float = 0.5f,
-    @ProtoNumber(7) val fadeOutLength: Float = 0.5f,
-    @ProtoNumber(8) val alignment: Int = ALIGNMENT_CENTER,
-    @ProtoNumber(9) val horizontalAnchor: Int = HORIZONTAL_ANCHOR_CENTER,
-    @ProtoNumber(10) val verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
-    @ProtoNumber(11) val withSound: Boolean = true,
-    @ProtoNumber(12) val withBox: Boolean = true,
-    @ProtoNumber(13) @Required var queue: String? = null,
-    @ProtoNumber(14) val prioritized: Boolean = false,
-    @ProtoNumber(15) val replace: Boolean = false,
+    @ProtoNumber(1) val text: String,
+    @ProtoNumber(2) val position: Vector2,
+    @ProtoNumber(3) @Required val id: Int? = null,
+    @ProtoNumber(4) @Required val time: Float? = null,
+    @ProtoNumber(5) val screenPosition: Int = SCREEN_POSITION_TOP_CENTER,
+    @ProtoNumber(6) val useInGameCoordinates: Boolean = false,
+    @ProtoNumber(7) val fadeInLength: Float = 0.5f,
+    @ProtoNumber(8) val fadeOutLength: Float = 0.5f,
+    @ProtoNumber(9) val alignment: Int = ALIGNMENT_CENTER,
+    @ProtoNumber(10) val horizontalAnchor: Int = HORIZONTAL_ANCHOR_CENTER,
+    @ProtoNumber(11) val verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
+    @ProtoNumber(12) val withSound: Boolean = true,
+    @ProtoNumber(13) val withBox: Boolean = true,
+    @ProtoNumber(14) @Required var queue: String? = null,
+    @ProtoNumber(15) val prioritized: Boolean = false,
 ) {
     companion object {
         const val SCREEN_POSITION_TOP_LEFT = 0
@@ -211,4 +241,30 @@ class RequestFullUpdate()
 @Serializable
 data class SetTrackerEndpointId(
     @ProtoNumber(1) val endpointId: String,
+)
+
+
+@Serializable
+data class RequestSeedMessage(
+    @ProtoNumber(1) val init: Boolean, // This is something for the client, ask wolf. We just pipe it through
+)
+
+@Serializable
+data class SetSeedMessage(
+    @ProtoNumber(1) val name: String,
+    @ProtoNumber(2) val seedContent: String,
+    @ProtoNumber(3) val init: Boolean, // This is something for the client, ask wolf. We just pipe it through
+)
+
+@Serializable
+class PlayerUseCatchingAbilityMessage()
+
+@Serializable
+data class PlayerUsedCatchingAbilityMessage(
+    @ProtoNumber(1) val playerId: String,
+)
+
+@Serializable
+data class PlayerCaughtMessage(
+    @ProtoNumber(1) val playerId: String,
 )

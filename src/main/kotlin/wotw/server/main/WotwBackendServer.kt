@@ -191,7 +191,7 @@ class WotwBackendServer {
         }
     }
 
-    val gameHandlerRegistry = GameHandlerRegistry()
+    val gameHandlerRegistry = GameHandlerRegistry(this)
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)

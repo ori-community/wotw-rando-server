@@ -1,29 +1,48 @@
 package wotw.server.game.handlers
 
+import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.protoBuf
+import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
+import wotw.server.main.WotwBackendServer
+import wotw.util.EventBus
 import wotw.util.EventBusWithMetadata
 import wotw.util.biMapOf
 import kotlin.reflect.KClass
+import kotlin.reflect.full.createType
 
 typealias PlayerId = String
 
-abstract class GameHandler(
+object GameHandlerType {
+    val NORMAL = 0
+    val HIDE_AND_SEEK = 1
+}
+
+abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     val multiverseId: Long,
+    val server: WotwBackendServer,
 ) {
     protected val messageEventBus = EventBusWithMetadata<PlayerId>()
+    protected val multiverseEventBus = EventBus()
 
     suspend fun onMessage(message: Any, sender: PlayerId) {
         messageEventBus.send(message, sender)
+    }
+
+    suspend fun onMultiverseEvent(message: Any) {
+        multiverseEventBus.send(message)
     }
 
     open fun serializeState(): String? {
         return null
     }
 
-    open fun restoreState(serializedState: String?) {
+    open suspend fun restoreState(serializedState: String?) {
 
     }
+
+    abstract suspend fun generateStateAggregationRegistry(): AggregationStrategyRegistry
 
     open fun start() {}
     open fun stop() {}
@@ -46,17 +65,32 @@ abstract class GameHandler(
         }
     }
 
+    open fun getClientInfo(): CLIENT_INFO_TYPE? {
+        return null
+    }
+
+    private fun serializeClientInfo(clientInfo: CLIENT_INFO_TYPE): ByteArray {
+        val serializer = serializer(clientInfo::class.createType())
+        return protoBuf.encodeToByteArray(serializer, clientInfo)
+    }
+
+    fun getSerializedClientInfo(): ByteArray {
+        return getClientInfo()?.let {
+            serializeClientInfo(it as CLIENT_INFO_TYPE)
+        } ?: ByteArray(0)
+    }
+
     companion object {
         private val handlerTypeMap = biMapOf(
-            "normal" to HideAndSeekGameHandler::class, // TODO
-            "bingo" to BingoGameHandler::class,
-            "hide_and_seek" to NormalGameHandler::class, // TODO
+            GameHandlerType.NORMAL to NormalGameHandler::class,
+            GameHandlerType.HIDE_AND_SEEK to HideAndSeekGameHandler::class,
         )
-        fun getByGameHandlerByType(type: String): KClass<out GameHandler> {
+
+        fun getByGameHandlerByType(type: Int): KClass<out GameHandler<out Any>> {
             return handlerTypeMap[type] ?: throw IllegalArgumentException("Could not get game handler for type '$type'")
         }
 
-        fun getByGameHandlerType(handler: KClass<out GameHandler>): String {
+        fun getByGameHandlerType(handler: KClass<out GameHandler<out Any>>): Int {
             return handlerTypeMap.inverse[handler] ?: throw IllegalArgumentException()
         }
     }

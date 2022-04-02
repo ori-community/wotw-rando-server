@@ -16,7 +16,7 @@ val ktor_version = "1.6.8"
 val logback_version = "1.2.11"
 val exposed_version = "0.37.3"
 val serialization_version = "1.3.2"
-val krontab_version = "0.7.0"
+val krontab_version = "0.7.1"
 // val protobuf_version = "3.19.4"
 
 plugins {
@@ -37,8 +37,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
     implementation("dev.inmo:krontab:$krontab_version")
 
-    implementation("io.github.classgraph:classgraph:4.8.141")
-    implementation("io.sentry:sentry:5.6.2")
+    implementation("io.github.classgraph:classgraph:4.8.143")
+    implementation("io.sentry:sentry:5.7.0")
 
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("io.ktor:ktor-websockets:$ktor_version")
@@ -106,7 +106,7 @@ tasks.create<JavaExec>("run") {
 val compileKotlin: KotlinCompile by tasks
 
 compileKotlin.kotlinOptions {
-    languageVersion = "1.5"
+    languageVersion = "1.6"
 }
 
 // protobuf {

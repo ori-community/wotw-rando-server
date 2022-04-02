@@ -10,10 +10,10 @@ import wotw.server.bingo.BingoCard
 import wotw.server.bingo.Line
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.jsonb
+import wotw.server.game.handlers.GameHandlerType
 import wotw.server.sync.ShareScope
 import wotw.server.sync.StateCache
 import java.util.*
-import kotlin.collections.HashSet
 import kotlin.math.ceil
 import kotlin.to
 
@@ -22,7 +22,7 @@ object Multiverses : LongIdTable("multiverse") {
     val board = jsonb("board", BingoCard.serializer()).nullable()
 
     val gameHandlerActive = bool("game_handler_active").default(false)
-    val gameHandlerType = varchar("game_handler_type", 64).default("normal")
+    val gameHandlerType = integer("game_handler_type").default(GameHandlerType.NORMAL)
     val gameHandlerStateJson = jsonb("game_handler_state", { s -> s }, { s -> s }).nullable()
 }
 
@@ -37,6 +37,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var spectators by User via Spectators
 
     var gameHandlerType by Multiverses.gameHandlerType
+    var gameHandlerActive by Multiverses.gameHandlerActive
     var gameHandlerStateJson by Multiverses.gameHandlerStateJson
 
     val universeStates

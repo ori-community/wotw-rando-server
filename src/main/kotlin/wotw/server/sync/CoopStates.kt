@@ -511,7 +511,6 @@ val furnaces = listOf(
 )
 
 val unsortedCoop = listOf(
-
     UberId(10289, 3804),      // windtornRuinsGroup.openedDesertRuins
     UberId(10289, 43103),      // windtornRuinsGroup.rootBreakPillarFall
     UberId(16155, 18906),      // willowsEndGroup.fallingPortal
@@ -666,7 +665,7 @@ val unsortedCoop = listOf(
     UberId(9593, 9229),      // inkwaterMarshStateGroup.lanternAndCreepA
 )
 
-val worldStateAggregationRegistry by lazy {
+val normalWorldSyncAggregationStrategy by lazy {
     AggregationStrategyRegistry().apply {
         register(
             sync(tpIds.values),
@@ -685,13 +684,6 @@ val worldStateAggregationRegistry by lazy {
             sync(18793, 26713).on(threshold = 7),  // mora fight
             sync(37858, 10720).on(threshold = 2), // Wellspring escape
             sync(937, 34641).with(UberStateSyncStrategy.MIN).on(threshold = 4), // Prevent Silent Teeth quest from syncing value=5
-        )
-    }
-}
-val universeStateAggregationRegistry by lazy {
-    AggregationStrategyRegistry().apply {
-        register(
-            sync(multiStates()).across(ShareScope.UNIVERSE),
         )
     }
 }

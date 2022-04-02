@@ -40,7 +40,6 @@ data class Packet(
         return result
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
     companion object {
         val ids: BiMap<PacketId, KType> = biMapOf(
             1 to typeOf<SyncBoardMessage>(),
@@ -57,6 +56,12 @@ data class Packet(
             12 to typeOf<AuthenticatedMessage>(),
             13 to typeOf<PrintTextMessage>(),
             14 to typeOf<PrintPickupMessage>(),
+            15 to typeOf<RequestSeedMessage>(),
+            16 to typeOf<SetSeedMessage>(),
+            17 to typeOf<PlayerUseCatchingAbilityMessage>(),
+            18 to typeOf<PlayerUsedCatchingAbilityMessage>(),
+            19 to typeOf<PlayerCaughtMessage>(),
+
             100 to typeOf<TrackerUpdate>(),
             101 to typeOf<ResetTracker>(),
             102 to typeOf<TrackerFlagsUpdate>(),

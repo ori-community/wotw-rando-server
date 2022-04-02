@@ -8,17 +8,8 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
-import wotw.io.messages.protobuf.UberId
-import wotw.server.api.AggregationStrategyRegistry
-import wotw.server.api.UberStateSyncStrategy.NotificationGroup.NONE
-import wotw.server.api.across
-import wotw.server.api.notify
-import wotw.server.api.sync
 import wotw.server.bingo.UberStateMap
-import wotw.server.sync.universeStateAggregationRegistry
-import wotw.server.sync.worldStateAggregationRegistry
 import wotw.server.database.jsonb
-import wotw.server.sync.ShareScope
 
 object GameStates : LongIdTable() {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
@@ -65,17 +56,4 @@ class GameState(id: EntityID<Long>) : LongEntity(id) {
         WORLD,
         INVALID,
     }
-}
-
-fun Multiverse.generateStateAggregationRegistry(): AggregationStrategyRegistry {
-    val bingoStates = board?.goals?.flatMap { it.value.keys }
-        ?.map { UberId(it.first, it.second) } ?: emptySet()
-
-    var aggregationRegistry = AggregationStrategyRegistry().register(
-        sync(bingoStates).notify(NONE).across(ShareScope.UNIVERSE)
-    )
-    aggregationRegistry += worldStateAggregationRegistry
-    aggregationRegistry += universeStateAggregationRegistry
-
-    return aggregationRegistry
 }

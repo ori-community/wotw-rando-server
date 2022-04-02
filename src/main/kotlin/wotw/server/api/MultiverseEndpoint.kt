@@ -24,7 +24,9 @@ import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.database.model.BingoEvents.x
 import wotw.server.exception.ConflictException
+import wotw.server.game.CustomEvent
 import wotw.server.game.GameConnectionHandler
+import wotw.server.game.handlers.GameHandlerType
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.StateCache.invalidate
@@ -87,6 +89,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             seed = Seed.findById(props.seedId) ?: throw NotFoundException()
                         if (props?.bingo != null)
                             board = BingoBoardGenerator().generateBoard(props)
+
+                        gameHandlerType = GameHandlerType.HIDE_AND_SEEK
                     }
                 }
                 call.respondText("${multiverse.id.value}", status = HttpStatusCode.Created)
@@ -147,6 +151,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 this.universe = universe
                                 this.uberStateData = UberStateMap()
                             }
+
                             if (multiverse.seed != null) {
                                 val seedFiles =
                                     server.seedGeneratorService.filesForSeed(multiverse.seed?.id?.toString() ?: "")
@@ -237,7 +242,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
                 }
 
-                server.sync.aggregationStrategies.remove(multiverseId)
+                server.sync.aggregationStrategiesCache.remove(multiverseId)
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
 
                 call.respond(HttpStatusCode.OK)
@@ -277,6 +282,28 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
 
                 call.respond(HttpStatusCode.Created)
+            }
+
+            post("multiverses/{multiverse_id}/event/{event}") {
+                val multiverseId =
+                    call.parameters["multiverse_id"]?.toLongOrNull()
+                        ?: throw BadRequestException("Unparsable MultiverseID")
+
+                call.parameters["event"]?.let { event ->
+                    newSuspendedTransaction {
+                        val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
+
+                        if (!multiverse.members.contains(authenticatedUser())) {
+                            throw BadRequestException("You cannot trigger custom events on this multiverse since you are not part of it")
+                        }
+
+                        server.gameHandlerRegistry.getHandler(multiverse).onMultiverseEvent(
+                            CustomEvent(event),
+                        )
+                    }
+
+                    call.respond(HttpStatusCode.Created)
+                } ?: throw BadRequestException("No event given")
             }
         }
 

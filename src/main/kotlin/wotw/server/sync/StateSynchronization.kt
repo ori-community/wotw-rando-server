@@ -10,7 +10,6 @@ import wotw.server.database.EntityCache
 import wotw.server.database.model.GameState
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
-import wotw.server.database.model.generateStateAggregationRegistry
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.zerore
 import java.util.*
@@ -31,7 +30,7 @@ object StateCache : EntityCache<Pair<ShareScope, Long>, UberStateMap>(
 }
 
 class StateSynchronization(private val server: WotwBackendServer) {
-    val aggregationStrategies: MutableMap<Long, AggregationStrategyRegistry> =
+    val aggregationStrategiesCache: MutableMap<Long, AggregationStrategyRegistry> =
         Collections.synchronizedMap(hashMapOf())
 
     //Requires active transaction
@@ -47,9 +46,13 @@ class StateSynchronization(private val server: WotwBackendServer) {
     ): Collection<Pair<UberId, AggregationResult>> {
         val universe = world.universe
         val multiverse = universe.multiverse
-        val strategies = aggregationStrategies.getOrPut(multiverse.id.value) {
-            multiverse.generateStateAggregationRegistry()
+
+        var strategies = aggregationStrategiesCache[multiverse.id.value]
+        if (strategies == null) {
+            strategies = server.gameHandlerRegistry.getHandler(multiverse.id.value).generateStateAggregationRegistry()
+            aggregationStrategiesCache[multiverse.id.value] = strategies
         }
+
         val result = mutableListOf<Pair<UberId, AggregationResult>>()
 
         result += states.flatMap { (uberId, value) ->
