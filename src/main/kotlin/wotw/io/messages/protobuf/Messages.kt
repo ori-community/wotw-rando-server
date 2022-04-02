@@ -3,6 +3,8 @@ package wotw.io.messages.protobuf
 import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 @Serializable
 data class UserInfo(
@@ -98,7 +100,11 @@ data class InitGameSyncMessage(
 data class Vector2(
     @ProtoNumber(1) val x: Float,
     @ProtoNumber(2) val y: Float,
-)
+) {
+    fun distanceSquaredTo(other: Vector2): Float {
+        return (x - other.x).pow(2) + (x - other.y).pow(2)
+    }
+}
 
 @Serializable
 data class PrintTextMessage(

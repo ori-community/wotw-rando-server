@@ -4,10 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.json
-import wotw.io.messages.protobuf.PlayerPositionMessage
-import wotw.io.messages.protobuf.PrintTextMessage
-import wotw.io.messages.protobuf.UpdatePlayerPositionMessage
-import wotw.io.messages.protobuf.Vector2
+import wotw.io.messages.protobuf.*
 import wotw.server.api.*
 import wotw.server.database.model.Multiverse
 import wotw.server.game.*
@@ -18,6 +15,7 @@ import wotw.server.util.Scheduler
 import wotw.server.util.logger
 import java.util.Collections
 import java.util.concurrent.TimeUnit
+import kotlin.math.pow
 
 
 @Serializable
@@ -114,6 +112,38 @@ class HideAndSeekGameHandler(
                     true,
                     UpdatePlayerPositionMessage(playerId, message.x, message.y)
                 )
+            }
+        }
+
+        messageEventBus.register(this, PlayerUseCatchingAbilityMessage::class) { message, playerId ->
+            val cache = server.populationCache.get(playerId)
+
+            state.seekerWorlds[cache.worldId]?.let { seekerWorldInfo ->
+                server.connections.toPlayers(
+                    playerPositionMap.keys,
+                    null,
+                    false,
+                    PlayerUsedCatchingAbilityMessage(playerId),
+                )
+
+                val caughtPlayers = mutableSetOf<PlayerId>()
+
+                playerPositionMap[playerId]?.let { seekerPosition ->
+                    playerPositionMap.forEach { (playerId, position) ->
+                        if (seekerPosition.distanceSquaredTo(position) < seekerWorldInfo.radius.pow(2)) {
+                            caughtPlayers.add(playerId)
+                        }
+                    }
+                }
+
+                for (caughtPlayer in caughtPlayers) {
+                    server.connections.toPlayers(
+                        playerPositionMap.keys,
+                        null,
+                        false,
+                        PlayerCaughtMessage(caughtPlayer),
+                    )
+                }
             }
         }
 
