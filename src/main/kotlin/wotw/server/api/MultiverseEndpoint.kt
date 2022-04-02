@@ -9,8 +9,6 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import org.jetbrains.exposed.dao.EntityChange
 import org.jetbrains.exposed.dao.EntityHook
@@ -22,14 +20,12 @@ import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
-import wotw.server.database.model.BingoEvents.x
 import wotw.server.exception.ConflictException
 import wotw.server.game.CustomEvent
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
-import wotw.server.sync.StateCache.invalidate
 import wotw.server.util.*
 
 class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -310,12 +306,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         webSocket("game_sync/") {
             handleClientSocket() {
                 var playerId = ""
-                var syncHandler: GameConnectionHandler? = null
+                var connectionHandler: GameConnectionHandler? = null
 
                 suspend fun setupGameSync() {
-                    syncHandler = GameConnectionHandler(playerId, socketConnection, server)
+                    connectionHandler = GameConnectionHandler(playerId, socketConnection, server)
 
-                    val setupResult = newSuspendedTransaction { syncHandler!!.setup() }
+                    val setupResult = newSuspendedTransaction { connectionHandler!!.setup() }
 
                     if (setupResult == null) {
                         logger.info("MultiverseEndpoint: game_sync: Player $playerId is not part of an active multiverse")
@@ -369,9 +365,9 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     setupGameSync()
                 }
 
-                onMessage(UberStateUpdateMessage::class) { syncHandler?.onMessage(this) }
-                onMessage(UberStateBatchUpdateMessage::class) { syncHandler?.onMessage(this) }
-                onMessage(PlayerPositionMessage::class) { syncHandler?.onMessage(this) }
+                onMessage(UberStateUpdateMessage::class) { connectionHandler?.onMessage(this) }
+                onMessage(UberStateBatchUpdateMessage::class) { connectionHandler?.onMessage(this) }
+                onMessage(PlayerPositionMessage::class) { connectionHandler?.onMessage(this) }
 
                 onClose {
                     logger.info("WebSocket for player $playerId disconnected (close, ${closeReason.await()})")

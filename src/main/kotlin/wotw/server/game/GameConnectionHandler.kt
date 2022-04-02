@@ -41,6 +41,7 @@ class GameConnectionHandler(
 
             val universe = world.universe
             val multiverse = universe.multiverse
+            multiverseId = multiverse.id.value
 
             val states = server.gameHandlerRegistry.getHandler(multiverse.id.value).generateStateAggregationRegistry().getSyncedStates()
 

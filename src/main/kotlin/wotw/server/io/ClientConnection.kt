@@ -68,7 +68,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
 
     suspend inline fun <reified T : Any> handleUdpMessage(datagram: Datagram, message: T) {
         if (udpAddress != datagram.address) {
-            logger().debug("ClientConnection: Updated UDP remote address of connection $udpId to ${datagram.address}")
+            logger().info("ClientConnection: Updated UDP remote address of connection $udpId to ${datagram.address}")
             udpAddress = datagram.address
         }
 
