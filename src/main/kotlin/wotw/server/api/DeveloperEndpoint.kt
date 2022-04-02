@@ -3,6 +3,7 @@ package wotw.server.api
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.features.*
+import io.ktor.http.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -45,6 +46,18 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             )
                         }
                     })
+                }
+
+                get("/handlers/{multiverse_id}/state") {
+                    requireDeveloper()
+
+                    val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("multiverse_id required")
+
+                    val state = newSuspendedTransaction {
+                        server.gameHandlerRegistry.getHandler(multiverseId).serializeState() ?: "{}"
+                    }
+
+                    call.respondText(state, ContentType("application", "json"))
                 }
             }
         }
