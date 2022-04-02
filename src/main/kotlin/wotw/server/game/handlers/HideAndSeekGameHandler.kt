@@ -113,7 +113,7 @@ class HideAndSeekGameHandler(
                 server.connections.toPlayers(
                     targetPlayers,
                     null,
-                    true,
+                    false,
                     UpdatePlayerPositionMessage(playerId, message.x, message.y)
                 )
             }
