@@ -90,7 +90,7 @@ class PlayerUniversePopulationCache : EntityCache<String, PlayerUniversePopulati
             }
 
             it.toEntity(World.Companion)?.let { world ->
-                world.members.forEach { player ->
+                world.universe.members.forEach { player ->
                     invalidate(player.id.value)
                 }
             }
