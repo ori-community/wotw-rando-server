@@ -3,6 +3,7 @@ package wotw.io.messages.protobuf
 import kotlinx.serialization.*
 import kotlinx.serialization.protobuf.ProtoNumber
 import wotw.io.messages.protoBuf
+import wotw.server.util.logger
 import wotw.util.BiMap
 import wotw.util.biMapOf
 import kotlin.reflect.KType
@@ -17,7 +18,13 @@ data class Packet(
 ) {
 
     fun deserializeMessage(): Any? {
-        val type = ids[id] ?: return null
+        val type = ids[id]
+
+        if (type == null) {
+            logger().info("No deserializer known for packet with id $id")
+            return null
+        }
+
         return protoBuf.decodeFromByteArray(serializer(type), message)
     }
 
