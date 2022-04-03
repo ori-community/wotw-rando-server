@@ -120,7 +120,7 @@ class HideAndSeekGameHandler(
 
             state.seekerWorlds[cache.worldId]?.let { seekerWorldInfo ->
                 server.connections.toPlayers(
-                    playerPositionMap.keys,
+                    playerPositionMap.keys - playerId,
                     null,
                     false,
                     PlayerUsedCatchingAbilityMessage(playerId),
@@ -129,7 +129,9 @@ class HideAndSeekGameHandler(
                 val caughtPlayers = mutableSetOf<PlayerId>()
 
                 playerPositionMap[playerId]?.let { seekerPosition ->
-                    playerPositionMap.forEach { (playerId, position) ->
+                    playerPositionMap
+                        .filterKeys { !seekerPlayerIdsCache.contains(it) }
+                        .forEach { (playerId, position) ->
                         if (seekerPosition.distanceSquaredTo(position) < seekerWorldInfo.radius.pow(2)) {
                             caughtPlayers.add(playerId)
                         }
@@ -138,7 +140,7 @@ class HideAndSeekGameHandler(
 
                 for (caughtPlayer in caughtPlayers) {
                     server.connections.toPlayers(
-                        playerPositionMap.keys,
+                        playerPositionMap.keys - playerId,
                         null,
                         false,
                         PlayerCaughtMessage(caughtPlayer),
@@ -164,7 +166,7 @@ class HideAndSeekGameHandler(
             if (state.seekerWorlds.isEmpty()) {
                 state.seekerWorlds[message.worldId] = SeekerWorldInfo(
                     message.worldId,
-                    12f,
+                    5f,
                     3f,
                 )
             }
@@ -182,7 +184,7 @@ class HideAndSeekGameHandler(
                     multiverse.worlds.firstOrNull()?.let { world ->
                         state.seekerWorlds[world.id.value] = SeekerWorldInfo(
                             world.id.value,
-                            12f,
+                            5f,
                             3f,
                         )
                     }
