@@ -106,7 +106,6 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                             logger().warn("ClientConnection: Cannot authenticate twice in a WebSocket connection")
                         }
                     } else if (principal != null) {
-                        logger().info("MESSAGE: " + message::class.qualifiedName)
                         eventBus.send(message)
                     } else {
                         logger().debug("Received message of type ${message::class.qualifiedName} while the socket was unauthenticated")
