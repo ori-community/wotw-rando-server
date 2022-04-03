@@ -368,10 +368,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 onMessage(UberStateUpdateMessage::class) { connectionHandler?.onMessage(this) }
                 onMessage(UberStateBatchUpdateMessage::class) { connectionHandler?.onMessage(this) }
                 onMessage(PlayerPositionMessage::class) { connectionHandler?.onMessage(this) }
-                onMessage(PlayerUseCatchingAbilityMessage::class) {
-                    logger().info("onMessage 1")
-                    connectionHandler?.onMessage(this)
-                }
+                onMessage(PlayerUseCatchingAbilityMessage::class) { connectionHandler?.onMessage(this) }
 
                 onClose {
                     logger.info("WebSocket for player $playerId disconnected (close, ${closeReason.await()})")

@@ -116,12 +116,7 @@ class HideAndSeekGameHandler(
         }
 
         messageEventBus.register(this, PlayerUseCatchingAbilityMessage::class) { message, playerId ->
-            logger().info("event bus 2")
-
             val cache = server.populationCache.get(playerId)
-
-            logger().info("player id: ${playerId}")
-            logger().info("world id: ${cache.worldId}")
 
             state.seekerWorlds[cache.worldId]?.let { seekerWorldInfo ->
                 server.connections.toPlayers(
