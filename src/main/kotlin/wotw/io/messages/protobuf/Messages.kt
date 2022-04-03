@@ -102,7 +102,7 @@ data class Vector2(
     @ProtoNumber(2) val y: Float,
 ) {
     fun distanceSquaredTo(other: Vector2): Float {
-        return (x - other.x).pow(2) + (x - other.y).pow(2)
+        return (x - other.x).pow(2) + (y - other.y).pow(2)
     }
 }
 
