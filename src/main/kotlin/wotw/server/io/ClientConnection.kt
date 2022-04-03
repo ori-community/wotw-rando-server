@@ -18,7 +18,6 @@ import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.makeServerTextMessage
-import wotw.server.util.toHex
 import wotw.util.EventBus
 import java.lang.Exception
 import java.util.*
@@ -80,8 +79,6 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
         try {
             for (frame in webSocket.incoming) {
                 if (frame is Frame.Binary) {
-                    logger().info("LOG: " + frame.data.toHex())
-
                     val message = Packet.deserialize(frame.data) ?: continue
 
                     if (message is AuthenticateMessage) {
