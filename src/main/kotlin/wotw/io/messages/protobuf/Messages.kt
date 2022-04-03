@@ -249,7 +249,6 @@ data class SetTrackerEndpointId(
     @ProtoNumber(1) val endpointId: String,
 )
 
-
 @Serializable
 data class RequestSeedMessage(
     @ProtoNumber(1) val init: Boolean, // This is something for the client, ask wolf. We just pipe it through

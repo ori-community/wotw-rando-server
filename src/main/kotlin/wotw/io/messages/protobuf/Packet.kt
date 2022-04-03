@@ -13,7 +13,7 @@ typealias PacketId = Int
 @Serializable
 data class Packet(
     @ProtoNumber(1) val id: PacketId,
-    @ProtoNumber(2) val message: ByteArray
+    @ProtoNumber(2) val message: ByteArray = ByteArray(0),
 ) {
 
     fun deserializeMessage(): Any? {
