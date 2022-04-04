@@ -32,9 +32,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
             server.connections.toPlayers(
                 targetPlayers,
-                null,
-                true,
-                UpdatePlayerPositionMessage(playerId, message.x, message.y)
+                UpdatePlayerPositionMessage(playerId, message.x, message.y),
+                unreliable = true,
             )
         }
     }

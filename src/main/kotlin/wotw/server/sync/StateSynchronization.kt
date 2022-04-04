@@ -109,7 +109,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         shareScopeUpdates.entries.forEach { (scope, states) ->
             if (scope !== null)
                 server.connections.sendTo(
-                    multiverseId, playerId, scope, false,
+                    playerId, scope, false,
                     *states.map { (uberId, result) ->
                         UberStateUpdateMessage(
                             UberId(zerore(uberId.group), zerore(uberId.state)),
@@ -118,7 +118,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     }.toTypedArray()
                 )
         }
-        server.connections.toPlayers(listOf(playerId), multiverseId, false, UberStateBatchUpdateMessage(
+        server.connections.toPlayers(listOf(playerId), UberStateBatchUpdateMessage(
             playerUpdates.map { (uberId, result) ->
                 UberStateUpdateMessage(
                     UberId(zerore(uberId.group), zerore(uberId.state)),
@@ -172,7 +172,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         server.connections.toObservers(multiverseId, message = syncBingoUniversesMessage)
         server.connections.toObservers(multiverseId, true, spectatorBoard)
         stateUpdates.forEach { (players, goalStateUpdate, board) ->
-            server.connections.toPlayers(players, multiverseId, false, goalStateUpdate)
+            server.connections.toPlayers(players, goalStateUpdate)
             players.forEach { playerId ->
                 server.connections.toObservers(multiverseId, playerId, board)
             }

@@ -116,15 +116,14 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                             server.connections.toPlayers(
                                 (multiverse.players - universe.members).map { it.id.value },
-                                multiverseId,
-                                false,
                                 makeServerTextMessage(
                                     "${player.name} joined this game in another universe",
-                                )
+                                ),
+                                false
                             )
 
                             server.connections.toPlayers(
-                                universe.members.map { it.id.value }, multiverseId, false, makeServerTextMessage(
+                                universe.members.map { it.id.value }, makeServerTextMessage(
                                     "${player.name} joined a new world in your universe",
                                 )
                             )
@@ -137,7 +136,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             }
 
                             server.connections.toPlayers(
-                                multiverse.players.map { it.id.value }, multiverseId, false, makeServerTextMessage(
+                                multiverse.players.map { it.id.value }, makeServerTextMessage(
                                     "${player.name} joined this game in a new universe",
                                 )
                             )
@@ -212,8 +211,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                         server.connections.toPlayers(
                             (multiverse.players - world.universe.members).map { it.id.value },
-                            multiverseId,
-                            false,
                             makeServerTextMessage(
                                 "${player.name} joined this game in another universe",
                             )
@@ -221,15 +218,13 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                         server.connections.toPlayers(
                             (world.universe.members - world.members).map { it.id.value },
-                            multiverseId,
-                            false,
                             makeServerTextMessage(
                                 "${player.name} joined your universe in another world",
                             )
                         )
 
                         server.connections.toPlayers(
-                            world.members.map { it.id.value }, multiverseId, false, makeServerTextMessage(
+                            world.members.map { it.id.value }, makeServerTextMessage(
                                 "${player.name} joined your world",
                             )
                         )
@@ -261,7 +256,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
 
                         server.connections.toPlayers(
-                            multiverse.players.map { it.id.value }, multiverseId, false, makeServerTextMessage(
+                            multiverse.players.map { it.id.value }, makeServerTextMessage(
                                 "${player.name} is now spectating this game",
                             )
                         )
@@ -333,7 +328,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                     if (allPlayersOnline && multiversePlayerIds.count() >= 2) {
                         server.connections.toPlayers(
-                            multiversePlayerIds, setupResult.multiverseId, false, makeServerTextMessage(
+                            multiversePlayerIds, makeServerTextMessage(
                                 "All ${multiversePlayerIds.count()} players are connected!",
                             )
                         )

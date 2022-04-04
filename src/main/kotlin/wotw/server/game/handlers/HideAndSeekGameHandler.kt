@@ -58,7 +58,7 @@ class HideAndSeekGameHandler(
                         catchPhase = true
 
                         message = PrintTextMessage(
-                            "GO!",
+                            "<s_4>GO!</>",
                             Vector2(0f, 1f),
                             0,
                             3f,
@@ -71,18 +71,13 @@ class HideAndSeekGameHandler(
                             Vector2(0f, 1f),
                             0,
                             3f,
-                            PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+                            PrintTextMessage.SCREEN_POSITION_TOP_RIGHT,
                             queue = "hide_and_seek",
                         )
                     }
 
                     message?.let {
-                        server.connections.toPlayers(
-                            playerPositionMap.keys,
-                            null,
-                            false,
-                            it,
-                        )
+                        server.connections.toPlayers(playerPositionMap.keys, it,)
                     }
                 } else {
                     gameSecondsElapsed++
@@ -108,9 +103,8 @@ class HideAndSeekGameHandler(
 
                 server.connections.toPlayers(
                     targetPlayers,
-                    null,
-                    true,
-                    UpdatePlayerPositionMessage(playerId, message.x, message.y)
+                    UpdatePlayerPositionMessage(playerId, message.x, message.y),
+                    unreliable = true,
                 )
             }
         }
@@ -121,8 +115,6 @@ class HideAndSeekGameHandler(
             state.seekerWorlds[cache.worldId]?.let { seekerWorldInfo ->
                 server.connections.toPlayers(
                     playerPositionMap.keys - playerId,
-                    null,
-                    false,
                     PlayerUsedCatchingAbilityMessage(playerId),
                 )
 
@@ -141,8 +133,6 @@ class HideAndSeekGameHandler(
                 for (caughtPlayer in caughtPlayers) {
                     server.connections.toPlayers(
                         playerPositionMap.keys - playerId,
-                        null,
-                        false,
                         PlayerCaughtMessage(caughtPlayer),
                     )
                 }

@@ -70,8 +70,6 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
             toPlayers(
                 multiverse.players.map { it.id.value },
-                multiverseId,
-                false,
                 message,
             )
 
@@ -207,7 +205,6 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     // region Convenience sending functions
     suspend inline fun <reified T : Any> sendTo(
-        multiverseId: Long,
         playerId: String,
         scope: ShareScope = ShareScope.PLAYER,
         excludePlayer: Boolean = false,
@@ -215,8 +212,8 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         unreliable: Boolean = false,
     ) {
         val targets: MutableCollection<String> = newSuspendedTransaction {
-            val multiverse = Multiverse.findById(multiverseId) ?: return@newSuspendedTransaction mutableSetOf()
             val player = User.findById(playerId) ?: return@newSuspendedTransaction mutableSetOf()
+            val multiverse = player.currentMultiverse ?: return@newSuspendedTransaction mutableSetOf()
 
             val affectedPlayers: Collection<User> = when (scope) {
                 ShareScope.PLAYER -> setOf(player)
@@ -231,7 +228,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         if(excludePlayer)
             targets -= playerId
 
-        toPlayers(targets, multiverseId, unreliable, *messages)
+        toPlayers(targets, messages, unreliable)
     }
 
     suspend inline fun <reified T : Any> toAll(
@@ -251,16 +248,20 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     suspend inline fun <reified T : Any> toPlayers(
         players: Iterable<String>,
-        multiverseId: Long? = null,
+        message: T,
         unreliable: Boolean = false,
-        vararg messages: T
+    ) = toPlayers(players, listOf(message), unreliable)
+
+    suspend inline fun <reified T : Any> toPlayers(
+        players: Iterable<String>,
+        messages: List<T>,
+        unreliable: Boolean = false,
     ) {
         for (player in players) {
             playerMultiverseConnections[player]?.let { conn ->
                 for (message in messages) {
                     try {
-                        if (multiverseId == null || multiverseId == conn.multiverseId)
-                            conn.clientConnection.sendMessage(message, unreliable)
+                        conn.clientConnection.sendMessage(message, unreliable)
                     } catch (e: Throwable) {
                         logger.error(e.message, e)
                     }
