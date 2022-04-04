@@ -83,12 +83,10 @@ class HideAndSeekGameHandler(
                     } else if (secondsUntilCatchPhase <= 10) {
                         message = PrintTextMessage(
                             "Catching starts in $secondsUntilCatchPhase seconds!",
-                            Vector2(-0.5f, -0.5f),
+                            Vector2(0f, -0.2f),
                             0,
                             3f,
-                            PrintTextMessage.SCREEN_POSITION_TOP_RIGHT,
-                            horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
-                            verticalAnchor = PrintTextMessage.VERTICAL_ANCHOR_TOP,
+                            PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
                             withBox = false,
                             withSound = false,
                             queue = "hide_and_seek",
@@ -209,6 +207,18 @@ class HideAndSeekGameHandler(
                     newSuspendedTransaction {
                         Multiverse.findById(multiverseId)?.gameHandlerActive = true
                     }
+                }
+                "debugmsg" -> {
+                    server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
+                        "This is a message!",
+                            Vector2(0f, -0.2f),
+                        0,
+                        3f,
+                        PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
+                        withBox = false,
+                        withSound = false,
+                        queue = "hide_and_seek",
+                    ))
                 }
             }
         }
