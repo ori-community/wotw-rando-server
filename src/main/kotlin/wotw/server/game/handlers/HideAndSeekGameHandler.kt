@@ -73,7 +73,7 @@ class HideAndSeekGameHandler(
                         catchPhase = true
 
                         message = PrintTextMessage(
-                            "<s_4>GO!</>",
+                            "<s_2>GO!</>",
                             Vector2(0f, 1f),
                             0,
                             3f,
@@ -83,10 +83,14 @@ class HideAndSeekGameHandler(
                     } else if (secondsUntilCatchPhase <= 10) {
                         message = PrintTextMessage(
                             "Catching starts in $secondsUntilCatchPhase seconds!",
-                            Vector2(0f, 1f),
+                            Vector2(-0.5f, -0.5f),
                             0,
                             3f,
                             PrintTextMessage.SCREEN_POSITION_TOP_RIGHT,
+                            horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
+                            verticalAnchor = PrintTextMessage.VERTICAL_ANCHOR_TOP,
+                            withBox = false,
+                            withSound = false,
                             queue = "hide_and_seek",
                         )
                     }
