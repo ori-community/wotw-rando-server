@@ -104,6 +104,8 @@ data class Vector2(
     fun distanceSquaredTo(other: Vector2): Float {
         return (x - other.x).pow(2) + (y - other.y).pow(2)
     }
+
+    operator fun plus(other: Vector2): Vector2 = Vector2(x + other.x, y + other.y)
 }
 
 @Serializable

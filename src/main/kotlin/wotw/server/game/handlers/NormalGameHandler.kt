@@ -13,17 +13,13 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
     init {
         messageEventBus.register(this, UberStateUpdateMessage::class) { message, playerId ->
             server.populationCache.getOrNull(playerId)?.worldId?.let { worldId ->
-                if (playerId.isNotEmpty()) {
-                    updateUberState(message, worldId, playerId)
-                }
+                updateUberState(message, worldId, playerId)
             }
         }
 
         messageEventBus.register(this, UberStateBatchUpdateMessage::class) { message, playerId ->
             server.populationCache.getOrNull(playerId)?.worldId?.let { worldId ->
-                if (playerId.isNotEmpty()) {
-                    batchUpdateUberStates(message, worldId, playerId)
-                }
+                batchUpdateUberStates(message, worldId, playerId)
             }
         }
 
@@ -46,9 +42,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to rezero(it.value)
         }.toMap()
 
-        val (results, multiverseId) = newSuspendedTransaction {
+        val results = newSuspendedTransaction {
             val world = World.findById(worldId) ?: error("Error: Requested uber state update on unknown world")
-            val result = server.sync.aggregateStates(world, updates) to world.universe.multiverse.id.value
+            val result = server.sync.aggregateStates(world, updates)
             world.universe.multiverse.updateCompletions(world.universe)
             result
         }
@@ -61,7 +57,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         // }
 
         server.sync.syncMultiverseProgress(multiverseId)
-        server.sync.syncStates(multiverseId, playerId, results)
+        server.sync.syncStates(playerId, results)
     }
 
     override suspend fun generateStateAggregationRegistry(): AggregationStrategyRegistry {

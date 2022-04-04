@@ -48,7 +48,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 result
             }
 
-            server.sync.syncStates(multiverseId, playerId, result)
+            server.sync.syncStates(playerId, result)
             server.sync.syncMultiverseProgress(multiverseId)
             call.respond(HttpStatusCode.NoContent)
         }

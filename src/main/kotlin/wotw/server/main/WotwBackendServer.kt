@@ -154,7 +154,7 @@ class WotwBackendServer {
         gameHandlerRegistry.cacheEntries.filter { cacheEntry ->
             !cacheEntry.isDisposable().also { disposable ->
                 if (disposable) {
-                    cacheEntry.handler?.let { handler ->
+                    cacheEntry.handler.let { handler ->
                         logger.info("Disposed handler for multiverse ${handler.multiverseId}")
                         handler.stop()
                     }
@@ -195,7 +195,7 @@ class WotwBackendServer {
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)
-        cacheScheduler.scheduleExecution(Every(30, TimeUnit.SECONDS))
+        cacheScheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         val env = applicationEngineEnvironment {
             config = cmd.config

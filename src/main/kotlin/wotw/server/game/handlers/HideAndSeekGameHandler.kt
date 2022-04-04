@@ -7,13 +7,14 @@ import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.*
 import wotw.server.database.model.Multiverse
+import wotw.server.database.model.World
 import wotw.server.game.*
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.*
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.logger
-import java.util.Collections
+import wotw.server.util.rezero
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
@@ -39,13 +40,23 @@ data class HideAndSeekGameHandlerClientInfo(
     @ProtoNumber(1) val seekerWorldInfos: List<SeekerWorldInfo>,
 )
 
+enum class PlayerType {
+    Hider,
+    Seeker,
+}
+
+data class PlayerInfo(
+    var type: PlayerType,
+    var position: Vector2 = Vector2(0f, 0f),
+)
+
 class HideAndSeekGameHandler(
     multiverseId: Long,
     server: WotwBackendServer,
 ) : GameHandler<HideAndSeekGameHandlerClientInfo>(multiverseId, server) {
-    private val playerPositionMap: MutableMap<PlayerId, Vector2> = Collections.synchronizedMap(mutableMapOf())
     private var state = HideAndSeekGameHandlerState()
-    private var seekerPlayerIdsCache = setOf<PlayerId>()
+    private val playerInfos = mutableMapOf<PlayerId, PlayerInfo>()
+
     private val scheduler = Scheduler {
         state.apply {
             if (started) {
@@ -77,7 +88,7 @@ class HideAndSeekGameHandler(
                     }
 
                     message?.let {
-                        server.connections.toPlayers(playerPositionMap.keys, it,)
+                        server.connections.toPlayers(playerInfos.keys, it)
                     }
                 } else {
                     gameSecondsElapsed++
@@ -86,26 +97,14 @@ class HideAndSeekGameHandler(
         }
     }
 
+    override fun isDisposable(): Boolean {
+        return playerInfos.keys.isEmpty()
+    }
+
     override fun start() {
         messageEventBus.register(this, PlayerPositionMessage::class) { message, playerId ->
-            playerPositionMap[playerId] = Vector2(message.x, message.y)
-
-            server.populationCache.get(playerId).let { cache ->
-                val targetPlayers = if (state.catchPhase) {
-                    cache.universeMemberIds // Everyone can see everyone else
-                } else if (state.seekerWorlds.containsKey(cache.worldId)) {
-                    // Seekers can be seen by everyone else
-                    cache.universeMemberIds
-                } else {
-                    // Hiders can't be seen before the catch phase
-                    emptySet()
-                }
-
-                server.connections.toPlayers(
-                    targetPlayers,
-                    UpdatePlayerPositionMessage(playerId, message.x, message.y),
-                    unreliable = true,
-                )
+            playerInfos[playerId]?.let { playerInfo ->
+                playerInfo.position = Vector2(message.x, message.y)
             }
         }
 
@@ -114,28 +113,54 @@ class HideAndSeekGameHandler(
 
             state.seekerWorlds[cache.worldId]?.let { seekerWorldInfo ->
                 server.connections.toPlayers(
-                    playerPositionMap.keys - playerId,
+                    playerInfos.keys - playerId,
                     PlayerUsedCatchingAbilityMessage(playerId),
                 )
 
                 val caughtPlayers = mutableSetOf<PlayerId>()
 
-                playerPositionMap[playerId]?.let { seekerPosition ->
-                    playerPositionMap
-                        .filterKeys { !seekerPlayerIdsCache.contains(it) }
-                        .forEach { (playerId, position) ->
-                        if (seekerPosition.distanceSquaredTo(position) < seekerWorldInfo.radius.pow(2)) {
-                            caughtPlayers.add(playerId)
+                playerInfos[playerId]?.let { seekerInfo ->
+                    playerInfos
+                        .filterValues { it.type == PlayerType.Hider }
+                        .forEach { (playerId, hiderInfo) ->
+                            if (seekerInfo.position.distanceSquaredTo(hiderInfo.position) < seekerWorldInfo.radius.pow(2)) {
+                                caughtPlayers.add(playerId)
+                            }
                         }
-                    }
                 }
 
                 for (caughtPlayer in caughtPlayers) {
                     server.connections.toPlayers(
-                        playerPositionMap.keys - playerId,
+                        playerInfos.keys - playerId,
                         PlayerCaughtMessage(caughtPlayer),
                     )
                 }
+            }
+        }
+
+        messageEventBus.register(this, UberStateUpdateMessage::class) { message, playerId ->
+            server.populationCache.getOrNull(playerId)?.worldId?.let { worldId ->
+                updateUberState(message, worldId, playerId)
+
+                if (
+                    pickupIds.containsValue(message.uberId) && // It's a pickup
+                    state.seekerWorlds.containsKey(worldId) // We are a seeker
+                ) {
+                    server.connections.toPlayers(
+                        listOf(playerId),
+                        PrintTextMessage(
+                            "?????????",
+                            (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, -1f),
+                            useInGameCoordinates = true,
+                        ),
+                    )
+                }
+            }
+        }
+
+        messageEventBus.register(this, UberStateBatchUpdateMessage::class) { message, playerId ->
+            server.populationCache.getOrNull(playerId)?.worldId?.let { worldId ->
+                batchUpdateUberStates(message, worldId, playerId)
             }
         }
 
@@ -161,7 +186,7 @@ class HideAndSeekGameHandler(
                 )
             }
 
-            updateSeekerPlayerIdCache()
+            updatePlayerInfoCache()
         }
 
         multiverseEventBus.register(this, WorldDeletedEvent::class) { message ->
@@ -181,17 +206,17 @@ class HideAndSeekGameHandler(
                 }
             }
 
-            updateSeekerPlayerIdCache()
+            updatePlayerInfoCache()
         }
 
         multiverseEventBus.register(this, PlayerJoinedEvent::class) { message ->
             logger().info("joined: ${message.worldId}")
-            updateSeekerPlayerIdCache()
+            updatePlayerInfoCache()
         }
 
         multiverseEventBus.register(this, PlayerLeftEvent::class) { message ->
             logger().info("left: ${message.worldId}")
-            updateSeekerPlayerIdCache()
+            updatePlayerInfoCache()
         }
 
         scheduler.scheduleExecution(Every(1, TimeUnit.SECONDS))
@@ -210,7 +235,7 @@ class HideAndSeekGameHandler(
             state = json.decodeFromString(HideAndSeekGameHandlerState.serializer(), it)
         }
 
-        updateSeekerPlayerIdCache()
+        updatePlayerInfoCache()
     }
 
     override suspend fun generateStateAggregationRegistry(): AggregationStrategyRegistry {
@@ -221,19 +246,41 @@ class HideAndSeekGameHandler(
         return HideAndSeekGameHandlerClientInfo(state.seekerWorlds.values.toList())
     }
 
-    private suspend fun updateSeekerPlayerIdCache() {
-        seekerPlayerIdsCache = newSuspendedTransaction {
+    private suspend fun updatePlayerInfoCache() {
+        val playerIds = mutableSetOf<PlayerId>()
+
+        newSuspendedTransaction {
             Multiverse.findById(multiverseId)?.let { multiverse ->
-                val set = mutableSetOf<PlayerId>()
                 multiverse.worlds.forEach { world ->
-                    if (state.seekerWorlds.containsKey(world.id.value)) {
-                        world.members.forEach { player ->
-                            set.add(player.id.value)
-                        }
+                    val type = if (state.seekerWorlds.containsKey(world.id.value))
+                        PlayerType.Seeker else PlayerType.Hider
+
+                    world.members.forEach { player ->
+                        playerIds.add(player.id.value)
+                        playerInfos.getOrPut(player.id.value) {
+                            PlayerInfo(type)
+                        }.type = type
                     }
                 }
-                set
-            } ?: setOf()
+            }
         }
+
+        playerInfos -= playerInfos.keys - playerIds
+    }
+
+    private suspend fun updateUberState(message: UberStateUpdateMessage, worldId: Long, playerId: String) =
+        batchUpdateUberStates(UberStateBatchUpdateMessage(message), worldId, playerId)
+
+    private suspend fun batchUpdateUberStates(message: UberStateBatchUpdateMessage, worldId: Long, playerId: String) {
+        val updates = message.updates.map {
+            UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to rezero(it.value)
+        }.toMap()
+
+        val results = newSuspendedTransaction {
+            val world = World.findById(worldId) ?: error("Error: Requested uber state update on unknown world")
+            server.sync.aggregateStates(world, updates)
+        }
+
+        server.sync.syncStates(playerId, results)
     }
 }

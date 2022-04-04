@@ -81,17 +81,16 @@ class StateSynchronization(private val server: WotwBackendServer) {
         return result
     }
 
-    suspend fun syncStates(gameId: Long, playerId: String, uberId: UberId, updates: Collection<AggregationResult>) =
-        syncStates(gameId, playerId, updates.map { uberId to it })
+    suspend fun syncStates(playerId: String, uberId: UberId, updates: Collection<AggregationResult>) =
+        syncStates(playerId, updates.map { uberId to it })
 
     suspend fun syncStates(
-        multiverseId: Long,
         playerId: String,
         updates: Map<UberId, Collection<AggregationResult>>
     ) =
-        syncStates(multiverseId, playerId, updates.entries.flatMap { (key, value) -> value.map { key to it } })
+        syncStates(playerId, updates.entries.flatMap { (key, value) -> value.map { key to it } })
 
-    suspend fun syncStates(multiverseId: Long, playerId: String, updates: Collection<Pair<UberId, AggregationResult>>) {
+    suspend fun syncStates(playerId: String, updates: Collection<Pair<UberId, AggregationResult>>) {
         val triggered = updates.filter { it.second.triggered }
         val playerUpdates = triggered.filter {
             val strategy = it.second.strategy
