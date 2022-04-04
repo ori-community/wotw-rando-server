@@ -120,6 +120,24 @@ class HideAndSeekGameHandler(
         messageEventBus.register(this, PlayerPositionMessage::class) { message, playerId ->
             playerInfos[playerId]?.let { playerInfo ->
                 playerInfo.position = Vector2(message.x, message.y)
+
+                val cache = server.populationCache.get(playerId)
+
+                val targetPlayers = if (state.catchPhase) {
+                    cache.universeMemberIds // Everyone can see everyone else
+                } else if (playerInfo.type == PlayerType.Seeker) {
+                    // Seekers can be seen by everyone else
+                    cache.universeMemberIds
+                } else {
+                    // Hiders can't be seen before the catch phase
+                    emptySet()
+                }
+
+                server.connections.toPlayers(
+                    targetPlayers,
+                    UpdatePlayerPositionMessage(playerId, message.x, message.y),
+                    unreliable = true,
+                )
             }
         }
 
