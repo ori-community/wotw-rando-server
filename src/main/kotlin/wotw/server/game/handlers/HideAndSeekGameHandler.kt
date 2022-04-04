@@ -164,7 +164,7 @@ class HideAndSeekGameHandler(
 
                 for (caughtPlayer in caughtPlayers) {
                     server.connections.toPlayers(
-                        playerInfos.keys - playerId,
+                        playerInfos.keys,
                         PlayerCaughtMessage(caughtPlayer),
                     )
                 }
@@ -284,8 +284,8 @@ class HideAndSeekGameHandler(
                         state.seekerWorlds.clear()
                         state.seekerWorlds[firstWorld.id.value] = SeekerWorldInfo(
                             firstWorld.id.value,
-                            5f,
-                            3f,
+                            8f,
+                            6f,
                         )
                     }
                 }
