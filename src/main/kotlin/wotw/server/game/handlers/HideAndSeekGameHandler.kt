@@ -212,14 +212,6 @@ class HideAndSeekGameHandler(
         multiverseEventBus.register(this, WorldCreatedEvent::class) { message ->
             logger().info("world created: ${message.worldId}")
 
-            if (state.seekerWorlds.isEmpty()) {
-                state.seekerWorlds[message.worldId] = SeekerWorldInfo(
-                    message.worldId,
-                    5f,
-                    3f,
-                )
-            }
-
             updatePlayerInfoCache()
         }
 
@@ -285,6 +277,19 @@ class HideAndSeekGameHandler(
 
         newSuspendedTransaction {
             Multiverse.findById(multiverseId)?.let { multiverse ->
+
+                // TODO: Hack, remove later.
+                multiverse.worlds.firstOrNull()?.let { firstWorld ->
+                    if (!state.seekerWorlds.containsKey(firstWorld.id.value)) {
+                        state.seekerWorlds.clear()
+                        state.seekerWorlds[firstWorld.id.value] = SeekerWorldInfo(
+                            firstWorld.id.value,
+                            5f,
+                            3f,
+                        )
+                    }
+                }
+
                 multiverse.worlds.forEach { world ->
                     val type = if (state.seekerWorlds.containsKey(world.id.value))
                         PlayerType.Seeker else PlayerType.Hider
