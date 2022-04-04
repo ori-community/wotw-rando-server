@@ -53,11 +53,14 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("multiverse_id required")
 
-                    val state = newSuspendedTransaction {
-                        server.gameHandlerRegistry.getHandler(multiverseId).serializeState() ?: "{}"
+                    val handler = server.gameHandlerRegistry.getHandler(multiverseId)
+                    var state = handler.serializeState() ?: "{}"
+
+                    handler.getAdditionalDebugInformation()?.let { debugInfo ->
+                        state += "\n$debugInfo"
                     }
 
-                    call.respondText(state, ContentType("application", "json"))
+                    call.respondText(state, ContentType("text", "plain"))
                 }
             }
         }

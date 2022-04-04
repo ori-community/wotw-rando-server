@@ -48,7 +48,11 @@ enum class PlayerType {
 data class PlayerInfo(
     var type: PlayerType,
     var position: Vector2 = Vector2(0f, 0f),
-)
+) {
+    override fun toString(): String {
+        return "$type at $position"
+    }
+}
 
 class HideAndSeekGameHandler(
     multiverseId: Long,
@@ -99,6 +103,17 @@ class HideAndSeekGameHandler(
 
     override fun isDisposable(): Boolean {
         return playerInfos.keys.isEmpty()
+    }
+
+    override suspend fun getAdditionalDebugInformation(): String {
+        var debugInfo = ""
+
+        debugInfo += "Player Infos:\n"
+        playerInfos.forEach { (playerId, playerInfo) ->
+            debugInfo += "  - $playerId: $playerInfo"
+        }
+
+        return debugInfo
     }
 
     override fun start() {

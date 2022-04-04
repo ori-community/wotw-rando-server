@@ -106,6 +106,10 @@ data class Vector2(
     }
 
     operator fun plus(other: Vector2): Vector2 = Vector2(x + other.x, y + other.y)
+
+    override fun toString(): String {
+        return "($x, $y)"
+    }
 }
 
 @Serializable

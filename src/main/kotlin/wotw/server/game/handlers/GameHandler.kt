@@ -34,13 +34,13 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         multiverseEventBus.send(message)
     }
 
-    open fun serializeState(): String? {
-        return null
-    }
+    open fun serializeState(): String? = null
 
     open suspend fun restoreState(serializedState: String?) {
 
     }
+
+    open suspend fun getAdditionalDebugInformation(): String? = null
 
     abstract suspend fun generateStateAggregationRegistry(): AggregationStrategyRegistry
 
