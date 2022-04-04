@@ -220,18 +220,6 @@ class HideAndSeekGameHandler(
 
             state.seekerWorlds.remove(message.worldId)
 
-            newSuspendedTransaction {
-                Multiverse.findById(multiverseId)?.let { multiverse ->
-                    multiverse.worlds.firstOrNull()?.let { world ->
-                        state.seekerWorlds[world.id.value] = SeekerWorldInfo(
-                            world.id.value,
-                            5f,
-                            3f,
-                        )
-                    }
-                }
-            }
-
             updatePlayerInfoCache()
         }
 
@@ -279,6 +267,7 @@ class HideAndSeekGameHandler(
             Multiverse.findById(multiverseId)?.let { multiverse ->
 
                 // TODO: Hack, remove later.
+                multiverse.refresh()
                 multiverse.worlds.firstOrNull()?.let { firstWorld ->
                     if (!state.seekerWorlds.containsKey(firstWorld.id.value)) {
                         state.seekerWorlds.clear()
