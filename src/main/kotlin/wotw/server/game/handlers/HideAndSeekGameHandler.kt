@@ -108,9 +108,9 @@ class HideAndSeekGameHandler(
     override suspend fun getAdditionalDebugInformation(): String {
         var debugInfo = ""
 
-        debugInfo += "Player Infos:\n"
+        debugInfo += "Player Infos:"
         playerInfos.forEach { (playerId, playerInfo) ->
-            debugInfo += "  - $playerId: $playerInfo"
+            debugInfo += "\n  - $playerId: $playerInfo"
         }
 
         return debugInfo
@@ -166,6 +166,7 @@ class HideAndSeekGameHandler(
                         PrintTextMessage(
                             "?????????",
                             (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, -1f),
+                            time = 3f,
                             useInGameCoordinates = true,
                         ),
                     )

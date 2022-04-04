@@ -57,7 +57,7 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     var state = handler.serializeState() ?: "{}"
 
                     handler.getAdditionalDebugInformation()?.let { debugInfo ->
-                        state += "\n$debugInfo"
+                        state += "\n\n$debugInfo"
                     }
 
                     call.respondText(state, ContentType("text", "plain"))

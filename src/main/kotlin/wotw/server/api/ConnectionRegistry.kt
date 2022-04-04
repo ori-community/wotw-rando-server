@@ -228,7 +228,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         if(excludePlayer)
             targets -= playerId
 
-        toPlayers(targets, messages, unreliable)
+        toPlayers(targets, messages.toList(), unreliable)
     }
 
     suspend inline fun <reified T : Any> toAll(
