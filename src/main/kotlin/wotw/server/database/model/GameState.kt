@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.jsonb
+import kotlin.reflect.typeOf
 
 object GameStates : LongIdTable() {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)

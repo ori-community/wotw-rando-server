@@ -7,8 +7,8 @@ import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.Multiverse
+import wotw.server.database.model.User
 import wotw.server.database.model.World
-import wotw.server.database.model.WorldMembership
 import wotw.server.game.handlers.GameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
@@ -96,25 +96,7 @@ class GameHandlerRegistry(val server: WotwBackendServer) {
                     }
                 }
 
-                it.toEntity(WorldMembership.Companion)?.let { membership ->
-                    when (it.changeType) {
-                        EntityChangeType.Created -> getHandler(membership.world.universe.multiverse.id.value).onMultiverseEvent(
-                            PlayerJoinedEvent(
-                                membership.player.id.value,
-                                membership.world.id.value,
-                                membership.world.universe.id.value,
-                            )
-                        )
-                        EntityChangeType.Removed -> getHandler(membership.world.universe.multiverse.id.value).onMultiverseEvent(
-                            PlayerLeftEvent(
-                                membership.player.id.value,
-                                membership.world.id.value,
-                                membership.world.universe.id.value,
-                            )
-                        )
-                        else -> {}
-                    }
-                }
+                // TODO: Player joined/left events in a separate bus
             }
         }
     }

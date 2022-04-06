@@ -171,23 +171,17 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }.sortedByDescending { it.rank }
     }
 
-    fun removePlayerFromWorlds(player: User, newWorld: World? = null): HashSet<Long> {
-        val existingWorlds = World.findAll(player.id.value).filter { it != newWorld }
+    fun deleteEmptyWorlds(newWorld: World? = null): HashSet<Long> {
         val affectedMultiverseIds = hashSetOf<Long>()
 
-        existingWorlds.forEach {
-            if (it.members.contains(player)) {
-                affectedMultiverseIds.add(it.universe.multiverse.id.value)
-                it.members = SizedCollection(it.members.minus(player))
+        worlds.forEach {
+            // Do not delete empty worlds in universes which are attached to a seed
+            if (it.members.empty() && it.universe.multiverse.seed == null) {
+                it.delete()
+            }
 
-                //Do not delete empty worlds in universes which are attached to a seed
-                if (it.members.empty() && it.universe.multiverse.seed == null) {
-                    it.delete()
-                }
-
-                if (it.universe.worlds.all { it.members.empty() } && newWorld?.universe != it.universe) {
-                    it.universe.delete()
-                }
+            if (it.universe.worlds.all { it.members.empty() } && newWorld?.universe != it.universe) {
+                it.universe.delete()
             }
         }
 

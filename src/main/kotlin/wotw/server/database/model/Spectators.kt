@@ -16,7 +16,7 @@ object Spectators : LongIdTable() {
 }
 
 class Spectator(id: EntityID<Long>) : LongEntity(id) {
-    companion object : LongEntityClass<WorldMembership>(WorldMemberships)
+    companion object : LongEntityClass<Spectator>(Spectators)
 
     var multiverse by Multiverse referencedOn Spectators.gameId
     var player by User referencedOn Spectators.playerId

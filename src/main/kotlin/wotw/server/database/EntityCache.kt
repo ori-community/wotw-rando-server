@@ -6,9 +6,8 @@ import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.server.database.model.User
 import wotw.server.database.model.World
-import wotw.server.database.model.WorldMembership
-import wotw.server.database.model.WorldMemberships
 import java.util.*
 
 open class EntityCache<KEY : Any, VALUE : Any>(
@@ -71,21 +70,19 @@ data class PlayerUniversePopulationCacheEntry(
 
 class PlayerUniversePopulationCache : EntityCache<String, PlayerUniversePopulationCacheEntry>({ playerId ->
     newSuspendedTransaction {
-        val membership = WorldMembership.find {
-            WorldMemberships.playerId eq playerId
-        }.firstOrNull()
+        val player = User.findById(playerId)
 
         PlayerUniversePopulationCacheEntry(
             playerId,
-            membership?.world?.id?.value,
-            membership?.world?.universe?.members?.map { it.id.value }?.toSet() ?: emptySet(),
-            membership?.world?.members?.map { it.id.value }?.toSet() ?: emptySet(),
+            player?.currentWorld?.id?.value,
+            player?.currentWorld?.universe?.members?.map { it.id.value }?.toSet() ?: emptySet(),
+            player?.currentWorld?.members?.map { it.id.value }?.toSet() ?: emptySet(),
         )
     }
 }, { _, _ -> }) {
     init {
         EntityHook.subscribe {
-            it.toEntity(WorldMembership.Companion)?.world?.universe?.members?.forEach { player ->
+            it.toEntity(User.Companion)?.let { player ->
                 invalidate(player.id.value)
             }
 

@@ -64,8 +64,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     }
 
     suspend fun broadcastMultiverseInfoMessage(multiverseId: Long) {
-        val multiverse = Multiverse.findById(multiverseId)
-        if (multiverse != null) {
+        Multiverse.findById(multiverseId)?.let { multiverse ->
             val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
 
             toPlayers(

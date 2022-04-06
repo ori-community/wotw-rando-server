@@ -20,7 +20,8 @@ class GameConnectionHandler(
     private val connection: ClientConnection,
     private val server: WotwBackendServer,
 ) {
-    private var multiverseId: Long? = null
+    var multiverseId: Long? = null
+        private set
 
     suspend fun onMessage(message: Any) {
         multiverseId?.let {
@@ -31,9 +32,7 @@ class GameConnectionHandler(
     suspend fun setup(): GameConnectionHandlerSyncResult? {
         return newSuspendedTransaction {
             val player = User.findById(playerId)
-            val world = WorldMembership.find {
-                WorldMemberships.playerId eq playerId
-            }.firstOrNull()?.world
+            val world = player?.currentWorld
 
             if (player == null || world == null) {
                 return@newSuspendedTransaction null

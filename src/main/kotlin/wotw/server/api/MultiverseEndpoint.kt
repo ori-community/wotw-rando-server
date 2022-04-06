@@ -32,26 +32,26 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
     val logger = logger()
 
     override fun Route.initRouting() {
-        post<UberStateUpdateMessage>("multiverses/{multiverse_id}/{player_id}/state") { message ->
-            if (System.getenv("DEV").isNullOrBlank()) {
-                throw BadRequestException("Only available in dev mode")
-            }
-
-            val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("")
-            val playerId = call.parameters["player_id"]?.ifEmpty { null } ?: throw BadRequestException("")
-
-            val result = newSuspendedTransaction {
-                val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
-                val world = World.find(multiverseId, playerId) ?: throw NotFoundException("World not found for player")
-                val result = server.sync.aggregateState(world, message.uberId, message.value)
-                multiverse.updateCompletions(world.universe)
-                result
-            }
-
-            server.sync.syncStates(playerId, result)
-            server.sync.syncMultiverseProgress(multiverseId)
-            call.respond(HttpStatusCode.NoContent)
-        }
+//        post<UberStateUpdateMessage>("multiverses/{multiverse_id}/{player_id}/state") { message ->
+//            if (System.getenv("DEV").isNullOrBlank()) {
+//                throw BadRequestException("Only available in dev mode")
+//            }
+//
+//            val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("")
+//            val playerId = call.parameters["player_id"]?.ifEmpty { null } ?: throw BadRequestException("")
+//
+//            val result = newSuspendedTransaction {
+//                val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
+//                val world = World.find(multiverseId, playerId) ?: throw NotFoundException("World not found for player")
+//                val result = server.sync.aggregateState(world, message.uberId, message.value)
+//                multiverse.updateCompletions(world.universe)
+//                result
+//            }
+//
+//            server.sync.syncStates(playerId, result)
+//            server.sync.syncMultiverseProgress(multiverseId)
+//            call.respond(HttpStatusCode.NoContent)
+//        }
         get("multiverses/{multiverse_id}/worlds/{world_id}") {
             val multiverseId =
                 call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
@@ -165,10 +165,10 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 World.new(universe, player.name + "'s World")
                         }
 
-                    multiverse.removePlayerFromWorlds(player, world).filter { it != multiverseId }.forEach {
-                        server.connections.broadcastMultiverseInfoMessage(it)
-                    }
-                    world.members = SizedCollection(player)
+
+                    server.multiverseUtil.removePlayerFromCurrentWorld(player, multiverseId)
+                    player.currentWorld = world
+                    multiverse.deleteEmptyWorlds()
 
                     multiverse.refresh(true)
 
@@ -202,12 +202,9 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         ?: throw NotFoundException("World does not exist!")
 
                     if (!world.members.contains(player)) {
-                        val affectedMultiverseIds = multiverse.removePlayerFromWorlds(player, world)
-                        world.members = SizedCollection(world.members + player)
-
-                        affectedMultiverseIds.filter { it != multiverseId }.forEach {
-                            server.connections.broadcastMultiverseInfoMessage(it)
-                        }
+                        server.multiverseUtil.removePlayerFromCurrentWorld(player, multiverseId)
+                        player.currentWorld = world
+                        multiverse.deleteEmptyWorlds()
 
                         server.connections.toPlayers(
                             (multiverse.players - world.universe.members).map { it.id.value },
@@ -250,7 +247,10 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val multiverse =
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
-                    val affectedMultiverseIds = multiverse.removePlayerFromWorlds(player)
+
+                    if (multiverse.members.contains(player)) {
+                        server.multiverseUtil.removePlayerFromCurrentWorld(player, multiverseId)
+                    }
 
                     if (!multiverse.spectators.contains(player)) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
@@ -260,10 +260,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 "${player.name} is now spectating this game",
                             )
                         )
-                    }
-
-                    affectedMultiverseIds.filter { it != multiverseId }.forEach {
-                        server.connections.broadcastMultiverseInfoMessage(it)
                     }
 
                     server.infoMessagesService.generateMultiverseInfoMessage(multiverse) to player.id.value
@@ -336,8 +332,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 val entityChangeHandler: (EntityChange) -> Unit = {
-                    it.toEntity(WorldMembership.Companion)?.player?.let { player ->
-                        if (player.id.value == playerId) {
+                    it.toEntity(User.Companion)?.let { player ->
+                        if (player.id.value == playerId && player.currentMultiverse?.id?.value != connectionHandler?.multiverseId) {
                             launch {
                                 setupGameSync()
                             }

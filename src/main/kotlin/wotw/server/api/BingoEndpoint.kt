@@ -36,7 +36,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 multiverse.board ?: throw NotFoundException()
                 val info = multiverse.bingoUniverseInfo()
 
-                BingoData(multiverse.createSyncableBoard(World.find(multiverse.id.value, player.id.value)?.universe), info)
+                BingoData(multiverse.createSyncableBoard(player.currentWorld?.universe), info)
             }
             call.respond(boardData)
         }
@@ -48,7 +48,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 multiverse.board ?: throw NotFoundException()
                 val info = multiverse.bingoUniverseInfo()
 
-                val data = BingoData(multiverse.createSyncableBoard(World.find(multiverse.id.value, player.id.value)?.universe, false, true), info)
+                val data = BingoData(multiverse.createSyncableBoard(player.currentWorld?.universe, false, true), info)
                 val posToId: (Position) -> Int = {it.x - 1 + (it.y - 1) * 5}
 
                 BingothonBoard(data.board.squares.sortedBy { posToId(it.position) }.map {
@@ -76,7 +76,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 newSuspendedTransaction {
                     val boardData = newSuspendedTransaction {
                         val player = authenticatedUserOrNull()
-                        val world = player?.let { World.find(multiverseId, player.id.value) }
+                        val world = player?.currentWorld
 
                         val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
                         multiverse.board ?: throw NotFoundException()

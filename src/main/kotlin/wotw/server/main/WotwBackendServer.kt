@@ -126,10 +126,9 @@ class WotwBackendServer {
                 Worlds,
                 GameStates,
                 Users,
-                WorldMemberships,
                 BingoEvents,
                 Spectators,
-                Seeds
+                Seeds,
             )
         }
     }
@@ -142,6 +141,7 @@ class WotwBackendServer {
     val remoteTrackerEndpoint = RemoteTrackerEndpoint(this)
     val developerEndpoint = DeveloperEndpoint(this)
     val infoMessagesService = InfoMessagesService(this)
+    val multiverseUtil = MultiverseUtil(this)
 
     val connections = ConnectionRegistry(this)
     val sync = StateSynchronization(this)

@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import wotw.server.bingo.UberStateMap
+import wotw.server.database.model.Spectator.Companion.referrersOn
 
 object Universes : LongIdTable() {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
@@ -37,28 +38,9 @@ class World(id: EntityID<Long>) : LongEntity(id) {
     var universe by Universe referencedOn Worlds.universeId
     var name by Worlds.name
     var seedFile by Worlds.seedFile
-    var members by User via WorldMemberships
+    val members by User optionalReferrersOn  Users.currentWorldId
 
     companion object : LongEntityClass<World>(Worlds) {
-        fun find(multiverseId: Long, playerId: String) =
-            findAll(multiverseId, playerId).firstOrNull()
-
-        fun findAll(multiverseId: Long, playerId: String) =
-            Worlds
-                .innerJoin(WorldMemberships)
-                .innerJoin(Universes)
-                .select {
-                    (Universes.multiverseId eq multiverseId) and (WorldMemberships.playerId eq playerId)
-                }.map { World.wrapRow(it) }
-
-        fun findAll(playerId: String) =
-            Worlds
-                .innerJoin(WorldMemberships)
-                .innerJoin(Universes)
-                .select {
-                    WorldMemberships.playerId eq playerId
-                }.map { World.wrapRow(it) }
-
         fun new(universe: Universe, name: String, seedFile: String? = null) =
             GameState.new {
                 this.multiverse = universe.multiverse
@@ -72,23 +54,4 @@ class World(id: EntityID<Long>) : LongEntity(id) {
                 uberStateData = UberStateMap()
             }.world!!
     }
-}
-
-
-object WorldMemberships : LongIdTable() {
-    val worldId = reference("world_id", Worlds, ReferenceOption.CASCADE)
-    val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
-
-    init {
-        uniqueIndex(playerId)
-    }
-}
-
-//FIXME: Rename to Census while @zre is not looking :)
-//DONTFIXME: oriNo
-class WorldMembership(id: EntityID<Long>) : LongEntity(id) {
-    companion object : LongEntityClass<WorldMembership>(WorldMemberships)
-
-    var world by World referencedOn WorldMemberships.worldId
-    var player by User referencedOn WorldMemberships.playerId
 }
