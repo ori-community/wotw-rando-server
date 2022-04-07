@@ -10,7 +10,10 @@ import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
 import wotw.server.game.*
 import wotw.server.main.WotwBackendServer
+import wotw.server.sync.ShareScope
+import wotw.server.sync.StateCache
 import wotw.server.sync.normalWorldSyncAggregationStrategy
+import wotw.server.sync.pickupIds
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.logger
@@ -173,25 +176,38 @@ class HideAndSeekGameHandler(
         }
 
         messageEventBus.register(this, UberStateUpdateMessage::class) { message, playerId ->
-            logger().info("GETTING CACHE")
             server.populationCache.getOrNull(playerId)?.worldId?.let { worldId ->
-                logger().info("WORLDID = $worldId")
                 updateUberState(message, worldId, playerId)
 
-//                if (
-//                    pickupIds.containsValue(message.uberId) && // It's a pickup
-//                    state.seekerWorlds.containsKey(worldId) // We are a seeker
-//                ) {
-//                    server.connections.toPlayers(
-//                        listOf(playerId),
-//                        PrintTextMessage(
-//                            "?????????",
-//                            (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, -1f),
-//                            time = 3f,
-//                            useInGameCoordinates = true,
-//                        ),
-//                    )
-//                }
+                if (
+                    pickupIds.containsValue(message.uberId) && // It's a pickup
+                    state.seekerWorlds.containsKey(worldId) // We are a seeker
+                ) {
+
+                    val worldNamesThatPickedUpThisItem = newSuspendedTransaction {
+                        Multiverse.findById(multiverseId)?.let { multiverse ->
+                            multiverse.worlds
+                                .filter { !state.seekerWorlds.containsKey(it.id.value) }
+                                .filter { world ->
+                                    val state = StateCache.get(ShareScope.WORLD to world.id.value)
+                                    state[message.uberId] == 1.0
+                                }
+                                .map { it.name }
+                        } ?: listOf()
+                    }
+
+                    if (worldNamesThatPickedUpThisItem.isNotEmpty()) {
+                        server.connections.toPlayers(
+                            server.populationCache.get(playerId).worldMemberIds,
+                            PrintTextMessage(
+                                worldNamesThatPickedUpThisItem.joinToString("\n"),
+                                (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, -1f),
+                                time = 3f,
+                                useInGameCoordinates = true,
+                            ),
+                        )
+                    }
+                }
             }
         }
 
@@ -208,18 +224,6 @@ class HideAndSeekGameHandler(
                     newSuspendedTransaction {
                         Multiverse.findById(multiverseId)?.gameHandlerActive = true
                     }
-                }
-                "debugmsg" -> {
-                    server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
-                        "This is a message!",
-                            Vector2(0f, -0.2f),
-                        0,
-                        3f,
-                        PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
-                        withBox = false,
-                        withSound = false,
-                        queue = "hide_and_seek",
-                    ))
                 }
             }
         }
