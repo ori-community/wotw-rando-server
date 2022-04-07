@@ -74,13 +74,14 @@ data class MultiverseInfoMessage(
 
 @Serializable
 data class UberId(
-    @ProtoNumber(1) val group: Int,
-    @ProtoNumber(2) val state: Int,
+    @ProtoNumber(1) val group: Int = 0,
+    @ProtoNumber(2) val state: Int = 0,
 )
 
 @Serializable
 data class UberStateBatchUpdateMessage(
     @ProtoNumber(1) val updates: List<UberStateUpdateMessage>,
+    @ProtoNumber(2) val resetBeforeApplying: Boolean = false,
 ) {
     constructor(vararg updates: UberStateUpdateMessage) : this(updates.toList())
 }
@@ -88,7 +89,7 @@ data class UberStateBatchUpdateMessage(
 @Serializable
 data class UberStateUpdateMessage(
     @ProtoNumber(1) val uberId: UberId,
-    @ProtoNumber(2) val value: Double,
+    @ProtoNumber(2) val value: Double = 0.0,
 )
 
 @Serializable

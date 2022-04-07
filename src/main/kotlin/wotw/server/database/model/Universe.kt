@@ -41,8 +41,8 @@ class World(id: EntityID<Long>) : LongEntity(id) {
     val members by User optionalReferrersOn  Users.currentWorldId
 
     companion object : LongEntityClass<World>(Worlds) {
-        fun new(universe: Universe, name: String, seedFile: String? = null) =
-            GameState.new {
+        fun new(universe: Universe, name: String, seedFile: String? = null): World {
+            val gameState = GameState.new {
                 this.multiverse = universe.multiverse
                 this.universe = universe
                 val world = World.new {
@@ -52,6 +52,12 @@ class World(id: EntityID<Long>) : LongEntity(id) {
                 }
                 this.world = world
                 uberStateData = UberStateMap()
-            }.world!!
+                world.flush()
+            }
+
+            gameState.flush()
+
+            return gameState.world!!
+        }
     }
 }

@@ -5,10 +5,11 @@ import kotlinx.html.currentTimeMillis
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.User
 import wotw.server.database.model.World
-import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 open class EntityCache<KEY : Any, VALUE : Any>(
     private val retrieve: suspend (KEY) -> VALUE?,
@@ -16,24 +17,36 @@ open class EntityCache<KEY : Any, VALUE : Any>(
 ) {
 
     protected data class CacheEntry<T>(var value: T, var lastAccess: Long)
+    private val cache: ConcurrentHashMap<KEY, CacheEntry<VALUE?>> = ConcurrentHashMap()
 
-    private val cache: MutableMap<KEY, CacheEntry<VALUE?>> = Collections.synchronizedMap(hashMapOf())
-
-    suspend fun get(key: KEY) = cache.getOrPut(key) {
-        CacheEntry(retrieve(key) ?: throw NotFoundException(), currentTimeMillis())
-    }.let {
-        it.lastAccess = currentTimeMillis()
-        it.value ?: throw NotFoundException()
+    suspend fun get(key: KEY): VALUE {
+        return cache.getOrPut(key) {
+            CacheEntry(retrieve(key) ?: throw NotFoundException(), currentTimeMillis())
+        }.let {
+            it.lastAccess = currentTimeMillis()
+            it.value ?: throw NotFoundException()
+        }
     }
 
-    suspend fun getOrNull(key: KEY) = cache.getOrPut(key) {
-        CacheEntry(retrieve(key), currentTimeMillis())
-    }.let {
-        it.lastAccess = currentTimeMillis()
-        it.value
+    suspend fun getOrNull(key: KEY): VALUE? {
+        cache[key]?.let { cacheEntry ->
+            return cacheEntry.value
+        }
+
+        // Don't cache null values
+        retrieve(key)?.let { cachedValue ->
+            return cache.getOrPut(key) {
+                CacheEntry(cachedValue, currentTimeMillis())
+            }.let {
+                it.lastAccess = currentTimeMillis()
+                it.value
+            }
+        }
+
+        return null
     }
 
-    fun put(key: KEY, value: VALUE?) = CacheEntry(value, currentTimeMillis()).let {
+    suspend fun put(key: KEY, value: VALUE?) = CacheEntry(value, currentTimeMillis()).let {
         cache[key] = it
         it.value
     }
@@ -58,6 +71,17 @@ open class EntityCache<KEY : Any, VALUE : Any>(
             }
         }
     }
+
+    suspend fun persist(key: KEY) {
+        try {
+            cache[key]?.value?.also { entity ->
+                save(key, entity)
+            }
+            cache -= key
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
 
 @Serializable
@@ -69,7 +93,7 @@ data class PlayerUniversePopulationCacheEntry(
 )
 
 class PlayerUniversePopulationCache : EntityCache<String, PlayerUniversePopulationCacheEntry>({ playerId ->
-    newSuspendedTransaction {
+    val retrieveFn = suspend {
         val player = User.findById(playerId)
 
         PlayerUniversePopulationCacheEntry(
@@ -78,6 +102,14 @@ class PlayerUniversePopulationCache : EntityCache<String, PlayerUniversePopulati
             player?.currentWorld?.universe?.members?.map { it.id.value }?.toSet() ?: emptySet(),
             player?.currentWorld?.members?.map { it.id.value }?.toSet() ?: emptySet(),
         )
+    }
+
+    if (TransactionManager.currentOrNull() == null) {
+        newSuspendedTransaction {
+            retrieveFn()
+        }
+    } else {
+        retrieveFn()
     }
 }, { _, _ -> }) {
     init {

@@ -119,6 +119,7 @@ class WotwBackendServer {
         }
         this.db =
             Database.connect(ds)//"jdbc:postgresql://$host:$port/$db?user=$user&password=$password", "org.postgresql.Driver")
+
         transaction {
             SchemaUtils.createMissingTablesAndColumns(
                 Multiverses,
@@ -176,7 +177,7 @@ class WotwBackendServer {
         runBlocking {
             logger.info("Saving game handler states...")
             gameHandlerRegistry.cacheEntries.forEach { cacheEntry ->
-                cacheEntry.handler?.let { handler ->
+                cacheEntry.handler.let { handler ->
                     logger.info("Stopping and persisting handler for multiverse ${handler.multiverseId}")
 
                     handler.stop()

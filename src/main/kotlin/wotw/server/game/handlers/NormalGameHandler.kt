@@ -1,13 +1,17 @@
 package wotw.server.game.handlers
 
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.protobuf.*
+import wotw.io.messages.protobuf.PlayerPositionMessage
+import wotw.io.messages.protobuf.UberStateBatchUpdateMessage
+import wotw.io.messages.protobuf.UberStateUpdateMessage
+import wotw.io.messages.protobuf.UpdatePlayerPositionMessage
 import wotw.server.api.*
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
 import wotw.server.main.WotwBackendServer
-import wotw.server.sync.*
-import wotw.server.util.rezero
+import wotw.server.sync.ShareScope
+import wotw.server.sync.multiStates
+import wotw.server.sync.normalWorldSyncAggregationStrategy
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHandler<Nothing>(multiverseId, server) {
     init {
@@ -38,9 +42,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         batchUpdateUberStates(UberStateBatchUpdateMessage(message), worldId, playerId)
 
     private suspend fun batchUpdateUberStates(message: UberStateBatchUpdateMessage, worldId: Long, playerId: String) {
-        val updates = message.updates.map {
-            UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to rezero(it.value)
-        }.toMap()
+        val updates = message.updates.associate {
+            it.uberId to it.value
+        }
 
         val results = newSuspendedTransaction {
             val world = World.findById(worldId) ?: error("Error: Requested uber state update on unknown world")
@@ -66,7 +70,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         // Add bingo states if we have a bingo game
         newSuspendedTransaction {
             Multiverse.findById(multiverseId)?.board?.goals?.flatMap { it.value.keys }
-                ?.map { UberId(it.first, it.second) }
         }?.let {
             aggregationRegistry += AggregationStrategyRegistry().apply {
                 register(

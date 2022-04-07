@@ -5,16 +5,15 @@ import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
-import wotw.server.api.*
+import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
 import wotw.server.game.*
 import wotw.server.main.WotwBackendServer
-import wotw.server.sync.*
+import wotw.server.sync.normalWorldSyncAggregationStrategy
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.logger
-import wotw.server.util.rezero
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
@@ -174,23 +173,25 @@ class HideAndSeekGameHandler(
         }
 
         messageEventBus.register(this, UberStateUpdateMessage::class) { message, playerId ->
+            logger().info("GETTING CACHE")
             server.populationCache.getOrNull(playerId)?.worldId?.let { worldId ->
+                logger().info("WORLDID = $worldId")
                 updateUberState(message, worldId, playerId)
 
-                if (
-                    pickupIds.containsValue(message.uberId) && // It's a pickup
-                    state.seekerWorlds.containsKey(worldId) // We are a seeker
-                ) {
-                    server.connections.toPlayers(
-                        listOf(playerId),
-                        PrintTextMessage(
-                            "?????????",
-                            (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, -1f),
-                            time = 3f,
-                            useInGameCoordinates = true,
-                        ),
-                    )
-                }
+//                if (
+//                    pickupIds.containsValue(message.uberId) && // It's a pickup
+//                    state.seekerWorlds.containsKey(worldId) // We are a seeker
+//                ) {
+//                    server.connections.toPlayers(
+//                        listOf(playerId),
+//                        PrintTextMessage(
+//                            "?????????",
+//                            (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, -1f),
+//                            time = 3f,
+//                            useInGameCoordinates = true,
+//                        ),
+//                    )
+//                }
             }
         }
 
@@ -315,12 +316,15 @@ class HideAndSeekGameHandler(
 
     private suspend fun batchUpdateUberStates(message: UberStateBatchUpdateMessage, worldId: Long, playerId: String) {
         val updates = message.updates.map {
-            UberId(rezero(it.uberId.group), rezero(it.uberId.state)) to rezero(it.value)
+            it.uberId to it.value
         }.toMap()
 
         val results = newSuspendedTransaction {
+            logger().info("AGGREGATE START $worldId")
             val world = World.findById(worldId) ?: error("Error: Requested uber state update on unknown world")
-            server.sync.aggregateStates(world, updates)
+            val retval = server.sync.aggregateStates(world, updates)
+            logger().info("AGGREGATE END $worldId")
+            retval
         }
 
         server.sync.syncStates(playerId, results)

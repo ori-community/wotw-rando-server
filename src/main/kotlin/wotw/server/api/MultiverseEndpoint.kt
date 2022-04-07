@@ -16,7 +16,10 @@ import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.MultiverseCreationConfig
-import wotw.io.messages.protobuf.*
+import wotw.io.messages.protobuf.PlayerPositionMessage
+import wotw.io.messages.protobuf.PlayerUseCatchingAbilityMessage
+import wotw.io.messages.protobuf.UberStateBatchUpdateMessage
+import wotw.io.messages.protobuf.UberStateUpdateMessage
 import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
@@ -26,7 +29,8 @@ import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
-import wotw.server.util.*
+import wotw.server.util.logger
+import wotw.server.util.makeServerTextMessage
 
 class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
     val logger = logger()
@@ -97,7 +101,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         ?: throw BadRequestException("Unparsable MultiverseID")
                 val universeId =
                     call.parameters["universe_id"]?.toLongOrNull()
-                val multiverseInfo = newSuspendedTransaction {
+                val (multiverseInfo, movedToWorldId) = newSuspendedTransaction {
                     val player = authenticatedUser()
                     wotwPrincipal().require(Scope.WORLD_CREATE)
 
@@ -136,7 +140,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             }
 
                             server.connections.toPlayers(
-                                multiverse.players.map { it.id.value }, makeServerTextMessage(
+                                (multiverse.players - player).map { it.id.value }, makeServerTextMessage(
                                     "${player.name} joined this game in a new universe",
                                 )
                             )
@@ -166,14 +170,15 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
 
 
-                    server.multiverseUtil.removePlayerFromCurrentWorld(player, multiverseId)
-                    player.currentWorld = world
+                    server.multiverseUtil.movePlayerToWorld(player, world)
                     multiverse.deleteEmptyWorlds()
 
                     multiverse.refresh(true)
 
-                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse) to world.id.value
                 }
+
+                server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(movedToWorldId, wotwPrincipal().userId)
 
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
 
@@ -187,7 +192,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val worldId =
                     call.parameters["world_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable WorldID")
 
-                val multiverseInfo = newSuspendedTransaction {
+                val (multiverseInfo, movedToWorldId) = newSuspendedTransaction {
                     val player = authenticatedUser()
                     wotwPrincipal().require(Scope.WORLD_JOIN)
 
@@ -201,33 +206,38 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                         ?: throw NotFoundException("World does not exist!")
 
+                    var movedToWorldId: Long? = null
                     if (!world.members.contains(player)) {
-                        server.multiverseUtil.removePlayerFromCurrentWorld(player, multiverseId)
-                        player.currentWorld = world
+                        server.multiverseUtil.movePlayerToWorld(player, world)
                         multiverse.deleteEmptyWorlds()
+                        movedToWorldId = world.id.value
 
                         server.connections.toPlayers(
-                            (multiverse.players - world.universe.members).map { it.id.value },
+                            (multiverse.players - world.universe.members - player).map { it.id.value },
                             makeServerTextMessage(
                                 "${player.name} joined this game in another universe",
                             )
                         )
 
                         server.connections.toPlayers(
-                            (world.universe.members - world.members).map { it.id.value },
+                            (world.universe.members - world.members - player).map { it.id.value },
                             makeServerTextMessage(
                                 "${player.name} joined your universe in another world",
                             )
                         )
 
                         server.connections.toPlayers(
-                            world.members.map { it.id.value }, makeServerTextMessage(
+                            (world.members - player).map { it.id.value }, makeServerTextMessage(
                                 "${player.name} joined your world",
                             )
                         )
                     }
 
-                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse) to movedToWorldId
+                }
+
+                movedToWorldId?.let {
+                    server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(it, wotwPrincipal().userId)
                 }
 
                 server.sync.aggregationStrategiesCache.remove(multiverseId)

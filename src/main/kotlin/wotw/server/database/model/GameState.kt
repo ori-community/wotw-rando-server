@@ -40,15 +40,15 @@ class GameState(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<GameState>(GameStates) {
         fun findMultiverseState(multiverseId: Long) = find {
             (GameStates.multiverseId eq multiverseId and GameStates.universeId.isNull() and GameStates.worldId.isNull())
-        }.singleOrNull()
+        }.firstOrNull()
 
         fun findUniverseState(universeId: Long) = find {
             (GameStates.universeId eq universeId and GameStates.worldId.isNull())
-        }.singleOrNull()
+        }.firstOrNull()
 
         fun findWorldState(worldId: Long) = find {
             (GameStates.worldId eq worldId)
-        }.singleOrNull()
+        }.firstOrNull()
     }
 
     enum class Type {

@@ -1,6 +1,7 @@
 package wotw.server.api
 
 import io.ktor.http.cio.websocket.*
+import io.ktor.util.collections.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.RequestFullUpdate
 import wotw.server.database.model.Multiverse
@@ -12,6 +13,8 @@ import wotw.server.util.logger
 import wotw.server.util.randomString
 import wotw.util.MultiMap
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 class ConnectionRegistry(val server: WotwBackendServer) {
     val logger = logger()
@@ -26,28 +29,28 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     val multiverseObserverConnections =
         //       ↓ multiverseId
-        MultiMap<Long, MultiverseObserverConnection>(Collections.synchronizedMap(hashMapOf()))
+        MultiMap<Long, MultiverseObserverConnection>(ConcurrentHashMap())
 
     data class RemoteTrackerEndpoint(
         var broadcasterConnection: ClientConnection?,
-        val listeners: MutableList<ClientConnection> = Collections.synchronizedList(mutableListOf()),
+        val listeners: CopyOnWriteArrayList<ClientConnection> = CopyOnWriteArrayList(),
         var expires: Long? = null,
     )
 
     // endpointId => RemoteTrackerEndpoint
-    val remoteTrackerEndpoints: MutableMap<String, RemoteTrackerEndpoint> = Collections.synchronizedMap(hashMapOf())
+    val remoteTrackerEndpoints: ConcurrentHashMap<String, RemoteTrackerEndpoint> = ConcurrentHashMap()
 
     // userId => endpointId
-    val remoteTrackerEndpointIds: MutableMap<String, String> = Collections.synchronizedMap(hashMapOf())
+    val remoteTrackerEndpointIds: ConcurrentHashMap<String, String> = ConcurrentHashMap()
 
     /*
     * A Map (MultiverseId?, PlayerId) -> WebSocketConnection
     * If MultiverseId == null then Socket listens to newest
     * */
     val playerObserverConnections =
-        MultiMap<Pair<Long?, String>, ClientConnection>(Collections.synchronizedMap(hashMapOf()))
+        MultiMap<Pair<Long?, String>, ClientConnection>(ConcurrentHashMap())
 
-    val playerMultiverseConnections = Collections.synchronizedMap(hashMapOf<String, PlayerConnection>())
+    val playerMultiverseConnections: ConcurrentHashMap<String, PlayerConnection> = ConcurrentHashMap()
 
     //region Connection registering
 

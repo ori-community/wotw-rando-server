@@ -7,6 +7,7 @@ import io.ktor.auth.jwt.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.network.sockets.*
 import io.ktor.util.network.*
+import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
 import io.ktor.websocket.*
@@ -122,6 +123,10 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
         } catch (e: Throwable) {
             udpId?.let {
                 ClientConnectionUDPRegistry.unregister(it)
+            }
+
+            if (e !is CancellationException) {
+                e.printStackTrace()
             }
 
             throw e

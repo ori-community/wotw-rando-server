@@ -13,6 +13,7 @@ import wotw.server.game.handlers.GameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.full.primaryConstructor
 
 data class GameHandlerCacheEntry(
@@ -27,7 +28,7 @@ data class GameHandlerCacheEntry(
 }
 
 class GameHandlerRegistry(val server: WotwBackendServer) {
-    private val handlers: MutableMap<Long, GameHandlerCacheEntry> = Collections.synchronizedMap(mutableMapOf())
+    private val handlers: ConcurrentHashMap<Long, GameHandlerCacheEntry> = ConcurrentHashMap()
 
     val cacheEntries: List<GameHandlerCacheEntry>
         get() = handlers.values.toList()
@@ -82,17 +83,21 @@ class GameHandlerRegistry(val server: WotwBackendServer) {
         EntityHook.subscribe {
             runBlocking {
                 it.toEntity(World.Companion)?.let { world ->
-                    when (it.changeType) {
-                        EntityChangeType.Created -> {
-                            val handler = getHandler(world.universe.multiverse.id.value)
-                            handler.onMultiverseEvent(
-                                WorldCreatedEvent(world.id.value)
+                    try {
+                        when (it.changeType) {
+                            EntityChangeType.Created -> {
+                                val handler = getHandler(world.universe.multiverse.id.value)
+                                handler.onMultiverseEvent(
+                                    WorldCreatedEvent(world.id.value)
+                                )
+                            }
+                            EntityChangeType.Removed -> getHandler(world.universe.multiverse.id.value).onMultiverseEvent(
+                                WorldDeletedEvent(world.id.value)
                             )
+                            else -> {}
                         }
-                        EntityChangeType.Removed -> getHandler(world.universe.multiverse.id.value).onMultiverseEvent(
-                            WorldDeletedEvent(world.id.value)
-                        )
-                        else -> {}
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
 

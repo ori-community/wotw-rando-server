@@ -11,16 +11,18 @@ import wotw.server.database.model.GameState
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
 import wotw.server.main.WotwBackendServer
-import wotw.server.util.zerore
+import wotw.server.util.assertTransaction
 import java.util.*
-import kotlin.to
+import java.util.concurrent.ConcurrentHashMap
 
 object StateCache : EntityCache<Pair<ShareScope, Long>, UberStateMap>(
     { StateCache.obtainState(it)?.uberStateData },
     { k, v -> StateCache.obtainState(k)?.uberStateData = v }
 ) {
-    private suspend fun obtainState(key: Pair<ShareScope, Long>): GameState? = newSuspendedTransaction {
-        when (key.first) {
+    private fun obtainState(key: Pair<ShareScope, Long>): GameState? {
+        assertTransaction()
+
+        return when (key.first) {
             ShareScope.WORLD -> GameState.findWorldState(key.second)
             ShareScope.UNIVERSE -> GameState.findUniverseState(key.second)
             ShareScope.MULTIVERSE -> GameState.findMultiverseState(key.second)
@@ -30,8 +32,7 @@ object StateCache : EntityCache<Pair<ShareScope, Long>, UberStateMap>(
 }
 
 class StateSynchronization(private val server: WotwBackendServer) {
-    val aggregationStrategiesCache: MutableMap<Long, AggregationStrategyRegistry> =
-        Collections.synchronizedMap(hashMapOf())
+    val aggregationStrategiesCache: ConcurrentHashMap<Long, AggregationStrategyRegistry> = ConcurrentHashMap()
 
     //Requires active transaction
     suspend fun aggregateState(
@@ -63,17 +64,20 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     ShareScope.MULTIVERSE -> multiverse
                     else -> null
                 }?.id?.value ?: return@map uberId to AggregationResult(value, strategy)
-                val data = StateCache.getOrNull(strategy.scope to id) ?: return@map uberId to AggregationResult(
+
+                val cache = StateCache.getOrNull(strategy.scope to id)
+                val data = cache ?: return@map uberId to AggregationResult(
                     value,
                     strategy
                 )
 
-                val oldValue = data[uberId.group to uberId.state]
+                val oldValue = data[uberId]
                 if (!strategy.trigger(oldValue, value))
                     return@map uberId to AggregationResult(value, strategy, oldValue, false)
 
                 val newValue = oldValue?.let { strategy.aggregation(it, value) } ?: value
-                data[uberId.group to uberId.state] = newValue
+                data[uberId] = newValue
+
                 uberId to AggregationResult(value, strategy, oldValue, true, newValue)
             }
         }
@@ -111,8 +115,8 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     playerId, scope, false,
                     *states.map { (uberId, result) ->
                         UberStateUpdateMessage(
-                            UberId(zerore(uberId.group), zerore(uberId.state)),
-                            zerore(result.newValue ?: 0.0)
+                            uberId,
+                            result.newValue ?: 0.0
                         )
                     }.toTypedArray()
                 )
@@ -120,8 +124,8 @@ class StateSynchronization(private val server: WotwBackendServer) {
         server.connections.toPlayers(listOf(playerId), UberStateBatchUpdateMessage(
             playerUpdates.map { (uberId, result) ->
                 UberStateUpdateMessage(
-                    UberId(zerore(uberId.group), zerore(uberId.state)),
-                    zerore(result.newValue ?: 0.0)
+                    uberId,
+                   result.newValue ?: 0.0
                 )
             }
         ))

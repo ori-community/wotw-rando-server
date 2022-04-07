@@ -2,13 +2,14 @@ package wotw.server.bingo
 
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
+import wotw.io.messages.protobuf.UberId
 import kotlin.math.max
 import kotlin.math.min
 
 typealias GameState = UberStateMap //These have changed *4 times* now, I'm keeping the typealiases :D
 
 @Serializable //Type-erasure forces a compiled class for type-safe serialization
-data class UberStateMap(private val map: MutableMap<Pair<Int, Int>, Double>): MutableMap<Pair<Int, Int>, Double> by map{
+data class UberStateMap(private val map: MutableMap<UberId, Double>): MutableMap<UberId, Double> by map{
     constructor(): this(mutableMapOf())
 
     companion object{
@@ -19,7 +20,7 @@ data class UberStateMap(private val map: MutableMap<Pair<Int, Int>, Double>): Mu
 @Polymorphic
 @Serializable
 sealed class BingoGoal {
-    abstract val keys: Set<Pair<Int, Int>>
+    abstract val keys: Set<UberId>
     abstract val title: String
     open val helpText: String? = null
 
@@ -29,7 +30,7 @@ sealed class BingoGoal {
 
 sealed class CompositeGoal : BingoGoal() {
     abstract val goals: Array<out BingoGoal>
-    override val keys: Set<Pair<Int, Int>> by lazy { goals.flatMap { it.keys }.toSet() }
+    override val keys: Set<UberId> by lazy { goals.flatMap { it.keys }.toSet() }
 
     override fun printSubText(state: GameState) =
         goals.map { (listOf(it.title) + it.printSubText(state)).joinToString(" ") to it.isCompleted(state) }
@@ -95,7 +96,7 @@ data class CountGoal(
 }
 
 @Serializable
-data class BoolGoal(override val title: String, private val key: Pair<Int, Int>) : BingoGoal() {
+data class BoolGoal(override val title: String, private val key: UberId) : BingoGoal() {
     override val keys = setOf(key)
     override fun isCompleted(state: GameState) = state[key]?.equals(0.toDouble()) == false
 }
@@ -188,7 +189,7 @@ data class BingoConfig(val lockout: Boolean = false,
 @Serializable
 sealed class StateExpression{
     abstract fun calc(state: GameState) : Double
-    abstract val keys: Set<Pair<Int, Int>>
+    abstract val keys: Set<UberId>
 
     operator fun plus(other: StateExpression): StateExpression {
         return OperatorExpression(this, other, OperatorExpression.OPERATOR.PLUS)
@@ -220,23 +221,23 @@ class AggregationExpression(val aggr: Aggregation, val expressions: List<StateEx
         return children.reduce(aggregationFunction)
     }
 
-    override val keys: Set<Pair<Int, Int>>
+    override val keys: Set<UberId>
         get() = expressions.map { it.keys }.reduce{first, second -> first.union(second)}
 }
 
 @Serializable
-class UberStateExpression(val uberId: Pair<Int, Int>): StateExpression() {
-    constructor(group: Int, state: Int): this(group to state)
+class UberStateExpression(val uberId: UberId): StateExpression() {
+    constructor(group: Int, state: Int): this(UberId(group, state))
 
     override fun calc(state: GameState) : Double = state[uberId] ?: Double.NaN
-    override val keys: Set<Pair<Int, Int>>
+    override val keys: Set<UberId>
         get() = setOf(uberId)
 }
 
 @Serializable
 class ConstExpression(val value: Double): StateExpression(){
     override fun calc(state: GameState): Double = value
-    override val keys: Set<Pair<Int, Int>>
+    override val keys: Set<UberId>
         get() = emptySet()
 }
 
@@ -255,6 +256,6 @@ class OperatorExpression(val first: StateExpression, val second: StateExpression
         }
     }
 
-    override val keys: Set<Pair<Int, Int>>
+    override val keys: Set<UberId>
             get() = first.keys + second.keys
 }

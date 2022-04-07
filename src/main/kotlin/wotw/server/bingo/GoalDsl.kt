@@ -1,5 +1,6 @@
 package wotw.server.bingo
 
+import wotw.io.messages.protobuf.UberId
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.math.sqrt
@@ -100,7 +101,7 @@ data class GeneratorWithConfig(val gen: GoalGenerator, val countOnly: Boolean = 
 fun bool(title: String, group: Int, state: Int, countOnly: Boolean = false) = GeneratorWithConfig({ _, count ->
     when {
         count > 0 -> null
-        else -> BoolGoal(title, group to state)
+        else -> BoolGoal(title, UberId(group, state))
     }
 }, countOnly)
 
