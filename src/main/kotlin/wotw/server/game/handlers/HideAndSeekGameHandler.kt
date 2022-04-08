@@ -173,12 +173,23 @@ class HideAndSeekGameHandler(
                         PlayerCaughtMessage(caughtPlayerId),
                     )
 
-                    newSuspendedTransaction {
-                        User.findById(caughtPlayerId)?.let { caughtPlayer ->
-                            World.findById(seekerWorldInfo.worldId)?.let { seekerWorld ->
-                                server.multiverseUtil.movePlayerToWorld(caughtPlayer, seekerWorld)
-                            }
+                    val didMovePlayer = newSuspendedTransaction {
+                        val caughtPlayer = User.findById(caughtPlayerId)
+                        val seekerWorld = World.findById(seekerWorldInfo.worldId)
+
+                        if (caughtPlayer == null || seekerWorld == null) {
+                            false
+                        } else {
+                            server.multiverseUtil.movePlayerToWorld(caughtPlayer, seekerWorld)
+                            true
                         }
+                    }
+
+                    if (didMovePlayer) {
+                        server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(
+                            seekerWorldInfo.worldId,
+                            caughtPlayerId
+                        )
                     }
                 }
             }
