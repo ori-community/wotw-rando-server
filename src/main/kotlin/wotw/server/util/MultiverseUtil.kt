@@ -41,6 +41,13 @@ class MultiverseUtil(val server: WotwBackendServer) {
             logger().info("Moving ${player.name} to world ${world.id.value}")
 
             server.connections.broadcastMultiverseInfoMessage(world.universe.multiverse.id.value)
+
+            doAfterTransaction {
+                server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(
+                    world.id.value,
+                    player.id.value,
+                )
+            }
         }
     }
 

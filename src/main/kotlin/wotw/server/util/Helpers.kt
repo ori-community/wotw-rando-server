@@ -5,6 +5,9 @@ import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.routing.*
 import io.ktor.util.pipeline.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.statements.StatementInterceptor
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.slf4j.LoggerFactory
 import wotw.io.messages.protobuf.PrintTextMessage
@@ -56,4 +59,16 @@ fun assertTransaction() {
     assert(TransactionManager.currentOrNull() != null) {
         "This function has to be called in an active transaction"
     }
+}
+
+fun doAfterTransaction(action: suspend () -> Unit) {
+    TransactionManager.current().registerInterceptor(object : StatementInterceptor {
+        override fun afterCommit() {
+            runBlocking {
+                launch {
+                    action()
+                }
+            }
+        }
+    })
 }

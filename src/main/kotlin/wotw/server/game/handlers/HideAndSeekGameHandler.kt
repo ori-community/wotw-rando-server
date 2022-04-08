@@ -1,7 +1,14 @@
 package wotw.server.game.handlers
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
+import org.jetbrains.exposed.dao.alertSubscribers
+import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.sql.statements.StatementInterceptor
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
@@ -17,8 +24,10 @@ import wotw.server.sync.normalWorldSyncAggregationStrategy
 import wotw.server.sync.pickupIds
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
+import wotw.server.util.doAfterTransaction
 import wotw.server.util.logger
 import java.util.concurrent.TimeUnit
+import javax.swing.plaf.nimbus.State
 import kotlin.math.pow
 
 
@@ -184,13 +193,10 @@ class HideAndSeekGameHandler(
                             true
                         }
                     }
+                }
 
-                    if (didMovePlayer) {
-                        server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(
-                            seekerWorldInfo.worldId,
-                            caughtPlayerId
-                        )
-                    }
+                if (caughtPlayerIds.isNotEmpty()) {
+                    updatePlayerInfoCache()
                 }
             }
         }
@@ -254,25 +260,34 @@ class HideAndSeekGameHandler(
         multiverseEventBus.register(this, WorldCreatedEvent::class) { message ->
             logger().info("world created: ${message.worldId}")
 
-            updatePlayerInfoCache()
+            doAfterTransaction {
+                updatePlayerInfoCache()
+            }
         }
 
         multiverseEventBus.register(this, WorldDeletedEvent::class) { message ->
             logger().info("world deleted: ${message.worldId}")
 
-            state.seekerWorlds.remove(message.worldId)
-
-            updatePlayerInfoCache()
+            doAfterTransaction {
+                state.seekerWorlds.remove(message.worldId)
+                updatePlayerInfoCache()
+            }
         }
 
         multiverseEventBus.register(this, PlayerJoinedEvent::class) { message ->
             logger().info("joined: ${message.worldId}")
-            updatePlayerInfoCache()
+
+            doAfterTransaction {
+                updatePlayerInfoCache()
+            }
         }
 
         multiverseEventBus.register(this, PlayerLeftEvent::class) { message ->
             logger().info("left: ${message.worldId}")
-            updatePlayerInfoCache()
+
+            doAfterTransaction {
+                updatePlayerInfoCache()
+            }
         }
 
         scheduler.scheduleExecution(Every(1, TimeUnit.SECONDS))

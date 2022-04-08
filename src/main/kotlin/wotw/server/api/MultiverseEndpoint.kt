@@ -101,7 +101,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         ?: throw BadRequestException("Unparsable MultiverseID")
                 val universeId =
                     call.parameters["universe_id"]?.toLongOrNull()
-                val (multiverseInfo, movedToWorldId) = newSuspendedTransaction {
+                val multiverseInfo = newSuspendedTransaction {
                     val player = authenticatedUser()
                     wotwPrincipal().require(Scope.WORLD_CREATE)
 
@@ -175,10 +175,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     multiverse.refresh(true)
 
-                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse) to world.id.value
+                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
                 }
-
-                server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(movedToWorldId, wotwPrincipal().userId)
 
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
 
@@ -192,7 +190,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val worldId =
                     call.parameters["world_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable WorldID")
 
-                val (multiverseInfo, movedToWorldId) = newSuspendedTransaction {
+                val multiverseInfo = newSuspendedTransaction {
                     val player = authenticatedUser()
                     wotwPrincipal().require(Scope.WORLD_JOIN)
 
@@ -233,11 +231,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
                     }
 
-                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse) to movedToWorldId
-                }
-
-                movedToWorldId?.let {
-                    server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(it, wotwPrincipal().userId)
+                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
                 }
 
                 server.sync.aggregationStrategiesCache.remove(multiverseId)
