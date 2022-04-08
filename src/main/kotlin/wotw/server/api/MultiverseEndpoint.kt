@@ -24,7 +24,7 @@ import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
-import wotw.server.game.CustomEvent
+import wotw.server.game.DeveloperEvent
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.io.handleClientSocket
@@ -295,7 +295,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
 
                         server.gameHandlerRegistry.getHandler(multiverse).onMultiverseEvent(
-                            CustomEvent(event),
+                            DeveloperEvent(event),
                         )
                     }
 

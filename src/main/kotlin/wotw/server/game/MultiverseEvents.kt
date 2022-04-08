@@ -17,7 +17,7 @@ data class PlayerLeftEvent(
     val universeId: Long,
 )
 
-data class CustomEvent(
+data class DeveloperEvent(
     val event: String,
     val payload: Any? = null,
 )

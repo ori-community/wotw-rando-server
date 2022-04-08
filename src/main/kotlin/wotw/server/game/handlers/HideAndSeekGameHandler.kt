@@ -226,13 +226,16 @@ class HideAndSeekGameHandler(
             }
         }
 
-        multiverseEventBus.register(this, CustomEvent::class) { message ->
+        multiverseEventBus.register(this, DeveloperEvent::class) { message ->
             when (message.event) {
                 "start" -> {
                     state.started = true
                     newSuspendedTransaction {
                         Multiverse.findById(multiverseId)?.gameHandlerActive = true
                     }
+                }
+                "updatePlayerInfoCache" -> {
+                    updatePlayerInfoCache()
                 }
             }
         }
@@ -333,10 +336,8 @@ class HideAndSeekGameHandler(
         }.toMap()
 
         val results = newSuspendedTransaction {
-            logger().info("AGGREGATE START $worldId")
             val world = World.findById(worldId) ?: error("Error: Requested uber state update on unknown world")
             val retval = server.sync.aggregateStates(world, updates)
-            logger().info("AGGREGATE END $worldId")
             retval
         }
 
