@@ -7,6 +7,7 @@ import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
+import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.game.*
 import wotw.server.main.WotwBackendServer
@@ -154,23 +155,31 @@ class HideAndSeekGameHandler(
                     PlayerUsedCatchingAbilityMessage(playerId),
                 )
 
-                val caughtPlayers = mutableSetOf<PlayerId>()
+                val caughtPlayerIds = mutableSetOf<PlayerId>()
 
                 playerInfos[playerId]?.let { seekerInfo ->
                     playerInfos
                         .filterValues { it.type == PlayerType.Hider }
                         .forEach { (playerId, hiderInfo) ->
                             if (seekerInfo.position.distanceSquaredTo(hiderInfo.position) < seekerWorldInfo.radius.pow(2)) {
-                                caughtPlayers.add(playerId)
+                                caughtPlayerIds.add(playerId)
                             }
                         }
                 }
 
-                for (caughtPlayer in caughtPlayers) {
+                for (caughtPlayerId in caughtPlayerIds) {
                     server.connections.toPlayers(
                         playerInfos.keys,
-                        PlayerCaughtMessage(caughtPlayer),
+                        PlayerCaughtMessage(caughtPlayerId),
                     )
+
+                    newSuspendedTransaction {
+                        User.findById(caughtPlayerId)?.let { caughtPlayer ->
+                            World.findById(seekerWorldInfo.worldId)?.let { seekerWorld ->
+                                server.multiverseUtil.movePlayerToWorld(caughtPlayer, seekerWorld)
+                            }
+                        }
+                    }
                 }
             }
         }
