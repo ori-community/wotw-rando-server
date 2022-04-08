@@ -37,6 +37,10 @@ class MultiverseUtil(val server: WotwBackendServer) {
                 world.universe.members.map { it.id.value }.toSet(),
                 world.members.map { it.id.value }.toSet(),
             ))
+
+            logger().info("Moving ${player.name} to world ${world.id.value}")
+
+            server.connections.broadcastMultiverseInfoMessage(world.universe.multiverse.id.value)
         }
     }
 
