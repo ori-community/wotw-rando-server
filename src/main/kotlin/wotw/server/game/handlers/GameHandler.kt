@@ -5,6 +5,8 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.protoBuf
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
+import wotw.server.database.model.World
+import wotw.server.game.GameConnectionHandler
 import wotw.server.main.WotwBackendServer
 import wotw.util.EventBus
 import wotw.util.EventBusWithMetadata
@@ -42,10 +44,12 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
 
     open suspend fun getAdditionalDebugInformation(): String? = null
 
-    abstract suspend fun generateStateAggregationRegistry(): AggregationStrategyRegistry
+    abstract suspend fun generateStateAggregationRegistry(world: World): AggregationStrategyRegistry
 
     open fun start() {}
     open fun stop() {}
+
+    open suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler) {}
 
     /**
      * Return false if the game handler must not be destroyed currently.

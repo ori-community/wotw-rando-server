@@ -61,6 +61,9 @@ data class Packet(
             17 to typeOf<PlayerUseCatchingAbilityMessage>(),
             18 to typeOf<PlayerUsedCatchingAbilityMessage>(),
             19 to typeOf<PlayerCaughtMessage>(),
+            20 to typeOf<SetVisibilityMessage>(),
+            21 to typeOf<UpdatePlayerWorldPositionMessage>(),
+            22 to typeOf<UpdatePlayerMapPositionMessage>(),
 
             100 to typeOf<TrackerUpdate>(),
             101 to typeOf<ResetTracker>(),

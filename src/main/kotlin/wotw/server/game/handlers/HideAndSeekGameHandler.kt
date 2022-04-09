@@ -32,6 +32,7 @@ import wotw.server.util.doAfterTransaction
 import wotw.server.util.logger
 import java.util.concurrent.TimeUnit
 import javax.swing.plaf.nimbus.State
+import kotlin.math.floor
 import kotlin.math.pow
 
 
@@ -39,7 +40,7 @@ import kotlin.math.pow
 data class HideAndSeekGameHandlerState(
     var started: Boolean = false,
     var catchPhase: Boolean = false,
-    var secondsUntilCatchPhase: Int = 15,
+    var secondsUntilCatchPhase: Int = 120,
     var gameSecondsElapsed: Int = 0,
     var seekerWorlds: MutableMap<Long, SeekerWorldInfo> = mutableMapOf(),
 )
@@ -85,7 +86,7 @@ class HideAndSeekGameHandler(
                 if (!catchPhase) {
                     secondsUntilCatchPhase--
 
-                    var message: PrintTextMessage? = null
+                    val message: PrintTextMessage
 
                     if (secondsUntilCatchPhase == 0) {
                         catchPhase = true
@@ -110,9 +111,14 @@ class HideAndSeekGameHandler(
                             PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
                             queue = "hide_and_seek",
                         )
-                    } else if (secondsUntilCatchPhase <= 10) {
+
+                        broadcastPlayerVisibility()
+                    } else {
+                        val minutesPart = floor(secondsUntilCatchPhase / 60f)
+                        val secondsPart = secondsUntilCatchPhase % 60
+
                         message = PrintTextMessage(
-                            "Catching starts in $secondsUntilCatchPhase seconds!",
+                            "Catching starts in $minutesPart:${secondsPart.toString().padStart(2, '0')}",
                             Vector2(0f, -0.2f),
                             0,
                             3f,
@@ -123,9 +129,7 @@ class HideAndSeekGameHandler(
                         )
                     }
 
-                    message?.let {
-                        server.connections.toPlayers(playerInfos.keys, it)
-                    }
+                    server.connections.toPlayers(playerInfos.keys, message)
                 } else {
                     gameSecondsElapsed++
                 }
@@ -150,23 +154,12 @@ class HideAndSeekGameHandler(
 
     override fun start() {
         messageEventBus.register(this, PlayerPositionMessage::class) { message, playerId ->
-            playerInfos[playerId]?.let { playerInfo ->
-                playerInfo.position = Vector2(message.x, message.y)
-
+            playerInfos[playerId]?.let { senderInfo ->
+                senderInfo.position = Vector2(message.x, message.y)
                 val cache = server.populationCache.get(playerId)
 
-                val targetPlayers = if (state.catchPhase) {
-                    cache.universeMemberIds // Everyone can see everyone else
-                } else if (playerInfo.type == PlayerType.Seeker) {
-                    // Seekers can be seen by everyone else
-                    cache.universeMemberIds
-                } else {
-                    // Hiders can't be seen before the catch phase
-                    emptySet()
-                }
-
                 server.connections.toPlayers(
-                    targetPlayers,
+                    cache.universeMemberIds,
                     UpdatePlayerPositionMessage(playerId, message.x, message.y),
                     unreliable = true,
                 )
@@ -193,6 +186,23 @@ class HideAndSeekGameHandler(
                             }
                         }
                 }
+
+                val seekerName = newSuspendedTransaction {
+                    User.findById(playerId)?.name ?: "(?)"
+                }
+
+                server.connections.toPlayers(
+                    caughtPlayerIds,
+                    PrintTextMessage(
+                        "You have been caught by ${seekerName}!\nYou are now a seeker in ${seekerName}'s world.",
+                        Vector2(0f, 0f),
+                        0,
+                        5f,
+                        PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+                        withBox = true,
+                        withSound = true,
+                    )
+                )
 
                 for (caughtPlayerId in caughtPlayerIds) {
                     server.connections.toPlayers(
@@ -280,7 +290,7 @@ class HideAndSeekGameHandler(
 
             val result = server.seedGeneratorService.generateSeedGroup(SeedGenConfig(
                 flags = listOf("--multiplayer"),
-                presets = listOf("gorlek"),
+                presets = listOf("gorlek", "qol", "rspawn"),
                 difficulty = "gorlek",
                 goals = listOf("trees"),
             ))
@@ -338,7 +348,7 @@ class HideAndSeekGameHandler(
         updatePlayerInfoCache()
     }
 
-    override suspend fun generateStateAggregationRegistry(): AggregationStrategyRegistry {
+    override suspend fun generateStateAggregationRegistry(world: World): AggregationStrategyRegistry {
         return normalWorldSyncAggregationStrategy + AggregationStrategyRegistry().apply {
             register(
                 sync(BLAZE_UBER_ID).with(UberStateSyncStrategy.MAX), // Blaze
@@ -400,5 +410,23 @@ class HideAndSeekGameHandler(
         }
 
         server.sync.syncStates(playerId, results)
+    }
+
+    override suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler) {
+        broadcastPlayerVisibility()
+    }
+
+    private suspend fun broadcastPlayerVisibility() {
+        val hiddenOnMap = playerInfos.filter { (_, info) -> info.type == PlayerType.Hider }.keys.toList()
+        val hiddenInWorld = if (state.catchPhase) {
+            listOf()
+        } else {
+            hiddenOnMap
+        }
+
+        server.connections.toPlayers(
+            playerInfos.keys,
+            SetVisibilityMessage(hiddenInWorld, hiddenOnMap)
+        )
     }
 }

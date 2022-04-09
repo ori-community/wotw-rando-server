@@ -48,10 +48,10 @@ class StateSynchronization(private val server: WotwBackendServer) {
         val universe = world.universe
         val multiverse = universe.multiverse
 
-        var strategies = aggregationStrategiesCache[multiverse.id.value]
+        var strategies = aggregationStrategiesCache[world.id.value]
         if (strategies == null) {
-            strategies = server.gameHandlerRegistry.getHandler(multiverse.id.value).generateStateAggregationRegistry()
-            aggregationStrategiesCache[multiverse.id.value] = strategies
+            strategies = server.gameHandlerRegistry.getHandler(multiverse.id.value).generateStateAggregationRegistry(world)
+            aggregationStrategiesCache[world.id.value] = strategies
         }
 
         val result = mutableListOf<Pair<UberId, AggregationResult>>()

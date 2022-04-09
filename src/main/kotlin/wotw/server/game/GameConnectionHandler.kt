@@ -22,6 +22,9 @@ class GameConnectionHandler(
     var multiverseId: Long? = null
         private set
 
+    val currentPlayerId
+        get() = playerId
+
     suspend fun onMessage(message: Any) {
         multiverseId?.let {
             server.gameHandlerRegistry.getHandler(it).onMessage(message, playerId)
@@ -41,7 +44,7 @@ class GameConnectionHandler(
             val multiverse = universe.multiverse
             multiverseId = multiverse.id.value
 
-            val states = server.gameHandlerRegistry.getHandler(multiverse.id.value).generateStateAggregationRegistry().getSyncedStates()
+            val states = server.gameHandlerRegistry.getHandler(multiverse.id.value).generateStateAggregationRegistry(world).getSyncedStates()
 
             this@GameConnectionHandler.connection.sendMessage(InitGameSyncMessage(states.toList()))
 
@@ -54,6 +57,8 @@ class GameConnectionHandler(
             this@GameConnectionHandler.connection.sendMessage(server.infoMessagesService.generateMultiverseInfoMessage(
                 multiverse
             ))
+
+            server.gameHandlerRegistry.getHandler(multiverse.id.value).onGameConnectionSetup(this@GameConnectionHandler)
 
             return@newSuspendedTransaction GameConnectionHandlerSyncResult(
                 world.id.value,

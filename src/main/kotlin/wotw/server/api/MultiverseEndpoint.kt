@@ -229,7 +229,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
                 }
 
-                server.sync.aggregationStrategiesCache.remove(multiverseId)
+                server.sync.aggregationStrategiesCache.remove(worldId)
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
 
                 call.respond(HttpStatusCode.OK)

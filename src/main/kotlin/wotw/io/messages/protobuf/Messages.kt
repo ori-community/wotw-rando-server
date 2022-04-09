@@ -202,6 +202,26 @@ data class UpdatePlayerPositionMessage(
 )
 
 @Serializable
+data class UpdatePlayerWorldPositionMessage(
+    @ProtoNumber(1) val playerId: String,
+    @ProtoNumber(2) val x: Float,
+    @ProtoNumber(3) val y: Float,
+)
+
+@Serializable
+data class UpdatePlayerMapPositionMessage(
+    @ProtoNumber(1) val playerId: String,
+    @ProtoNumber(2) val x: Float,
+    @ProtoNumber(3) val y: Float,
+)
+
+@Serializable
+data class SetVisibilityMessage(
+    @ProtoNumber(1) val hiddenInWorld: List<String>,
+    @ProtoNumber(2) val hiddenOnMap: List<String>,
+)
+
+@Serializable
 data class PlayerPositionMessage(
     @ProtoNumber(1) val x: Float,
     @ProtoNumber(2) val y: Float,
