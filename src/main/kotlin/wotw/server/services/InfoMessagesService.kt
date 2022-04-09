@@ -37,7 +37,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         universe.id.value,
         universe.name,
         color ?: COLORS[universe.multiverse.universes.sortedBy { it.id }.indexOf(universe) % COLORS.size],
-        universe.worlds.mapIndexed { index, world ->
+        universe.worlds.sortedBy { it.id }.mapIndexed { index, world ->
             generateWorldInfo(world, COLORS[index % COLORS.size])
         }
     )
