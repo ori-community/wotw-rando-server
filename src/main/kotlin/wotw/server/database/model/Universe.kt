@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import wotw.server.bingo.UberStateMap
+import wotw.server.database.model.Multiverses.nullable
 import wotw.server.database.model.Spectator.Companion.referrersOn
 
 object Universes : LongIdTable() {
@@ -31,24 +32,24 @@ class Universe(id: EntityID<Long>) : LongEntity(id) {
 object Worlds : LongIdTable() {
     val universeId = reference("universe_id", Universes, ReferenceOption.CASCADE)
     val name = varchar("name", 255)
-    val seedFile = varchar("seed_file", 255).nullable()
+    val seed = reference("seed", Seeds).nullable()
 }
 
 class World(id: EntityID<Long>) : LongEntity(id) {
     var universe by Universe referencedOn Worlds.universeId
     var name by Worlds.name
-    var seedFile by Worlds.seedFile
+    var seed by Seed optionalReferencedOn Worlds.seed
     val members by User optionalReferrersOn  Users.currentWorldId
 
     companion object : LongEntityClass<World>(Worlds) {
-        fun new(universe: Universe, name: String, seedFile: String? = null): World {
+        fun new(universe: Universe, name: String, seed: Seed? = null): World {
             val gameState = GameState.new {
                 this.multiverse = universe.multiverse
                 this.universe = universe
                 val world = World.new {
                     this.universe = universe
                     this.name = name
-                    this.seedFile = seedFile
+                    this.seed = seed
                 }
                 this.world = world
                 uberStateData = UberStateMap()

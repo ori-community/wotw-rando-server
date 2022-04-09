@@ -1,6 +1,7 @@
 package wotw.server.util
 
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.protobuf.SetSeedMessage
 import wotw.io.messages.protobuf.UberId
 import wotw.io.messages.protobuf.UberStateBatchUpdateMessage
 import wotw.io.messages.protobuf.UberStateUpdateMessage
@@ -52,19 +53,28 @@ class MultiverseUtil(val server: WotwBackendServer) {
     }
 
     suspend fun sendWorldStateAfterMovedToAnotherWorld(worldId: Long, playerId: PlayerId) {
-        var messages = listOf<UberStateUpdateMessage>()
-
-        newSuspendedTransaction {
-            StateCache.getOrNull(ShareScope.WORLD to worldId)?.map { (uberId, value) ->
+        val (uberStateUpdateMessages, setSeedMessage) = newSuspendedTransaction {
+            val uberStateUpdateMessages = StateCache.getOrNull(ShareScope.WORLD to worldId)?.map { (uberId, value) ->
                 UberStateUpdateMessage(UberId(uberId.group, uberId.state), value)
-            }?.let { uberStateUpdateMessages ->
-                messages = uberStateUpdateMessages
+            } ?: listOf()
+
+            val setSeedMessage = World.findById(worldId)?.seed?.let { seed ->
+                SetSeedMessage("${seed.id.value}.wotwr", server.seedGeneratorService.seedFile(seed).readText())
             }
+
+            uberStateUpdateMessages to setSeedMessage
+        }
+
+        setSeedMessage?.let {
+            server.connections.toPlayers(
+                listOf(playerId),
+                it,
+            )
         }
 
         server.connections.toPlayers(
             listOf(playerId),
-            UberStateBatchUpdateMessage(messages, true)
+            UberStateBatchUpdateMessage(uberStateUpdateMessages, true)
         )
     }
 }

@@ -164,10 +164,9 @@ enum class GoalMode(private val displayName: String, private val description: St
 }
 
 @Serializable
-data class SeedInfo(
+data class SeedGroupInfo(
     val id: Long,
-    val name: String,
-    val files: List<String>,
+    val seedIds: List<Long>,
     val creator: UserInfo?,
     val config: SeedGenConfig,
 )
@@ -201,15 +200,15 @@ data class HideAndSeekConfig(
 
 @Serializable
 data class MultiverseCreationConfig(
-    val seedId: Long? = null,
+    val seedGroupId: Long? = null,
     val bingo: BingoConfig? = null,
     val hideAndSeekConfig: HideAndSeekConfig? = null,
 )
 
 @Serializable
 data class SeedGenResult(
-    val seedId: Long,
-    val files: List<String> = emptyList(),
+    val seedGroupId: Long,
+    val seedIds: List<Long> = emptyList(),
 )
 
 @Serializable

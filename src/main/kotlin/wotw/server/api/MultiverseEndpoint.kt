@@ -83,10 +83,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             post("multiverses") {
                 wotwPrincipal().require(Scope.MULTIVERSE_CREATE)
                 val props = call.receiveOrNull<MultiverseCreationConfig>()
+
                 val multiverse = newSuspendedTransaction {
                     Multiverse.new {
-                        if (props?.seedId != null)
-                            seed = Seed.findById(props.seedId) ?: throw NotFoundException()
+                        if (props?.seedGroupId != null)
+                            seedGroup = SeedGroup.findById(props.seedGroupId) ?: throw NotFoundException()
                         if (props?.bingo != null)
                             board = BingoBoardGenerator().generateBoard(props)
 
@@ -113,7 +114,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val world =
                         if (universeId != null) {
-                            if (multiverse.seed != null)
+                            if (multiverse.seedGroup != null)
                                 throw ConflictException("Cannot manually create or remove worlds from seed-linked universes")
                             val universe =
                                 Universe.findById(universeId) ?: throw NotFoundException("Universe does not exist!")
@@ -151,27 +152,23 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 this.uberStateData = UberStateMap()
                             }
 
-                            if (multiverse.seed != null) {
-                                val seedFiles =
-                                    server.seedGeneratorService.filesForSeed(multiverse.seed?.id?.toString() ?: "")
-                                val first = seedFiles.firstOrNull()
-                                if (first != null) {
-                                    val world =
-                                        World.new(universe, first.nameWithoutExtension, first.nameWithoutExtension)
-                                    seedFiles.drop(1).forEach {
-                                        World.new(universe, it.nameWithoutExtension, it.nameWithoutExtension)
+                            multiverse.seedGroup?.let { seedGroup ->
+                                var first: World? = null
+
+                                seedGroup.seeds.forEach { seed ->
+                                    val world = World.new(universe, seed.id.value.toString(), seed)
+                                    if (first == null) {
+                                        first = world
                                     }
-                                    world
-                                } else {
-                                    throw ConflictException("This seed cannot be attached to online games")
                                 }
-                            } else
-                                World.new(universe, player.name + "'s World")
+
+                                first ?: throw BadRequestException("Seed group does not contain any world")
+                            } ?: World.new(universe, "${player.name}'s World")
                         }
 
 
                     server.multiverseUtil.movePlayerToWorld(player, world)
-                    multiverse.deleteEmptyWorlds()
+                    multiverse.deleteEmptyWorlds(world)
 
                     multiverse.refresh(true)
 
@@ -204,11 +201,9 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                         ?: throw NotFoundException("World does not exist!")
 
-                    var movedToWorldId: Long? = null
                     if (!world.members.contains(player)) {
                         server.multiverseUtil.movePlayerToWorld(player, world)
-                        multiverse.deleteEmptyWorlds()
-                        movedToWorldId = world.id.value
+                        multiverse.deleteEmptyWorlds(world)
 
                         server.connections.toPlayers(
                             (multiverse.players - world.universe.members - player).map { it.id.value },

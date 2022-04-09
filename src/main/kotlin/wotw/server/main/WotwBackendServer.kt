@@ -35,7 +35,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
-import wotw.io.messages.protobuf.*
+import wotw.io.messages.protobuf.UdpPacket
 import wotw.server.api.*
 import wotw.server.database.PlayerUniversePopulationCache
 import wotw.server.database.model.*
@@ -129,6 +129,7 @@ class WotwBackendServer {
                 Users,
                 BingoEvents,
                 Spectators,
+                SeedGroups,
                 Seeds,
             )
         }

@@ -1,7 +1,6 @@
 package wotw.server.seedgen
 
 import io.ktor.features.*
-import io.ktor.html.*
 import kotlinx.coroutines.future.await
 import wotw.io.messages.SeedGenConfig
 import wotw.server.database.model.Seed
@@ -10,11 +9,14 @@ import wotw.server.main.WotwBackendServer
 import wotw.server.util.CompletableFuture
 import wotw.server.util.logger
 import java.io.File
-import java.io.FilenameFilter
 import java.nio.file.Path
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+
+data class SeedGeneratorGenerationResult(
+    val warnings: String,
+)
 
 class SeedGeneratorService(private val server: WotwBackendServer) {
     private val numThreads = System.getenv("SEEDGEN_TRHEADS")?.toIntOrNull() ?: 4
@@ -25,40 +27,42 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
     fun sanitizedPlayerName(player: String) = player.replace(invalidCharacterRegex, "_")
 
     fun filesForSeed(seedId: String): List<File> {
-        var pathString = "${System.getenv("SEED_DIR")}${File.separator}seed-${seedId}"
+        var pathString = "${System.getenv("SEED_DIR")}${File.separator}${seedId}"
+
         val dir = Path.of(pathString).toFile()
-        if(dir.exists() && dir.isDirectory){
+        if (dir.exists() && dir.isDirectory) {
             return dir.listFiles { _, name ->
                 name.endsWith(".wotwr") && !name.endsWith(".spoiler.wotwr")
             }?.toList() ?: emptyList()
         }
+
         pathString += ".wotwr"
         val file = Path.of(pathString).toFile()
         if (!file.exists() || file.isDirectory)
             return emptyList()
+
         return listOf(file)
     }
 
-    fun seedFile(seedId: String, player: String? = null): File {
-        var pathString = "${System.getenv("SEED_DIR")}${File.separator}seed-${seedId}"
-        if (File(pathString).isDirectory && player != null) {
-            val sanitized = server.seedGeneratorService.sanitizedPlayerName(player)
+    fun seedFile(seed: Seed) = seedFile(seed.group.file, seed.file)
+
+    fun seedFile(seedGroupFile: String, seedFile: String? = null): File {
+        var pathString = "${System.getenv("SEED_DIR")}${File.separator}${seedGroupFile}"
+
+        if (File(pathString).isDirectory && seedFile != null) {
+            val sanitized = server.seedGeneratorService.sanitizedPlayerName(seedFile)
             pathString += "${File.separator}$sanitized"
         }
+
         pathString += ".wotwr"
         val file = Path.of(pathString).toFile()
         if (!file.exists() || file.isDirectory)
             throw NotFoundException()
         return file
     }
-    fun seedFile(seed: Seed) = seedFile(seed.id.value.toString())
 
-    fun validate(config: SeedGenConfig) {
-    }
-
-    suspend fun generate(fileName: String, config: SeedGenConfig): Result<String> {
-        validate(config)
-        val commandString = buildSeedGenCommand(fileName, config)
+    suspend fun generate(seedGroupFileName: String, config: SeedGenConfig): Result<SeedGeneratorGenerationResult> {
+        val commandString = buildSeedGenCommand(seedGroupFileName, config)
 
         logger().info("Generating seed using command:")
         logger().info(commandString.joinToString(" "))
@@ -87,29 +91,29 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             process.outputStream.close()
             process.inputStream.readAllBytes()
 
-            val err = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
+            val stderrOutput = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
             val exitCode = process.waitFor()
 
-            err.lines().forEach {
+            stderrOutput.lines().forEach {
                 logger().info(it)
             }
 
             if (exitCode != 0)
-                Result.failure(Exception(err))
-            else{
-                Result.success(err)
+                Result.failure(Exception(stderrOutput))
+            else {
+                Result.success(SeedGeneratorGenerationResult(stderrOutput))
             }
         }
 
         return try {
-            future.orTimeout(timeout, TimeUnit.MILLISECONDS).await() as Result<String>
+            future.orTimeout(timeout, TimeUnit.MILLISECONDS).await() as Result<SeedGeneratorGenerationResult>
         } catch (e: TimeoutException) {
             handle?.destroyForcibly()
             Result.failure(Exception("seedgen timed out!"))
         }
     }
 
-    private fun buildSeedGenCommand(fileName: String, config: SeedGenConfig): Array<String> {
+    private fun buildSeedGenCommand(seedGroupFileName: String, config: SeedGenConfig): Array<String> {
         var command = "$seedgenExec seed --verbose".split(" ").toTypedArray() + config.flags.flatMap { it.split(" ") }
 
         command += "--difficulty"
@@ -154,7 +158,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         }
 
         command += "--"
-        command += fileName
+        command += seedGroupFileName
 
         return command
     }

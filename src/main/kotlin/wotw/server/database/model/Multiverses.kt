@@ -18,7 +18,7 @@ import kotlin.math.ceil
 import kotlin.to
 
 object Multiverses : LongIdTable("multiverse") {
-    val seed = reference("seed", Seeds).nullable()
+    val seedGroup = reference("seed_group_id", SeedGroups).nullable()
     val board = jsonb("board", BingoCard.serializer()).nullable()
 
     val gameHandlerActive = bool("game_handler_active").default(false)
@@ -28,7 +28,7 @@ object Multiverses : LongIdTable("multiverse") {
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var board by Multiverses.board
-    var seed by Seed optionalReferencedOn Multiverses.seed
+    var seedGroup by SeedGroup optionalReferencedOn Multiverses.seedGroup
     val universes by Universe referrersOn Universes.multiverseId
     val worlds: Collection<World>
         get() = universes.flatMap { it.worlds }
@@ -174,15 +174,21 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     fun deleteEmptyWorlds(newWorld: World? = null): HashSet<Long> {
         val affectedMultiverseIds = hashSetOf<Long>()
 
-        worlds.forEach {
+        val universesQueuedForDeletion = mutableSetOf<Universe>()
+
+        for (world in worlds) {
             // Do not delete empty worlds in universes which are attached to a seed
-            if (it.members.empty() && it.universe.multiverse.seed == null) {
-                it.delete()
+            if (world.members.empty() && world.seed == null) {
+                world.delete()
             }
 
-            if (it.universe.worlds.all { it.members.empty() } && newWorld?.universe != it.universe) {
-                it.universe.delete()
+            if (world.universe.worlds.all { world.members.empty() } && newWorld?.universe != world.universe) {
+                universesQueuedForDeletion += world.universe
             }
+        }
+
+        for (universe in universesQueuedForDeletion) {
+            universe.delete()
         }
 
         return affectedMultiverseIds

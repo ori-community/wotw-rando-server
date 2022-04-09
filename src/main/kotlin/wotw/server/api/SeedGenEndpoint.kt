@@ -8,10 +8,11 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.*
-import wotw.io.messages.protobuf.UserInfo
 import wotw.server.database.model.Seed
+import wotw.server.database.model.SeedGroup
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
+import wotw.server.util.then
 import kotlin.io.path.Path
 
 class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -67,69 +68,82 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val result = presetMap.map { it.value.fullResolve(presetMap).toPreset(it.key) }
             call.respond(result)
         }
-        get("seeds/{id}/config") {
-            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
-            val config = newSuspendedTransaction { Seed.findById(id)?.generatorConfig ?: throw NotFoundException() }
-            call.respond(config)
-        }
 
-        get("seeds/{id}") {
+        get("seed-groups/{id}") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
-            val seedInfo = newSuspendedTransaction {
-                val seed = Seed.findById(id) ?: throw NotFoundException()
-                SeedInfo(
-                    seed.id.value,
-                    seed.name,
-                    server.seedGeneratorService.filesForSeed(id.toString()).map { it.nameWithoutExtension },
-                    seed.creator?.let { server.infoMessagesService.generateUserInfo(it) },
-                    seed.generatorConfig
+            val seedGroupInfo = newSuspendedTransaction {
+                val seedGroup = SeedGroup.findById(id) ?: throw NotFoundException()
+                SeedGroupInfo(
+                    seedGroup.id.value,
+                    seedGroup.seeds.map { it.id.value },
+                    seedGroup.creator?.let { server.infoMessagesService.generateUserInfo(it) },
+                    seedGroup.generatorConfig
                 )
             }
-            call.respond(seedInfo)
+            call.respond(seedGroupInfo)
         }
-        get("seeds/{id}/files") {
-            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
-            newSuspendedTransaction { Seed.findById(id) ?: throw NotFoundException() }
-            call.respond(server.seedGeneratorService.filesForSeed(id.toString()).map { it.nameWithoutExtension })
-        }
-        get("seeds/{id}/files/{file}") {
-            val id = call.parameters["id"] ?: throw BadRequestException("No Seed ID found")
-            val player = call.parameters["file"] ?: throw BadRequestException("No Seed-file found!")
 
-            call.respond(server.seedGeneratorService.seedFile(id, player).readBytes())
+        get("seeds/{id}/file") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
+
+            val (seedGroupFile, seedFile) = newSuspendedTransaction {
+                val seed = Seed.findById(id) ?: throw NotFoundException("Seed not found")
+
+                seed.group.file to seed.file
+            }
+
+            call.respond(server.seedGeneratorService.seedFile(seedGroupFile, seedFile).readBytes())
         }
+
         authenticate(JWT_AUTH, optional = true) {
             post<SeedGenConfig>("seeds") { config ->
-
-                val seed = newSuspendedTransaction {
-                    Seed.new {
+                val (result, seedGroupId, seedIds) = newSuspendedTransaction {
+                    val seedGroup = SeedGroup.new {
                         generatorConfig = config
                         creator = authenticatedUserOrNull()
-                        name = config.seed ?: "Unknown!"
                     }
-                }
-                val result = server.seedGeneratorService.generate("seed-${seed.id.value}", config)
 
-                if (result.isSuccess) {
-                    if (config.seed == null) {
-                        val lines =
-                            server.seedGeneratorService.filesForSeed(seed.id.value.toString()).first().readLines()
-                        if (lines.size > 3) {
-                            newSuspendedTransaction {
-                                seed.name = lines[lines.size - 3].substringAfter("Seed: ")
-                                seed.generatorConfig = seed.generatorConfig.copy(seed = seed.name)
+                    val seedGroupFile = "${seedGroup.id.value}"
+                    val result = server.seedGeneratorService.generate(seedGroupFile, config)
+
+                    if (result.isSuccess) {
+                        val seedGroupGeneratedFiles = server.seedGeneratorService.filesForSeed(seedGroup.id.value.toString())
+
+                        // If the user did not explicitly request a seed, read it from the generated seed and save it
+                        if (config.seed == null) {
+                            val firstSeedLines = seedGroupGeneratedFiles.first().readLines()
+
+                            if (firstSeedLines.size > 3) {
+                                val actualSeed = firstSeedLines[firstSeedLines.size - 3].substringAfter("Seed: ")
+                                seedGroup.generatorConfig = seedGroup.generatorConfig.copy(seed = actualSeed)
                             }
                         }
-                    }
 
+                        seedGroup.file = seedGroupFile
+
+                        val seeds = seedGroupGeneratedFiles.map { seedGroupGeneratedFile ->
+                            Seed.new {
+                                group = seedGroup
+                                file = seedGroupGeneratedFile.nameWithoutExtension
+                            }
+                        }
+                        val seedIds = seeds.map { it.id.value }
+
+                        result then seedGroup.id.value then seedIds
+                    } else {
+                        seedGroup.delete()
+                        result then 0L then emptyList()
+                    }
+                }
+
+                if (result.isSuccess) {
                     call.respond(
                         HttpStatusCode.Created, SeedGenResponse(
                             result = SeedGenResult(
-                                seedId = seed.id.value,
-                                files = server.seedGeneratorService.filesForSeed(seed.id.value.toString())
-                                    .map { it.nameWithoutExtension },
+                                seedGroupId = seedGroupId,
+                                seedIds = seedIds,
                             ),
-                            warnings = result.getOrNull()?.ifBlank { null },
+                            warnings = result.getOrNull()?.warnings?.ifBlank { null },
                         )
                     )
                 } else {

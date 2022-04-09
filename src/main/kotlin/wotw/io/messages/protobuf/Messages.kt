@@ -22,7 +22,7 @@ data class WorldInfo(
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val color: String,
     @ProtoNumber(4) val members: List<UserInfo>,
-    @ProtoNumber(5) val seedFile: String?,
+    @ProtoNumber(5) val seedId: Long?,
 )
 
 @Serializable
@@ -39,7 +39,7 @@ data class MultiverseInfoMessage(
     @ProtoNumber(2) val universes: List<UniverseInfo>,
     @ProtoNumber(3) val hasBingoBoard: Boolean,
     @ProtoNumber(4) val spectators: List<UserInfo>,
-    @ProtoNumber(5) val seedId: Long?,
+    @ProtoNumber(5) val seedGroupId: Long?,
     @ProtoNumber(6) val gameHandlerType: Int,
     @ProtoNumber(7) val gameHandlerClientInfo: ByteArray,
 ) {
@@ -53,7 +53,7 @@ data class MultiverseInfoMessage(
         if (universes != other.universes) return false
         if (hasBingoBoard != other.hasBingoBoard) return false
         if (spectators != other.spectators) return false
-        if (seedId != other.seedId) return false
+        if (seedGroupId != other.seedGroupId) return false
         if (gameHandlerType != other.gameHandlerType) return false
         if (!gameHandlerClientInfo.contentEquals(other.gameHandlerClientInfo)) return false
 
@@ -65,7 +65,7 @@ data class MultiverseInfoMessage(
         result = 31 * result + universes.hashCode()
         result = 31 * result + hasBingoBoard.hashCode()
         result = 31 * result + spectators.hashCode()
-        result = 31 * result + (seedId?.hashCode() ?: 0)
+        result = 31 * result + (seedGroupId?.hashCode() ?: 0)
         result = 31 * result + gameHandlerType
         result = 31 * result + gameHandlerClientInfo.contentHashCode()
         return result
@@ -265,7 +265,7 @@ data class RequestSeedMessage(
 data class SetSeedMessage(
     @ProtoNumber(1) val name: String,
     @ProtoNumber(2) val seedContent: String,
-    @ProtoNumber(3) val init: Boolean, // This is something for the client, ask wolf. We just pipe it through
+    @ProtoNumber(3) val init: Boolean = false, // This is something for the client, ask wolf. We just pipe it through
 )
 
 @Serializable

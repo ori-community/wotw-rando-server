@@ -182,7 +182,7 @@ class HideAndSeekGameHandler(
                         PlayerCaughtMessage(caughtPlayerId),
                     )
 
-                    val didMovePlayer = newSuspendedTransaction {
+                    newSuspendedTransaction {
                         val caughtPlayer = User.findById(caughtPlayerId)
                         val seekerWorld = World.findById(seekerWorldInfo.worldId)
 
