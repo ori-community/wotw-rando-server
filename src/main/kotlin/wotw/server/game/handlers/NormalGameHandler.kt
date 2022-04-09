@@ -64,7 +64,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         server.sync.syncStates(playerId, results)
     }
 
-    override suspend fun generateStateAggregationRegistry(): AggregationStrategyRegistry {
+    override suspend fun generateStateAggregationRegistry(world: World): AggregationStrategyRegistry {
         var aggregationRegistry = AggregationStrategyRegistry()
 
         // Add bingo states if we have a bingo game
