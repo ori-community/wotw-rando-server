@@ -88,7 +88,7 @@ class GameHandlerRegistry(val server: WotwBackendServer) {
                             EntityChangeType.Created -> {
                                 val handler = getHandler(world.universe.multiverse.id.value)
                                 handler.onMultiverseEvent(
-                                    WorldCreatedEvent(world.id.value)
+                                    WorldCreatedEvent(world)
                                 )
                             }
                             EntityChangeType.Removed -> getHandler(world.universe.multiverse.id.value).onMultiverseEvent(

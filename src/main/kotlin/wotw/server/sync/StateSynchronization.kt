@@ -121,14 +121,17 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     }.toTypedArray()
                 )
         }
-        server.connections.toPlayers(listOf(playerId), UberStateBatchUpdateMessage(
-            playerUpdates.map { (uberId, result) ->
-                UberStateUpdateMessage(
-                    uberId,
-                   result.newValue ?: 0.0
-                )
-            }
-        ))
+
+        if (playerUpdates.isNotEmpty()) {
+            server.connections.toPlayers(listOf(playerId), UberStateBatchUpdateMessage(
+                playerUpdates.map { (uberId, result) ->
+                    UberStateUpdateMessage(
+                        uberId,
+                        result.newValue ?: 0.0
+                    )
+                }
+            ))
+        }
     }
 
     suspend fun syncMultiverseProgress(multiverseId: Long) {

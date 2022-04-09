@@ -1,18 +1,24 @@
 package wotw.server.game
 
+import wotw.server.database.model.User
+import wotw.server.database.model.World
+
 data class WorldCreatedEvent(
-    val worldId: Long,
+    val world: World,
 )
+
 data class WorldDeletedEvent(
     val worldId: Long,
 )
+
 data class PlayerJoinedEvent(
-    val playerId: String,
+    val player: User,
     val worldId: Long,
     val universeId: Long,
 )
+
 data class PlayerLeftEvent(
-    val playerId: String,
+    val player: User,
     val worldId: Long,
     val universeId: Long,
 )

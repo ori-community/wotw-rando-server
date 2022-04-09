@@ -10,9 +10,13 @@ import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.statements.StatementInterceptor
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.SeedGenConfig
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
+import wotw.server.api.UberStateSyncStrategy
+import wotw.server.api.sync
+import wotw.server.api.with
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
 import wotw.server.database.model.World
@@ -73,6 +77,8 @@ class HideAndSeekGameHandler(
     private var state = HideAndSeekGameHandlerState()
     private val playerInfos = mutableMapOf<PlayerId, PlayerInfo>()
 
+    private val BLAZE_UBER_ID = UberId(6, 1115)
+
     private val scheduler = Scheduler {
         state.apply {
             if (started) {
@@ -83,6 +89,18 @@ class HideAndSeekGameHandler(
 
                     if (secondsUntilCatchPhase == 0) {
                         catchPhase = true
+
+                        // Give blaze to seeker worlds
+                        newSuspendedTransaction {
+                            seekerWorlds.keys.forEach { seekerWorldId ->
+                                World.findById(seekerWorldId)?.let { seekerWorld ->
+                                    val result = server.sync.aggregateStates(seekerWorld, mapOf(BLAZE_UBER_ID to 1.0))
+                                    seekerWorld.members.forEach { member ->
+                                        server.sync.syncStates(member.id.value, result)
+                                    }
+                                }
+                            }
+                        }
 
                         message = PrintTextMessage(
                             "<s_2>GO!</>",
@@ -258,7 +276,18 @@ class HideAndSeekGameHandler(
         }
 
         multiverseEventBus.register(this, WorldCreatedEvent::class) { message ->
-            logger().info("world created: ${message.worldId}")
+            logger().info("world created: ${message.world.id.value}")
+
+            val result = server.seedGeneratorService.generateSeedGroup(SeedGenConfig(
+                flags = listOf("--multiplayer"),
+                presets = listOf("gorlek"),
+                difficulty = "gorlek",
+                goals = listOf("trees"),
+            ))
+
+            result.seedGroup?.let { seedGroup ->
+                message.world.seed = seedGroup.seeds.firstOrNull()
+            }
 
             doAfterTransaction {
                 updatePlayerInfoCache()
@@ -310,7 +339,11 @@ class HideAndSeekGameHandler(
     }
 
     override suspend fun generateStateAggregationRegistry(): AggregationStrategyRegistry {
-        return normalWorldSyncAggregationStrategy
+        return normalWorldSyncAggregationStrategy + AggregationStrategyRegistry().apply {
+            register(
+                sync(BLAZE_UBER_ID).with(UberStateSyncStrategy.MAX), // Blaze
+            )
+        }
     }
 
     override fun getClientInfo(): HideAndSeekGameHandlerClientInfo {
@@ -363,8 +396,7 @@ class HideAndSeekGameHandler(
 
         val results = newSuspendedTransaction {
             val world = World.findById(worldId) ?: error("Error: Requested uber state update on unknown world")
-            val retval = server.sync.aggregateStates(world, updates)
-            retval
+            server.sync.aggregateStates(world, updates)
         }
 
         server.sync.syncStates(playerId, results)

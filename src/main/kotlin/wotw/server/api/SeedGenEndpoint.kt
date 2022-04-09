@@ -98,42 +98,11 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(JWT_AUTH, optional = true) {
             post<SeedGenConfig>("seeds") { config ->
                 val (result, seedGroupId, seedIds) = newSuspendedTransaction {
-                    val seedGroup = SeedGroup.new {
-                        generatorConfig = config
-                        creator = authenticatedUserOrNull()
-                    }
+                    val result = server.seedGeneratorService.generateSeedGroup(config, authenticatedUserOrNull())
 
-                    val seedGroupFile = "${seedGroup.id.value}"
-                    val result = server.seedGeneratorService.generate(seedGroupFile, config)
-
-                    if (result.isSuccess) {
-                        val seedGroupGeneratedFiles = server.seedGeneratorService.filesForSeed(seedGroup.id.value.toString())
-
-                        // If the user did not explicitly request a seed, read it from the generated seed and save it
-                        if (config.seed == null) {
-                            val firstSeedLines = seedGroupGeneratedFiles.first().readLines()
-
-                            if (firstSeedLines.size > 3) {
-                                val actualSeed = firstSeedLines[firstSeedLines.size - 3].substringAfter("Seed: ")
-                                seedGroup.generatorConfig = seedGroup.generatorConfig.copy(seed = actualSeed)
-                            }
-                        }
-
-                        seedGroup.file = seedGroupFile
-
-                        val seeds = seedGroupGeneratedFiles.map { seedGroupGeneratedFile ->
-                            Seed.new {
-                                group = seedGroup
-                                file = seedGroupGeneratedFile.nameWithoutExtension
-                            }
-                        }
-                        val seedIds = seeds.map { it.id.value }
-
-                        result then seedGroup.id.value then seedIds
-                    } else {
-                        seedGroup.delete()
-                        result then 0L then emptyList()
-                    }
+                    result.generationResult then
+                            (result.seedGroup?.id?.value ?: 0L) then
+                            (result.seedGroup?.seeds?.map { it.id.value } ?: listOf())
                 }
 
                 if (result.isSuccess) {

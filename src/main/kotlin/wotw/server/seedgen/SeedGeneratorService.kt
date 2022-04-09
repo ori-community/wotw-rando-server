@@ -4,10 +4,13 @@ import io.ktor.features.*
 import kotlinx.coroutines.future.await
 import wotw.io.messages.SeedGenConfig
 import wotw.server.database.model.Seed
+import wotw.server.database.model.SeedGroup
+import wotw.server.database.model.User
 import wotw.server.exception.ServerConfigurationException
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.CompletableFuture
 import wotw.server.util.logger
+import wotw.server.util.then
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.Executors
@@ -16,6 +19,11 @@ import java.util.concurrent.TimeoutException
 
 data class SeedGeneratorGenerationResult(
     val warnings: String,
+)
+
+data class SeedGeneratorSeedGroupResult(
+    val generationResult: Result<SeedGeneratorGenerationResult>,
+    val seedGroup: SeedGroup?,
 )
 
 class SeedGeneratorService(private val server: WotwBackendServer) {
@@ -128,7 +136,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             command += config.glitches.map { it.lowercase() }
         }
         if (config.presets.isNotEmpty()) {
-            command += "--presets"
+            command += "--preset"
             command += config.presets
         }
         if (config.headers.isNotEmpty()) {
@@ -163,4 +171,43 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         return command
     }
 
+    suspend fun generateSeedGroup(config: SeedGenConfig, creator: User? = null): SeedGeneratorSeedGroupResult {
+        val seedGroup = SeedGroup.new {
+            this.generatorConfig = config
+            this.creator = creator
+        }
+
+        val seedGroupFile = "${seedGroup.id.value}"
+        val result = server.seedGeneratorService.generate(seedGroupFile, config)
+
+        if (result.isSuccess) {
+            val seedGroupGeneratedFiles = server.seedGeneratorService.filesForSeed(seedGroup.id.value.toString())
+
+            // If the user did not explicitly request a seed, read it from the generated seed and save it
+            if (config.seed == null) {
+                val firstSeedLines = seedGroupGeneratedFiles.first().readLines()
+
+                if (firstSeedLines.size > 3) {
+                    val actualSeed = firstSeedLines[firstSeedLines.size - 3].substringAfter("Seed: ")
+                    seedGroup.generatorConfig = seedGroup.generatorConfig.copy(seed = actualSeed)
+                }
+            }
+
+            seedGroup.file = seedGroupFile
+
+            seedGroupGeneratedFiles.map { seedGroupGeneratedFile ->
+                Seed.new {
+                    group = seedGroup
+                    file = seedGroupGeneratedFile.nameWithoutExtension
+                }
+            }
+            seedGroup.refresh(true)
+
+            return SeedGeneratorSeedGroupResult(result, seedGroup)
+        } else {
+            seedGroup.delete()
+        }
+
+        return SeedGeneratorSeedGroupResult(result, seedGroup)
+    }
 }
