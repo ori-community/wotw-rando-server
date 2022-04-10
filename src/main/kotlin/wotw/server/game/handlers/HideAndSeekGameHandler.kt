@@ -114,7 +114,7 @@ class HideAndSeekGameHandler(
 
                         broadcastPlayerVisibility()
                     } else {
-                        val minutesPart = floor(secondsUntilCatchPhase / 60f)
+                        val minutesPart = (secondsUntilCatchPhase / 60f).toInt()
                         val secondsPart = secondsUntilCatchPhase % 60
 
                         message = PrintTextMessage(
