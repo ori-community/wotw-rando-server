@@ -140,18 +140,7 @@ class HideAndSeekGameHandler(
                     gameSecondsElapsed++
                     secondsUntilSeekerHint--
 
-                    if (secondsUntilSeekerHint <= 30) {
-                        server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
-                            "Hider positions will be revealed to seekers once in\n${secondsUntilSeekerHint}s",
-                            Vector2(0f, -0.2f),
-                            0,
-                            3f,
-                            PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
-                            withBox = false,
-                            withSound = true,
-                            queue = "hide_and_seek",
-                        ))
-                    } else if (secondsUntilSeekerHint <= 0) {
+                    if (secondsUntilSeekerHint <= 0) {
                         seekerHintsGiven++
                         secondsUntilSeekerHint = (seekerHintBaseInterval * seekerHintIntervalMultiplier.pow(seekerHintsGiven)).toInt()
 
@@ -173,6 +162,17 @@ class HideAndSeekGameHandler(
                         ))
 
                         broadcastPlayerVisibility()
+                    } else if (secondsUntilSeekerHint <= 30) {
+                        server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
+                            "Hider positions will be revealed to seekers once in\n${secondsUntilSeekerHint}s",
+                            Vector2(0f, -0.2f),
+                            0,
+                            3f,
+                            PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
+                            withBox = false,
+                            withSound = true,
+                            queue = "hide_and_seek",
+                        ))
                     }
                 }
             }
