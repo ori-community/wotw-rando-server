@@ -125,10 +125,10 @@ class HideAndSeekGameHandler(
 
                         message = PrintTextMessage(
                             "Catching starts in $minutesPart:${secondsPart.toString().padStart(2, '0')}",
-                            Vector2(0f, 0f),
+                            Vector2(2f, 0f),
                             0,
                             3f,
-                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_CENTER,
+                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
                             horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
                             alignment = PrintTextMessage.ALIGNMENT_RIGHT,
                             withBox = false,
@@ -154,10 +154,10 @@ class HideAndSeekGameHandler(
 
                         server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
                             "Hider positions revealed to seekers!",
-                            Vector2(0f, 0f),
+                            Vector2(2f, 0f),
                             0,
                             3f,
-                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_CENTER,
+                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
                             horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
                             alignment = PrintTextMessage.ALIGNMENT_RIGHT,
                             withBox = false,
@@ -169,10 +169,10 @@ class HideAndSeekGameHandler(
                     } else if (secondsUntilSeekerHint <= 30) {
                         server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
                             "Revealing hider positions in ${secondsUntilSeekerHint}s",
-                            Vector2(0f, 0f),
+                            Vector2(2f, 0f),
                             0,
                             3f,
-                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_CENTER,
+                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
                             horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
                             alignment = PrintTextMessage.ALIGNMENT_RIGHT,
                             withBox = false,
