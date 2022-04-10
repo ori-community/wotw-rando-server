@@ -125,7 +125,7 @@ class HideAndSeekGameHandler(
 
                         message = PrintTextMessage(
                             "Catching starts in $minutesPart:${secondsPart.toString().padStart(2, '0')}",
-                            Vector2(0f, -0.2f),
+                            Vector2(0f, 0f),
                             0,
                             3f,
                             PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
@@ -152,7 +152,7 @@ class HideAndSeekGameHandler(
 
                         server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
                             "Hider positions revealed to seekers!",
-                            Vector2(0f, -0.2f),
+                            Vector2(0f, 0f),
                             0,
                             3f,
                             PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
@@ -165,7 +165,7 @@ class HideAndSeekGameHandler(
                     } else if (secondsUntilSeekerHint <= 30) {
                         server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
                             "Hider positions will be revealed to seekers once in\n${secondsUntilSeekerHint}s",
-                            Vector2(0f, -0.2f),
+                            Vector2(0f, 0f),
                             0,
                             3f,
                             PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
