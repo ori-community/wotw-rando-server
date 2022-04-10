@@ -36,7 +36,8 @@ data class HideAndSeekGameHandlerState(
     var secondsUntilCatchPhase: Int = 600,
     var seekerHintBaseInterval: Int = 600,
     var seekerHintIntervalMultiplier: Float = 0.75f,
-    var seekerHintMinInterval: Int = 45,
+    var seekerHintInterval: Int = seekerHintBaseInterval,
+    var seekerHintMinInterval: Int = 30,
     var gameSecondsElapsed: Int = 0,
     var secondsUntilSeekerHint: Int = secondsUntilCatchPhase,
     var seekerHintsGiven: Int = 0,
@@ -99,6 +100,7 @@ class HideAndSeekGameHandler(
                 3|0|2|97
                 3|0|2|101
                 3|0|9|0
+                3|0|2|118
             """.trimIndent()
         ),
     )
@@ -174,17 +176,12 @@ class HideAndSeekGameHandler(
                     gameSecondsElapsed++
                     secondsUntilSeekerHint--
 
-                    val seekerHintCountdownSeconds = min(max(
-                        (seekerHintBaseInterval * seekerHintIntervalMultiplier.pow(seekerHintsGiven)).toInt(),
-                        seekerHintMinInterval
-                    ), 30)
+                    val seekerHintCountdownSeconds = min(seekerHintInterval / 2, 30)
 
                     if (secondsUntilSeekerHint <= 0) {
                         seekerHintsGiven++
-                        secondsUntilSeekerHint = max(
-                            (seekerHintBaseInterval * seekerHintIntervalMultiplier.pow(seekerHintsGiven)).toInt(),
-                            seekerHintMinInterval
-                        )
+                        seekerHintInterval = min((seekerHintInterval * seekerHintIntervalMultiplier).toInt(), seekerHintMinInterval)
+                        secondsUntilSeekerHint = seekerHintInterval
 
                         playerInfos.values.forEach { info ->
                             if (info.type == PlayerType.Hider) {
@@ -343,13 +340,12 @@ class HideAndSeekGameHandler(
 
                     caughtPlayerNames.forEach { caughtPlayerName ->
                         server.connections.toPlayers(
-                            playerInfos.filter { (_, info) -> info.type == PlayerType.Hider }.keys,
+                            playerInfos.keys,
                             PrintTextMessage(
                                 "$caughtPlayerName has been caught by $seekerName!",
                                 Vector2(0f, 0f),
-                                0,
-                                3f,
-                                PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+                                time = 3f,
+                                screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
                                 withBox = true,
                                 withSound = true,
                                 queue = "hide_and_seek_caught",
@@ -361,36 +357,48 @@ class HideAndSeekGameHandler(
         }
 
         messageEventBus.register(this, UberStateUpdateMessage::class) { message, playerId ->
-            server.populationCache.getOrNull(playerId)?.worldId?.let { worldId ->
-                updateUberState(message, worldId, playerId)
+            server.populationCache.getOrNull(playerId)?.let { playerCache ->
+                playerCache.worldId?.let { worldId ->
+                    updateUberState(message, worldId, playerId)
 
-                if (
-                    pickupIds.containsValue(message.uberId) && // It's a pickup
-                    state.seekerWorlds.containsKey(worldId) // We are a seeker
-                ) {
+                    logger().info("is it a pickup? ${pickupIds.containsValue(message.uberId)}")
+                    logger().info("seekrr? ${state.seekerWorlds.containsKey(worldId)}")
 
-                    val worldNamesThatPickedUpThisItem = newSuspendedTransaction {
-                        Multiverse.findById(multiverseId)?.let { multiverse ->
-                            multiverse.worlds
-                                .filter { !state.seekerWorlds.containsKey(it.id.value) }
-                                .filter { world ->
-                                    val state = StateCache.get(ShareScope.WORLD to world.id.value)
-                                    state[message.uberId] == 1.0
-                                }
-                                .map { it.name }
-                        } ?: listOf()
-                    }
+                    if (
+                        pickupIds.containsValue(message.uberId) && // It's a pickup
+                        state.seekerWorlds.containsKey(worldId) // We are a seeker
+                    ) {
 
-                    if (worldNamesThatPickedUpThisItem.isNotEmpty()) {
-                        server.connections.toPlayers(
-                            server.populationCache.get(playerId).worldMemberIds,
-                            PrintTextMessage(
-                                worldNamesThatPickedUpThisItem.joinToString("\n"),
-                                (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, -1f),
-                                time = 3f,
-                                useInGameCoordinates = true,
-                            ),
-                        )
+                        val worldNamesThatPickedUpThisItem = newSuspendedTransaction {
+                            Multiverse.findById(multiverseId)?.let { multiverse ->
+                                multiverse.worlds
+                                    .filter { !state.seekerWorlds.containsKey(it.id.value) }
+                                    .filter { world ->
+                                        val state = StateCache.get(ShareScope.WORLD to world.id.value)
+                                        state[message.uberId] == 1.0
+                                    }
+                                    .map { it.name }
+                            } ?: listOf()
+                        }
+
+                        logger().info("${message.uberId} picked up by $worldNamesThatPickedUpThisItem")
+
+                        if (worldNamesThatPickedUpThisItem.isNotEmpty()) {
+                            logger().info(playerInfos[playerId]?.position.toString())
+                            logger().info(playerCache.worldMemberIds.toString())
+                            server.connections.toPlayers(
+                                playerCache.worldMemberIds,
+                                PrintTextMessage(
+                                    worldNamesThatPickedUpThisItem.joinToString("\n") + "\ntest\nsomething\nblabla",
+                                    (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, 0.5f),
+                                    time = 3f,
+                                    // verticalAnchor = PrintTextMessage.VERTICAL_ANCHOR_BOTTOM,
+                                    useInGameCoordinates = true,
+                                    withBox = false,
+                                    withSound = true,
+                                )
+                            )
+                        }
                     }
                 }
             }
