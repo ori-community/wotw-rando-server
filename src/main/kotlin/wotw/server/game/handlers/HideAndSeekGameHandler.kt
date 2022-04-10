@@ -23,9 +23,9 @@ import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.doAfterTransaction
 import wotw.server.util.logger
-import java.lang.Integer.min
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 
 
@@ -174,7 +174,7 @@ class HideAndSeekGameHandler(
                     gameSecondsElapsed++
                     secondsUntilSeekerHint--
 
-                    val seekerHintCountdownSeconds = min(secondsUntilSeekerHint / 2, 30)
+                    val seekerHintCountdownSeconds = min(secondsUntilSeekerHint.toFloat() / 2f, 30f).toInt()
 
                     if (secondsUntilSeekerHint <= 0) {
                         seekerHintsGiven++
