@@ -40,9 +40,9 @@ import kotlin.math.pow
 data class HideAndSeekGameHandlerState(
     var started: Boolean = false,
     var catchPhase: Boolean = false,
-    var secondsUntilCatchPhase: Int = 60,
-    var seekerHintBaseInterval: Int = 60,
-    var seekerHintIntervalMultiplier: Float = 0.6f,
+    var secondsUntilCatchPhase: Int = 600,
+    var seekerHintBaseInterval: Int = 600,
+    var seekerHintIntervalMultiplier: Float = 0.75f,
     var gameSecondsElapsed: Int = 0,
     var secondsUntilSeekerHint: Int = secondsUntilCatchPhase,
     var seekerHintsGiven: Int = 0,
@@ -125,7 +125,7 @@ class HideAndSeekGameHandler(
 
                         message = PrintTextMessage(
                             "Catching starts in $minutesPart:${secondsPart.toString().padStart(2, '0')}",
-                            Vector2(2f, 0f),
+                            Vector2(1.5f, 0f),
                             0,
                             3f,
                             screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
@@ -154,7 +154,7 @@ class HideAndSeekGameHandler(
 
                         server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
                             "Hider positions revealed to seekers!",
-                            Vector2(2f, 0f),
+                            Vector2(1.5f, 0f),
                             0,
                             3f,
                             screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
@@ -169,7 +169,7 @@ class HideAndSeekGameHandler(
                     } else if (secondsUntilSeekerHint <= 30) {
                         server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
                             "Revealing hider positions in ${secondsUntilSeekerHint}s",
-                            Vector2(2f, 0f),
+                            Vector2(1.5f, 0f),
                             0,
                             3f,
                             screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
