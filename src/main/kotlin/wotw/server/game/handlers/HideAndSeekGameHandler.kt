@@ -40,8 +40,12 @@ import kotlin.math.pow
 data class HideAndSeekGameHandlerState(
     var started: Boolean = false,
     var catchPhase: Boolean = false,
-    var secondsUntilCatchPhase: Int = 120,
+    var secondsUntilCatchPhase: Int = 600,
+    var seekerHintBaseInterval: Int = 600,
+    var seekerHintIntervalMultiplier: Float = 0.6f,
     var gameSecondsElapsed: Int = 0,
+    var secondsUntilSeekerHint: Int = secondsUntilCatchPhase,
+    var seekerHintsGiven: Int = 0,
     var seekerWorlds: MutableMap<Long, SeekerWorldInfo> = mutableMapOf(),
 )
 
@@ -65,6 +69,7 @@ enum class PlayerType {
 data class PlayerInfo(
     var type: PlayerType,
     var position: Vector2 = Vector2(0f, 0f),
+    var revealedMapPosition: Vector2? = null,
 ) {
     override fun toString(): String {
         return "$type at $position"
@@ -76,6 +81,7 @@ class HideAndSeekGameHandler(
     server: WotwBackendServer,
 ) : GameHandler<HideAndSeekGameHandlerClientInfo>(multiverseId, server) {
     private var state = HideAndSeekGameHandlerState()
+
     private val playerInfos = mutableMapOf<PlayerId, PlayerInfo>()
 
     private val BLAZE_UBER_ID = UberId(6, 1115)
@@ -132,6 +138,34 @@ class HideAndSeekGameHandler(
                     server.connections.toPlayers(playerInfos.keys, message)
                 } else {
                     gameSecondsElapsed++
+                    secondsUntilSeekerHint--
+
+                    if (secondsUntilSeekerHint <= 30) {
+                        server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
+                            "Hider positions will be revealed to seekers once in\n${secondsUntilSeekerHint}s",
+                            Vector2(0f, -0.2f),
+                            0,
+                            3f,
+                            PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
+                            withBox = false,
+                            withSound = true,
+                            queue = "hide_and_seek",
+                        ))
+                    } else if (secondsUntilSeekerHint <= 0) {
+                        seekerHintsGiven++
+                        secondsUntilSeekerHint = (seekerHintBaseInterval * seekerHintIntervalMultiplier.pow(seekerHintsGiven)).toInt()
+
+                        server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
+                            "Hider positions revealed to seekers!",
+                            Vector2(0f, -0.2f),
+                            0,
+                            3f,
+                            PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
+                            withBox = false,
+                            withSound = true,
+                            queue = "hide_and_seek",
+                        ))
+                    }
                 }
             }
         }
@@ -158,11 +192,27 @@ class HideAndSeekGameHandler(
                 senderInfo.position = Vector2(message.x, message.y)
                 val cache = server.populationCache.get(playerId)
 
-                server.connections.toPlayers(
-                    cache.universeMemberIds,
-                    UpdatePlayerPositionMessage(playerId, message.x, message.y),
-                    unreliable = true,
-                )
+                if (senderInfo.type == PlayerType.Seeker) {
+                    server.connections.toPlayers(
+                        cache.universeMemberIds - playerId,
+                        UpdatePlayerPositionMessage(playerId, message.x, message.y),
+                        unreliable = true,
+                    )
+                } else {
+                    server.connections.toPlayers(
+                        cache.universeMemberIds - playerId,
+                        UpdatePlayerWorldPositionMessage(playerId, message.x, message.y),
+                        unreliable = true,
+                    )
+
+                    senderInfo.revealedMapPosition?.let { revealedMapPosition ->
+                        server.connections.toPlayers(
+                            playerInfos.filter { (_, info) -> info.type == PlayerType.Seeker }.keys - playerId,
+                            UpdatePlayerMapPositionMessage(playerId, revealedMapPosition.x, revealedMapPosition.y),
+                            unreliable = true,
+                        )
+                    }
+                }
             }
         }
 
@@ -200,7 +250,7 @@ class HideAndSeekGameHandler(
                         5f,
                         PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
                         withBox = true,
-                        withSound = true,
+                        withSound = false,
                     )
                 )
 
@@ -293,6 +343,7 @@ class HideAndSeekGameHandler(
                 flags = listOf("--multiplayer"),
                 presets = listOf("gorlek", "qol", "rspawn"),
                 difficulty = "gorlek",
+                headers = listOf("tp_zone_hints"),
                 goals = listOf("trees"),
             ))
 
@@ -418,7 +469,7 @@ class HideAndSeekGameHandler(
     }
 
     private suspend fun broadcastPlayerVisibility() {
-        val hiddenOnMap = playerInfos.filter { (_, info) -> info.type == PlayerType.Hider }.keys.toList()
+        val hiddenOnMap = playerInfos.filter { (_, info) -> info.type == PlayerType.Hider && info.revealedMapPosition == null }.keys.toList()
         val hiddenInWorld = if (state.catchPhase) {
             listOf()
         } else {
