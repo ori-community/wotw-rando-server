@@ -174,7 +174,10 @@ class HideAndSeekGameHandler(
                     gameSecondsElapsed++
                     secondsUntilSeekerHint--
 
-                    val seekerHintCountdownSeconds = min(secondsUntilSeekerHint.toFloat() / 2f, 30f).toInt()
+                    val seekerHintCountdownSeconds = min(max(
+                        (seekerHintBaseInterval * seekerHintIntervalMultiplier.pow(seekerHintsGiven)).toInt(),
+                        seekerHintMinInterval
+                    ), 30)
 
                     if (secondsUntilSeekerHint <= 0) {
                         seekerHintsGiven++
