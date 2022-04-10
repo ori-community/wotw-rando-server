@@ -389,7 +389,7 @@ class HideAndSeekGameHandler(
                             server.connections.toPlayers(
                                 playerCache.worldMemberIds,
                                 PrintTextMessage(
-                                    worldNamesThatPickedUpThisItem.joinToString("\n") + "\ntest\nsomething\nblabla",
+                                    worldNamesThatPickedUpThisItem.joinToString("\n"),
                                     (playerInfos[playerId]?.position ?: Vector2(0f, 0f)) + Vector2(0f, 0.5f),
                                     time = 3f,
                                     // verticalAnchor = PrintTextMessage.VERTICAL_ANCHOR_BOTTOM,
