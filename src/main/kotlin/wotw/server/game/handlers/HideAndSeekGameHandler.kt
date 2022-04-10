@@ -33,9 +33,9 @@ import kotlin.math.pow
 data class HideAndSeekGameHandlerState(
     var started: Boolean = false,
     var catchPhase: Boolean = false,
-    var secondsUntilCatchPhase: Int = 600,
-    var seekerHintBaseInterval: Int = 600,
-    var seekerHintIntervalMultiplier: Float = 0.75f,
+    var secondsUntilCatchPhase: Int = 900,
+    var seekerHintBaseInterval: Int = 900,
+    var seekerHintIntervalMultiplier: Float = 0.8f,
     var seekerHintInterval: Int = seekerHintBaseInterval,
     var seekerHintMinInterval: Int = 90,
     var gameSecondsElapsed: Int = 0,
