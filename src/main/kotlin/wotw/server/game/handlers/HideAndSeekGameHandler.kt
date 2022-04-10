@@ -225,6 +225,7 @@ class HideAndSeekGameHandler(
 
                 if (caughtPlayerIds.isNotEmpty()) {
                     updatePlayerInfoCache()
+                    broadcastPlayerVisibility()
                 }
             }
         }

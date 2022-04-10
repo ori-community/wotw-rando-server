@@ -39,11 +39,16 @@ class MultiverseUtil(val server: WotwBackendServer) {
                 world.members.map { it.id.value }.toSet(),
             ))
 
+            val worldMemberIds = world.members.map { it.id.value }
+
             logger().info("Moving ${player.name} to world ${world.id.value}")
 
-            server.connections.broadcastMultiverseInfoMessage(world.universe.multiverse.id.value)
-
             doAfterTransaction {
+                worldMemberIds.forEach { worldMemberId ->
+                    server.populationCache.invalidate(worldMemberId)
+                }
+
+                server.connections.broadcastMultiverseInfoMessage(world.universe.multiverse.id.value)
                 server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(
                     world.id.value,
                     player.id.value,
