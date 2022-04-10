@@ -168,7 +168,7 @@ class HideAndSeekGameHandler(
                         broadcastPlayerVisibility()
                     } else if (secondsUntilSeekerHint <= 30) {
                         server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
-                            "Hider positions will be revealed to seekers in\n${secondsUntilSeekerHint}s",
+                            "Revealing hider positions in ${secondsUntilSeekerHint}s",
                             Vector2(0f, 0f),
                             0,
                             3f,
