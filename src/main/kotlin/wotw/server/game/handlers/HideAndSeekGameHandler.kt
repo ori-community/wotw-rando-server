@@ -155,6 +155,12 @@ class HideAndSeekGameHandler(
                         seekerHintsGiven++
                         secondsUntilSeekerHint = (seekerHintBaseInterval * seekerHintIntervalMultiplier.pow(seekerHintsGiven)).toInt()
 
+                        playerInfos.values.forEach { info ->
+                            if (info.type == PlayerType.Hider) {
+                                info.revealedMapPosition = info.position
+                            }
+                        }
+
                         server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
                             "Hider positions revealed to seekers!",
                             Vector2(0f, -0.2f),
@@ -165,6 +171,8 @@ class HideAndSeekGameHandler(
                             withSound = true,
                             queue = "hide_and_seek",
                         ))
+
+                        broadcastPlayerVisibility()
                     }
                 }
             }
@@ -333,6 +341,20 @@ class HideAndSeekGameHandler(
                 "updatePlayerInfoCache" -> {
                     updatePlayerInfoCache()
                 }
+                "reset" -> {
+                    state = HideAndSeekGameHandlerState()
+                    updatePlayerInfoCache()
+                    newSuspendedTransaction {
+                        Multiverse.findById(multiverseId)?.let { multiverse ->
+                            multiverse.gameHandlerActive = false
+
+                            server.connections.toPlayers(
+                                playerInfos.keys,
+                                server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -446,6 +468,7 @@ class HideAndSeekGameHandler(
         }
 
         playerInfos -= playerInfos.keys - playerIds
+        broadcastPlayerVisibility()
     }
 
     private suspend fun updateUberState(message: UberStateUpdateMessage, worldId: Long, playerId: String) =
