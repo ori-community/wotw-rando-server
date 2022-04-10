@@ -1,14 +1,7 @@
 package wotw.server.game.handlers
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import org.jetbrains.exposed.dao.alertSubscribers
-import org.jetbrains.exposed.sql.Transaction
-import org.jetbrains.exposed.sql.statements.StatementInterceptor
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.SeedGenConfig
 import wotw.io.messages.json
@@ -30,9 +23,9 @@ import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.doAfterTransaction
 import wotw.server.util.logger
+import java.lang.Integer.min
 import java.util.concurrent.TimeUnit
-import javax.swing.plaf.nimbus.State
-import kotlin.math.floor
+import kotlin.math.max
 import kotlin.math.pow
 
 
@@ -43,6 +36,7 @@ data class HideAndSeekGameHandlerState(
     var secondsUntilCatchPhase: Int = 600,
     var seekerHintBaseInterval: Int = 600,
     var seekerHintIntervalMultiplier: Float = 0.75f,
+    var seekerHintMinInterval: Int = 45,
     var gameSecondsElapsed: Int = 0,
     var secondsUntilSeekerHint: Int = secondsUntilCatchPhase,
     var seekerHintsGiven: Int = 0,
@@ -85,6 +79,44 @@ class HideAndSeekGameHandler(
     private val playerInfos = mutableMapOf<PlayerId, PlayerInfo>()
 
     private val BLAZE_UBER_ID = UberId(6, 1115)
+
+    private val seekerSeedgenConfig = SeedGenConfig(
+        flags = listOf("--multiplayer"),
+        presets = listOf("qol", "rspawn"),
+        difficulty = "gorlek",
+        headers = listOf(
+            "vanilla_opher_upgrades",
+            "black_market",
+            "key_hints",
+            "zone_hints",
+            "trial_hints",
+        ),
+        customHeaders = listOf(
+            """
+                !!remove 2|115  // Remove Blaze
+                3|0|2|100
+                3|0|2|5
+                3|0|2|97
+                3|0|2|101
+                3|0|9|0
+            """.trimIndent()
+        ),
+    )
+
+    private val hiderSeedgenConfig = SeedGenConfig(
+        flags = listOf("--multiplayer"),
+        presets = listOf("qol", "rspawn"),
+        difficulty = "gorlek",
+        headers = listOf(
+            "tp_zone_hints",
+            "vanilla_opher_upgrades",
+            "black_market",
+            "key_hints",
+            "zone_hints",
+            "trial_hints",
+        ),
+        goals = listOf("trees"),
+    )
 
     private val scheduler = Scheduler {
         state.apply {
@@ -142,9 +174,14 @@ class HideAndSeekGameHandler(
                     gameSecondsElapsed++
                     secondsUntilSeekerHint--
 
+                    val seekerHintCountdownSeconds = min(secondsUntilSeekerHint / 2, 30)
+
                     if (secondsUntilSeekerHint <= 0) {
                         seekerHintsGiven++
-                        secondsUntilSeekerHint = (seekerHintBaseInterval * seekerHintIntervalMultiplier.pow(seekerHintsGiven)).toInt()
+                        secondsUntilSeekerHint = max(
+                            (seekerHintBaseInterval * seekerHintIntervalMultiplier.pow(seekerHintsGiven)).toInt(),
+                            seekerHintMinInterval
+                        )
 
                         playerInfos.values.forEach { info ->
                             if (info.type == PlayerType.Hider) {
@@ -152,33 +189,37 @@ class HideAndSeekGameHandler(
                             }
                         }
 
-                        server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
-                            "Hider positions revealed to seekers!",
-                            Vector2(1.5f, 0f),
-                            0,
-                            3f,
-                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
-                            horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
-                            alignment = PrintTextMessage.ALIGNMENT_RIGHT,
-                            withBox = false,
-                            withSound = true,
-                            queue = "hide_and_seek",
-                        ))
+                        server.connections.toPlayers(
+                            playerInfos.keys, PrintTextMessage(
+                                "Hider positions revealed to seekers!",
+                                Vector2(1.5f, 0f),
+                                0,
+                                3f,
+                                screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
+                                horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
+                                alignment = PrintTextMessage.ALIGNMENT_RIGHT,
+                                withBox = false,
+                                withSound = true,
+                                queue = "hide_and_seek",
+                            )
+                        )
 
                         broadcastPlayerVisibility()
-                    } else if (secondsUntilSeekerHint <= 30) {
-                        server.connections.toPlayers(playerInfos.keys, PrintTextMessage(
-                            "Revealing hider positions in ${secondsUntilSeekerHint}s",
-                            Vector2(1.5f, 0f),
-                            0,
-                            3f,
-                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
-                            horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
-                            alignment = PrintTextMessage.ALIGNMENT_RIGHT,
-                            withBox = false,
-                            withSound = true,
-                            queue = "hide_and_seek",
-                        ))
+                    } else if (secondsUntilSeekerHint <= seekerHintCountdownSeconds) {
+                        server.connections.toPlayers(
+                            playerInfos.keys, PrintTextMessage(
+                                "Revealing hider positions in ${secondsUntilSeekerHint}s",
+                                Vector2(1.5f, 0f),
+                                0,
+                                3f,
+                                screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
+                                horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
+                                alignment = PrintTextMessage.ALIGNMENT_RIGHT,
+                                withBox = false,
+                                withSound = true,
+                                queue = "hide_and_seek",
+                            )
+                        )
                     }
                 }
             }
@@ -290,6 +331,28 @@ class HideAndSeekGameHandler(
                 if (caughtPlayerIds.isNotEmpty()) {
                     updatePlayerInfoCache()
                     broadcastPlayerVisibility()
+
+                    val caughtPlayerNames = newSuspendedTransaction {
+                        caughtPlayerIds.mapNotNull {
+                            User.findById(it)?.name
+                        }
+                    }
+
+                    caughtPlayerNames.forEach { caughtPlayerName ->
+                        server.connections.toPlayers(
+                            playerInfos.filter { (_, info) -> info.type == PlayerType.Hider }.keys,
+                            PrintTextMessage(
+                                "$caughtPlayerName has been caught by $seekerName!",
+                                Vector2(0f, 0f),
+                                0,
+                                3f,
+                                PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+                                withBox = true,
+                                withSound = true,
+                                queue = "hide_and_seek_caught",
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -367,13 +430,14 @@ class HideAndSeekGameHandler(
         multiverseEventBus.register(this, WorldCreatedEvent::class) { message ->
             logger().info("world created: ${message.world.id.value}")
 
-            val result = server.seedGeneratorService.generateSeedGroup(SeedGenConfig(
-                flags = listOf("--multiplayer"),
-                presets = listOf("gorlek", "qol", "rspawn"),
-                difficulty = "gorlek",
-                headers = listOf("tp_zone_hints"),
-                goals = listOf("trees"),
-            ))
+            // TODO: Make better
+            val result = server.seedGeneratorService.generateSeedGroup(
+                if (state.seekerWorlds.isEmpty()) {
+                    seekerSeedgenConfig
+                } else {
+                    hiderSeedgenConfig
+                }
+            )
 
             result.seedGroup?.let { seedGroup ->
                 message.world.seed = seedGroup.seeds.firstOrNull()
@@ -498,7 +562,8 @@ class HideAndSeekGameHandler(
     }
 
     private suspend fun broadcastPlayerVisibility() {
-        val hiddenOnMap = playerInfos.filter { (_, info) -> info.type == PlayerType.Hider && info.revealedMapPosition == null }.keys.toList()
+        val hiddenOnMap =
+            playerInfos.filter { (_, info) -> info.type == PlayerType.Hider && info.revealedMapPosition == null }.keys.toList()
         val hiddenInWorld = if (state.catchPhase) {
             listOf()
         } else {
