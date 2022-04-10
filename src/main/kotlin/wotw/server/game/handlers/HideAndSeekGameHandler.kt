@@ -37,7 +37,7 @@ data class HideAndSeekGameHandlerState(
     var seekerHintBaseInterval: Int = 600,
     var seekerHintIntervalMultiplier: Float = 0.75f,
     var seekerHintInterval: Int = seekerHintBaseInterval,
-    var seekerHintMinInterval: Int = 30,
+    var seekerHintMinInterval: Int = 90,
     var gameSecondsElapsed: Int = 0,
     var secondsUntilSeekerHint: Int = secondsUntilCatchPhase,
     var seekerHintsGiven: Int = 0,
@@ -110,6 +110,7 @@ class HideAndSeekGameHandler(
         presets = listOf("qol", "rspawn"),
         difficulty = "gorlek",
         headers = listOf(
+            "teleporters",
             "tp_zone_hints",
             "vanilla_opher_upgrades",
             "black_market",
@@ -360,9 +361,6 @@ class HideAndSeekGameHandler(
             server.populationCache.getOrNull(playerId)?.let { playerCache ->
                 playerCache.worldId?.let { worldId ->
                     updateUberState(message, worldId, playerId)
-
-                    logger().info("is it a pickup? ${pickupIds.containsValue(message.uberId)}")
-                    logger().info("seekrr? ${state.seekerWorlds.containsKey(worldId)}")
 
                     if (
                         pickupIds.containsValue(message.uberId) && // It's a pickup
