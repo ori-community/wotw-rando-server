@@ -180,7 +180,7 @@ class HideAndSeekGameHandler(
 
                     if (secondsUntilSeekerHint <= 0) {
                         seekerHintsGiven++
-                        seekerHintInterval = min((seekerHintInterval * seekerHintIntervalMultiplier).toInt(), seekerHintMinInterval)
+                        seekerHintInterval = max((seekerHintInterval * seekerHintIntervalMultiplier).toInt(), seekerHintMinInterval)
                         secondsUntilSeekerHint = seekerHintInterval
 
                         playerInfos.values.forEach { info ->
@@ -434,6 +434,9 @@ class HideAndSeekGameHandler(
                             )
                         }
                     }
+                }
+                "fix1" -> {
+                    state.seekerHintInterval = 500
                 }
             }
         }
