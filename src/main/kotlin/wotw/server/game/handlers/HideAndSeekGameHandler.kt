@@ -485,7 +485,7 @@ class HideAndSeekGameHandler(
             }
         }
 
-        scheduler.scheduleExecution(Every(1, TimeUnit.SECONDS))
+        scheduler.scheduleExecution(Every(1, TimeUnit.SECONDS), true)
     }
 
     override fun stop() {

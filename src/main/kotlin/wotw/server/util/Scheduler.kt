@@ -6,13 +6,19 @@ import java.util.concurrent.TimeUnit
 
 class Scheduler(private val task: suspend () -> Unit) {
     private val executor = Executors.newScheduledThreadPool(1)
-    fun scheduleExecution(every: Every) {
+
+    fun scheduleExecution(every: Every, fixedRate: Boolean = false) {
         val taskWrapper = Runnable {
             runBlocking {
                 task.invoke()
             }
         }
-        executor.scheduleWithFixedDelay(taskWrapper, every.n, every.n, every.unit)
+
+        if (fixedRate) {
+            executor.scheduleAtFixedRate(taskWrapper, every.n, every.n, every.unit)
+        } else {
+            executor.scheduleWithFixedDelay(taskWrapper, every.n, every.n, every.unit)
+        }
     }
 
     fun stop() {
