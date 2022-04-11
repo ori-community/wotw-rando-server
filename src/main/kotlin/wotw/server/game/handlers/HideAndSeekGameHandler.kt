@@ -94,6 +94,8 @@ class HideAndSeekGameHandler(
         ),
         customHeaders = listOf(
             """
+                Flags: Hide and Seek (Seeker)
+                
                 !!remove 2|115  // Remove Blaze
                 3|0|2|100
                 3|0|2|5
@@ -101,6 +103,15 @@ class HideAndSeekGameHandler(
                 3|0|2|101
                 3|0|9|0
                 3|0|2|118
+                
+                // Hide and Seek specific bonus items
+                !!add 5x 8|9|10|int|+1
+                !!name 8|9|10|int|+1 <hex_ff008d>Reveal Spell (useless)</>
+                !!icon 8|9|10|int|+1 shard:0
+
+                !!add 5x 8|9|10|int|+1
+                !!name 8|9|10|int|+1 <hex_ff008d>Vanish Spell (useless)</>
+                !!icon 8|9|10|int|+1 shard:0
             """.trimIndent()
         ),
     )
@@ -117,6 +128,11 @@ class HideAndSeekGameHandler(
             "key_hints",
             "zone_hints",
             "trial_hints",
+        ),
+        customHeaders = listOf(
+            """
+                Flags: Hide and Seek (Seeker)
+            """.trimIndent()
         ),
         goals = listOf("trees"),
     )
@@ -181,7 +197,8 @@ class HideAndSeekGameHandler(
 
                     if (secondsUntilSeekerHint <= 0) {
                         seekerHintsGiven++
-                        seekerHintInterval = max((seekerHintInterval * seekerHintIntervalMultiplier).toInt(), seekerHintMinInterval)
+                        seekerHintInterval =
+                            max((seekerHintInterval * seekerHintIntervalMultiplier).toInt(), seekerHintMinInterval)
                         secondsUntilSeekerHint = seekerHintInterval
 
                         playerInfos.values.forEach { info ->
