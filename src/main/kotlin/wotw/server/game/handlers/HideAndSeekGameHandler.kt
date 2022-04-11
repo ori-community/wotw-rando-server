@@ -131,7 +131,7 @@ class HideAndSeekGameHandler(
         ),
         customHeaders = listOf(
             """
-                Flags: Hide and Seek (Seeker)
+                Flags: Hide and Seek (Hider)
             """.trimIndent()
         ),
         goals = listOf("trees"),
