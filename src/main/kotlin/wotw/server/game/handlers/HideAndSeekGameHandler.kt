@@ -257,7 +257,7 @@ class HideAndSeekGameHandler(
     }
 
     private suspend fun handlePlayerWorldVisibility() = state.apply {
-        playerInfos.values.forEach { playerInfo ->
+        playerInfos.forEach { (playerId, playerInfo) ->
             if (playerInfo.hiddenInWorldSeconds > 0) {
                 playerInfo.hiddenInWorldSeconds--
 
@@ -270,7 +270,7 @@ class HideAndSeekGameHandler(
                 }
 
                 server.connections.toPlayers(
-                    playerInfos.keys, PrintTextMessage(
+                    listOf(playerId), PrintTextMessage(
                         message,
                         Vector2(1.5f, 2f),
                         1,
@@ -352,7 +352,7 @@ class HideAndSeekGameHandler(
 
                 playerInfos[playerId]?.let { seekerInfo ->
                     playerInfos
-                        .filterValues { it.type == PlayerType.Hider }
+                        .filterValues { it.type == PlayerType.Hider && it.hiddenInWorldSeconds == 0 }
                         .forEach { (playerId, hiderInfo) ->
                             if (seekerInfo.position.distanceSquaredTo(hiderInfo.position) < seekerWorldInfo.radius.pow(2)) {
                                 caughtPlayerIds.add(playerId)
