@@ -65,6 +65,7 @@ data class PlayerInfo(
     var type: PlayerType,
     var position: Vector2 = Vector2(0f, 0f),
     var revealedMapPosition: Vector2? = null,
+    var hiddenInWorldSeconds: Int = 0,
 ) {
     override fun toString(): String {
         return "$type at $position"
@@ -141,105 +142,147 @@ class HideAndSeekGameHandler(
         state.apply {
             if (started) {
                 if (!catchPhase) {
-                    secondsUntilCatchPhase--
-
-                    val message: PrintTextMessage
-
-                    if (secondsUntilCatchPhase == 0) {
-                        catchPhase = true
-
-                        // Give blaze to seeker worlds
-                        newSuspendedTransaction {
-                            seekerWorlds.keys.forEach { seekerWorldId ->
-                                World.findById(seekerWorldId)?.let { seekerWorld ->
-                                    val result = server.sync.aggregateStates(seekerWorld, mapOf(BLAZE_UBER_ID to 1.0))
-                                    seekerWorld.members.forEach { member ->
-                                        server.sync.syncStates(member.id.value, result)
-                                    }
-                                }
-                            }
-                        }
-
-                        message = PrintTextMessage(
-                            "<s_2>GO!</>",
-                            Vector2(0f, 1f),
-                            0,
-                            3f,
-                            PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
-                            queue = "hide_and_seek",
-                        )
-
-                        broadcastPlayerVisibility()
-                    } else {
-                        val minutesPart = (secondsUntilCatchPhase / 60f).toInt()
-                        val secondsPart = secondsUntilCatchPhase % 60
-
-                        message = PrintTextMessage(
-                            "Catching starts in $minutesPart:${secondsPart.toString().padStart(2, '0')}",
-                            Vector2(1.5f, 0f),
-                            0,
-                            3f,
-                            screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
-                            horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
-                            alignment = PrintTextMessage.ALIGNMENT_RIGHT,
-                            withBox = false,
-                            withSound = false,
-                            queue = "hide_and_seek",
-                        )
-                    }
-
-                    server.connections.toPlayers(playerInfos.keys, message)
+                    handleCatchPhaseCountdown()
                 } else {
                     gameSecondsElapsed++
-                    secondsUntilSeekerHint--
 
-                    val seekerHintCountdownSeconds = min(seekerHintInterval / 2, 30)
+                    handleSeekerHint()
+                    handlePlayerWorldVisibility()
+                }
+            }
+        }
+    }
 
-                    if (secondsUntilSeekerHint <= 0) {
-                        seekerHintsGiven++
-                        seekerHintInterval =
-                            max((seekerHintInterval * seekerHintIntervalMultiplier).toInt(), seekerHintMinInterval)
-                        secondsUntilSeekerHint = seekerHintInterval
 
-                        playerInfos.values.forEach { info ->
-                            if (info.type == PlayerType.Hider) {
-                                info.revealedMapPosition = info.position
-                            }
+    private suspend fun handleCatchPhaseCountdown() = state.apply {
+        secondsUntilCatchPhase--
+
+        val message: PrintTextMessage
+
+        if (secondsUntilCatchPhase == 0) {
+            catchPhase = true
+
+            // Give blaze to seeker worlds
+            newSuspendedTransaction {
+                seekerWorlds.keys.forEach { seekerWorldId ->
+                    World.findById(seekerWorldId)?.let { seekerWorld ->
+                        val result = server.sync.aggregateStates(seekerWorld, mapOf(BLAZE_UBER_ID to 1.0))
+                        seekerWorld.members.forEach { member ->
+                            server.sync.syncStates(member.id.value, result)
                         }
-
-                        server.connections.toPlayers(
-                            playerInfos.keys, PrintTextMessage(
-                                "Hider positions revealed to seekers!",
-                                Vector2(1.5f, 0f),
-                                0,
-                                3f,
-                                screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
-                                horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
-                                alignment = PrintTextMessage.ALIGNMENT_RIGHT,
-                                withBox = false,
-                                withSound = true,
-                                queue = "hide_and_seek",
-                            )
-                        )
-
-                        broadcastPlayerVisibility()
-                    } else if (secondsUntilSeekerHint <= seekerHintCountdownSeconds) {
-                        server.connections.toPlayers(
-                            playerInfos.keys, PrintTextMessage(
-                                "Revealing hider positions in ${secondsUntilSeekerHint}s",
-                                Vector2(1.5f, 0f),
-                                0,
-                                3f,
-                                screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
-                                horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
-                                alignment = PrintTextMessage.ALIGNMENT_RIGHT,
-                                withBox = false,
-                                withSound = true,
-                                queue = "hide_and_seek",
-                            )
-                        )
                     }
                 }
+            }
+
+            message = PrintTextMessage(
+                "<s_2>GO!</>",
+                Vector2(0f, 1f),
+                0,
+                3f,
+                PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+                queue = "hide_and_seek",
+            )
+
+            broadcastPlayerVisibility()
+        } else {
+            val minutesPart = (secondsUntilCatchPhase / 60f).toInt()
+            val secondsPart = secondsUntilCatchPhase % 60
+
+            message = PrintTextMessage(
+                "Catching starts in $minutesPart:${secondsPart.toString().padStart(2, '0')}",
+                Vector2(1.5f, 0f),
+                0,
+                3f,
+                screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
+                horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
+                alignment = PrintTextMessage.ALIGNMENT_RIGHT,
+                withBox = false,
+                withSound = false,
+                queue = "hide_and_seek",
+            )
+        }
+
+        server.connections.toPlayers(playerInfos.keys, message)
+    }
+
+    private suspend fun handleSeekerHint() = state.apply {
+        secondsUntilSeekerHint--
+
+        val seekerHintCountdownSeconds = min(seekerHintInterval / 2, 30)
+
+        if (secondsUntilSeekerHint <= 0) {
+            seekerHintsGiven++
+            seekerHintInterval =
+                max((seekerHintInterval * seekerHintIntervalMultiplier).toInt(), seekerHintMinInterval)
+            secondsUntilSeekerHint = seekerHintInterval
+
+            playerInfos.values.forEach { info ->
+                if (info.type == PlayerType.Hider) {
+                    info.revealedMapPosition = info.position
+                }
+            }
+
+            server.connections.toPlayers(
+                playerInfos.keys, PrintTextMessage(
+                    "Hider positions revealed to seekers!",
+                    Vector2(1.5f, 0f),
+                    0,
+                    3f,
+                    screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
+                    horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
+                    alignment = PrintTextMessage.ALIGNMENT_RIGHT,
+                    withBox = false,
+                    withSound = true,
+                    queue = "hide_and_seek",
+                )
+            )
+
+            broadcastPlayerVisibility()
+        } else if (secondsUntilSeekerHint <= seekerHintCountdownSeconds) {
+            server.connections.toPlayers(
+                playerInfos.keys, PrintTextMessage(
+                    "Revealing hider positions in ${secondsUntilSeekerHint}s",
+                    Vector2(1.5f, 0f),
+                    0,
+                    3f,
+                    screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
+                    horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
+                    alignment = PrintTextMessage.ALIGNMENT_RIGHT,
+                    withBox = false,
+                    withSound = true,
+                    queue = "hide_and_seek",
+                )
+            )
+        }
+    }
+
+    private suspend fun handlePlayerWorldVisibility() = state.apply {
+        playerInfos.values.forEach { playerInfo ->
+            if (playerInfo.hiddenInWorldSeconds > 0) {
+                playerInfo.hiddenInWorldSeconds--
+
+                val message: String
+                if (playerInfo.hiddenInWorldSeconds == 0) {
+                    message = "You are no longer invisible."
+                    broadcastPlayerVisibility()
+                } else {
+                    message = "You are invisible for ${playerInfo.hiddenInWorldSeconds}s"
+                }
+
+                server.connections.toPlayers(
+                    playerInfos.keys, PrintTextMessage(
+                        message,
+                        Vector2(1.5f, 2f),
+                        1,
+                        2f,
+                        screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
+                        horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
+                        alignment = PrintTextMessage.ALIGNMENT_RIGHT,
+                        withBox = false,
+                        withSound = true,
+                        queue = "hide_and_seek",
+                    )
+                )
             }
         }
     }
@@ -272,11 +315,18 @@ class HideAndSeekGameHandler(
                         unreliable = true,
                     )
                 } else {
-                    server.connections.toPlayers(
-                        cache.universeMemberIds - playerId,
-                        UpdatePlayerWorldPositionMessage(playerId, message.x, message.y),
-                        unreliable = true,
-                    )
+                    val positionDistance = Vector2(message.x, message.y).distanceSquaredTo(senderInfo.position)
+
+                    if (positionDistance > 100.0) {
+                        senderInfo.hiddenInWorldSeconds = 15
+                        broadcastPlayerVisibility()
+                    } else if (senderInfo.hiddenInWorldSeconds == 0) {
+                        server.connections.toPlayers(
+                            cache.universeMemberIds - playerId,
+                            UpdatePlayerWorldPositionMessage(playerId, message.x, message.y),
+                            unreliable = true,
+                        )
+                    }
 
                     senderInfo.revealedMapPosition?.let { revealedMapPosition ->
                         server.connections.toPlayers(
@@ -593,8 +643,9 @@ class HideAndSeekGameHandler(
     private suspend fun broadcastPlayerVisibility() {
         val hiddenOnMap =
             playerInfos.filter { (_, info) -> info.type == PlayerType.Hider && info.revealedMapPosition == null }.keys.toList()
+
         val hiddenInWorld = if (state.catchPhase) {
-            listOf()
+            playerInfos.filter { (_, info) -> info.hiddenInWorldSeconds > 0 }.keys.toList()
         } else {
             hiddenOnMap
         }
