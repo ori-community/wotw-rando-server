@@ -68,7 +68,7 @@ data class PlayerInfo(
     var hiddenInWorldSeconds: Int = 0,
 ) {
     override fun toString(): String {
-        return "$type at $position"
+        return "$type at $position invisible for ${hiddenInWorldSeconds}s"
     }
 }
 
@@ -305,6 +305,7 @@ class HideAndSeekGameHandler(
     override fun start() {
         messageEventBus.register(this, PlayerPositionMessage::class) { message, playerId ->
             playerInfos[playerId]?.let { senderInfo ->
+                val previousSenderPosition = senderInfo.position
                 senderInfo.position = Vector2(message.x, message.y)
                 val cache = server.populationCache.get(playerId)
 
@@ -315,7 +316,7 @@ class HideAndSeekGameHandler(
                         unreliable = true,
                     )
                 } else {
-                    val positionDistance = Vector2(message.x, message.y).distanceSquaredTo(senderInfo.position)
+                    val positionDistance = previousSenderPosition.distanceSquaredTo(senderInfo.position)
 
                     if (positionDistance > 100.0) {
                         senderInfo.hiddenInWorldSeconds = 15
