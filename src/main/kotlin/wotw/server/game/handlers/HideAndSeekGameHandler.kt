@@ -598,7 +598,7 @@ class HideAndSeekGameHandler(
                         state.seekerWorlds[firstWorld.id.value] = SeekerWorldInfo(
                             firstWorld.id.value,
                             8f,
-                            6f,
+                            0f,
                         )
                     }
                 }
