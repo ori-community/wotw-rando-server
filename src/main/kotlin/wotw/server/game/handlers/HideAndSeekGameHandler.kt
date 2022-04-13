@@ -318,7 +318,7 @@ class HideAndSeekGameHandler(
                 } else {
                     val positionDistance = previousSenderPosition.distanceSquaredTo(senderInfo.position)
 
-                    if (positionDistance > 100.0) {
+                    if (positionDistance > 2500.0) {
                         senderInfo.hiddenInWorldSeconds = 15
                         broadcastPlayerVisibility()
                     } else if (senderInfo.hiddenInWorldSeconds == 0) {
