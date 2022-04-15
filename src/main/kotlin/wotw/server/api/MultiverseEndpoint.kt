@@ -10,12 +10,14 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.launch
+import kotlinx.serialization.serializer
 import org.jetbrains.exposed.dao.EntityChange
 import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.MultiverseCreationConfig
+import wotw.io.messages.json
 import wotw.io.messages.protobuf.PlayerPositionMessage
 import wotw.io.messages.protobuf.PlayerUseCatchingAbilityMessage
 import wotw.io.messages.protobuf.UberStateBatchUpdateMessage
@@ -27,6 +29,7 @@ import wotw.server.exception.ConflictException
 import wotw.server.game.DeveloperEvent
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.GameHandlerType
+import wotw.server.game.handlers.HideAndSeekGameHandlerState
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -86,12 +89,17 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 val multiverse = newSuspendedTransaction {
                     Multiverse.new {
-                        if (props?.seedGroupId != null)
-                            seedGroup = SeedGroup.findById(props.seedGroupId) ?: throw NotFoundException()
-                        if (props?.bingo != null)
-                            board = BingoBoardGenerator().generateBoard(props)
-
-                        gameHandlerType = GameHandlerType.HIDE_AND_SEEK
+                        if (props?.hideAndSeekConfig != null) {
+                            gameHandlerType = GameHandlerType.HIDE_AND_SEEK
+                            gameHandlerStateJson = json.encodeToString(serializer(), HideAndSeekGameHandlerState(
+                                secondsUntilCatchPhase = props.hideAndSeekConfig.secondsUntilCatchPhase,
+                            ))
+                        } else {
+                            if (props?.seedGroupId != null)
+                                seedGroup = SeedGroup.findById(props.seedGroupId) ?: throw NotFoundException()
+                            if (props?.bingo != null)
+                                board = BingoBoardGenerator().generateBoard(props)
+                        }
                     }
                 }
                 call.respondText("${multiverse.id.value}", status = HttpStatusCode.Created)

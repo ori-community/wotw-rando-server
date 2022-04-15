@@ -195,7 +195,7 @@ data class BingoConfig(
 
 @Serializable
 data class HideAndSeekConfig(
-    val seekerStartTimeout: Float = 30f, // 30 Seconds for now
+    val secondsUntilCatchPhase: Int = 15 * 60,
 )
 
 @Serializable

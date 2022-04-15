@@ -17,8 +17,8 @@ import kotlin.reflect.full.createType
 typealias PlayerId = String
 
 object GameHandlerType {
-    val NORMAL = 0
-    val HIDE_AND_SEEK = 1
+    const val NORMAL = 0
+    const val HIDE_AND_SEEK = 1
 }
 
 abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
