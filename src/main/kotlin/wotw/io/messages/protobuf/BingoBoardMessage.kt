@@ -9,7 +9,7 @@ import kotlin.math.max
 
 @Serializable
 data class BingoData(
-    val board: BingoBoard,
+    val board: BingoBoardMessage,
     val universes: List<BingoUniverseInfo>,
 )
 
@@ -19,16 +19,16 @@ data class PositionedBingoSquare(
     @ProtoNumber(2) val square: BingoSquare,
 )
 @Serializable
-data class BingoBoard(
+data class BingoBoardMessage(
     @ProtoNumber(1) val squares: List<PositionedBingoSquare> = emptyList(),
     @ProtoNumber(2) val size: Int = -1,
     @ProtoNumber(3) val lockout: Boolean = false,
 ) {
 
     operator fun get(position: Position) = squares.first { it.position == position }.square
-    fun merge(other: BingoBoard) =
-        BingoBoard(squares + other.squares, max(size, other.size), lockout || other.lockout)
-    operator fun plus(other: BingoBoard) = merge(other)
+    fun merge(other: BingoBoardMessage) =
+        BingoBoardMessage(squares + other.squares, max(size, other.size), lockout || other.lockout)
+    operator fun plus(other: BingoBoardMessage) = merge(other)
 }
 
 @Serializable

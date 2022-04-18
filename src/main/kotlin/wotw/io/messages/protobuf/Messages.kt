@@ -4,7 +4,6 @@ import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.math.pow
-import kotlin.math.sqrt
 
 @Serializable
 data class UserInfo(
@@ -167,7 +166,7 @@ data class PrintPickupMessage(
 
 @Serializable
 data class SyncBoardMessage(
-    @ProtoNumber(1) val board: BingoBoard,
+    @ProtoNumber(1) val board: BingoBoardMessage,
     @ProtoNumber(2) val replace: Boolean = false
 )
 

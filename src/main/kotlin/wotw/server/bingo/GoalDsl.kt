@@ -7,7 +7,7 @@ import kotlin.math.sqrt
 import kotlin.random.Random
 
 fun Collection<GeneratorWithConfig>.weightedRandom(random: Random): GeneratorWithConfig {
-    return this.map { it to it.weight }.toMap().weightedRandom(random)
+    return this.associateWith { it.weight }.weightedRandom(random)
 }
 
 fun <T> Map<T, Int>.weightedRandom(random: Random): T {

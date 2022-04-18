@@ -187,10 +187,11 @@ data class SeedGenConfig(
 )
 
 @Serializable
-data class BingoConfig(
+data class BingoCreationConfig(
     val discovery: Int? = null,
     val lockout: Boolean? = false,
-    val manualGoalCompletion: Boolean? = false
+    val manualGoalCompletion: Boolean? = false,
+    val size: Int = 5,
 )
 
 @Serializable
@@ -201,7 +202,7 @@ data class HideAndSeekConfig(
 @Serializable
 data class MultiverseCreationConfig(
     val seedGroupId: Long? = null,
-    val bingo: BingoConfig? = null,
+    val bingoConfig: BingoCreationConfig? = null,
     val hideAndSeekConfig: HideAndSeekConfig? = null,
 )
 

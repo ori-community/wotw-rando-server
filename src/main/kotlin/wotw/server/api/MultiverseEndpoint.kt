@@ -97,7 +97,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         } else {
                             if (props?.seedGroupId != null)
                                 seedGroup = SeedGroup.findById(props.seedGroupId) ?: throw NotFoundException()
-                            if (props?.bingo != null)
+                            if (props?.bingoConfig != null)
                                 board = BingoBoardGenerator().generateBoard(props)
                         }
                     }

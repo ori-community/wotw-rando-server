@@ -2,6 +2,7 @@ package wotw.server.bingo
 
 import wotw.io.messages.MultiverseCreationConfig
 import java.time.Instant
+import kotlin.math.min
 import kotlin.random.Random
 
 fun generatePool() = mutableListOf(
@@ -21,8 +22,9 @@ fun generatePool() = mutableListOf(
 
         countGoal = { it.nextTriangular(2, 8, 5) },
         maxRepeats = 2
-        ),
-    nof(3,
+    ),
+    nof(
+        3,
         pickupsIn.marsh,
         pickupsIn.hollow,
         pickupsIn.glades,
@@ -47,10 +49,10 @@ fun generatePool() = mutableListOf(
         bool("Reach Escape Access", 28895, 42209),
         bool("Marsh Cave Lizard Door", 21786, 35598),
         bool("Marsh Burrow Area Gauntlet", 9593, 59418),
-        threshold("Double Jump Tree Approach", 9593, 25130, 3, hideValue=true),
-        threshold("Wellspring Wheel Room Access", 37858, 8487, 2, hideValue=true),
-        threshold("Pools Water Dash Fight Room", 5377, 53480, 4, hideValue=true)
-        ),
+        threshold("Double Jump Tree Approach", 9593, 25130, 3, hideValue = true),
+        threshold("Wellspring Wheel Room Access", 37858, 8487, 2, hideValue = true),
+        threshold("Pools Water Dash Fight Room", 5377, 53480, 4, hideValue = true)
+    ),
     // group(
     //     "Buy # Weapon Upgrade[s]",
     //     bool("Exploding Spike", 1, 1074),
@@ -61,7 +63,8 @@ fun generatePool() = mutableListOf(
     //     countGoal = { it.nextTriangular(1, 5, 2) },
     //     maxRepeats = 1
     // ),
-    group("Break # Wellspring Blob[s]",
+    group(
+        "Break # Wellspring Blob[s]",
         bool("wellspringGroupDescriptor.lanternAndCreepA", 53632, 2522),
         bool("waterMillStateGroupDescriptor.waterMillEntranceDoorUberStateDescriptor", 37858, 23644),
         bool("waterMillStateGroupDescriptor.waterMillEntranceFallingDiscUberStateDescriptor", 37858, 16604),
@@ -70,17 +73,18 @@ fun generatePool() = mutableListOf(
         bool("waterMillStateGroupDescriptor.wheelBActive", 37858, 60716),
         bool("waterMillStateGroupDescriptor.wheelsActivated", 37858, 31584),
         bool("waterMillStateGroupDescriptor.waterMillBEntranceTriggerUberStateDescriptor", 37858, 31962),
-        threshold("waterMillStateGroupDescriptor.rotatingEnemyArenaStates", 37858, 8487, 5, hideValue=true),
-        countGoal = {it.nextTriangular(2, 8, 4)},
+        threshold("waterMillStateGroupDescriptor.rotatingEnemyArenaStates", 37858, 8487, 5, hideValue = true),
+        countGoal = { it.nextTriangular(2, 8, 4) },
         subsetGoal = false,
         maxRepeats = 1
     ),
-    group("Break # Blob[s] in Woods",
+    group(
+        "Break # Blob[s] in Woods",
         bool("wellspringGroupDescriptor.lanternAndCreepA", 58674, 49272),
         bool("wellspringGroupDescriptor.lanternAndCreepA", 58674, 902),
         bool("wellspringGroupDescriptor.lanternAndCreepA", 58674, 44324),
         bool("wellspringGroupDescriptor.lanternAndCreepA", 58674, 48394),
-        countGoal = {it.nextTriangular(1, 4, 3)},
+        countGoal = { it.nextTriangular(1, 4, 3) },
         subsetGoal = false,
         maxRepeats = 1
     ),
@@ -99,8 +103,8 @@ fun generatePool() = mutableListOf(
     //     ),
     group(
         "Break # Willow Heart[s]",
-        bool("Wind Spinners", 16155,42976),
-        bool("Spinning Lasers", 16155,54940),
+        bool("Wind Spinners", 16155, 42976),
+        bool("Spinning Lasers", 16155, 54940),
         bool("Upper Heart", 16155, 24290),
         bool("Burrow Heart", 16155, 3588),
         threshold("Willow Laser", 16155, 12971, 4, hideValue = true, countOnly = true),
@@ -110,7 +114,7 @@ fun generatePool() = mutableListOf(
         maxRepeats = 2,
         orChance = .75,
         countGoal = { it.nextTriangular(2, 8, 4) },
-        ).weighted(50),
+    ).weighted(50),
     group(
         "Get # Tree[s]",
         bool("Sword", 0, 100),
@@ -129,7 +133,8 @@ fun generatePool() = mutableListOf(
         bool("Ancestral Light (Burrows)", 0, 121),
         countGoal = { it.nextTriangular(3, 11, 6) },
     ).weighted(150),
-    group("Activate # Spirit Trial[s]",
+    group(
+        "Activate # Spirit Trial[s]",
         threshold("Baur's Reach", 44964, 23661, threshold = 1, hideValue = true),
         threshold("Windswept Wastes", 44964, 30767, threshold = 1, hideValue = true),
         threshold("Inkwater Marsh", 44964, 45951, threshold = 1, hideValue = true),
@@ -141,7 +146,8 @@ fun generatePool() = mutableListOf(
         countGoal = { it.nextTriangular(2, 8, 4) },
         maxRepeats = 2
     ),
-    group("Complete # Spirit Trial[s]",
+    group(
+        "Complete # Spirit Trial[s]",
         threshold("Baur's Reach", 44964, 23661, threshold = 2, hideValue = true),
         threshold("Windswept Wastes", 44964, 30767, threshold = 2, hideValue = true),
         threshold("Inkwater Marsh", 44964, 45951, threshold = 2, hideValue = true),
@@ -154,7 +160,8 @@ fun generatePool() = mutableListOf(
         maxRepeats = 1
     ),
     oneof(
-        group("Find # Key Item[s]",
+        group(
+            "Find # Key Item[s]",
             bool("Bash", 6, 1000),
             bool("Glide", 6, 1014),
             bool("Light Burst", 6, 1051),
@@ -178,7 +185,7 @@ fun generatePool() = mutableListOf(
         bool("Eyes (Depths)", 18793, 63291),
         bool("Voice (Hollow)", 46462, 59806),
         bool("Seir", 10289, 22102, countOnly = true),
-        countGoal = { it.nextTriangular(2, 4, 3)},
+        countGoal = { it.nextTriangular(2, 4, 3) },
         maxRepeats = 2
     ),
 //    bool("Get Seir", 10289, 22102),
@@ -198,7 +205,8 @@ fun generatePool() = mutableListOf(
 //        threshold("Windtorn Ruins", 10289, 19890, 3, hideValue=true, countOnly = true),
         maxRepeats = 1
     ),
-    group("Complete # Combat Shrine[s]",
+    group(
+        "Complete # Combat Shrine[s]",
         bool("Howl's Den", 24922, 13993),
         bool("Inkwater Marsh", 21786, 18109),
         bool("Wellspring Glades", 44310, 9902),
@@ -208,7 +216,8 @@ fun generatePool() = mutableListOf(
         countGoal = { it.nextTriangular(2, 5, 3) },
     ),
 
-    nof(3,
+    nof(
+        3,
         threshold("Kill enemies", 10, 10, triag(25, 100, 50)),
         threshold("Drown Enemies", 10, 23, triag(2, 8, 4)),
         threshold("Kill Gorlek", 10, 40, triag(3, 15, 5)),
@@ -219,7 +228,8 @@ fun generatePool() = mutableListOf(
         threshold("Kill exploding enemies", 10, 45, triag(3, 15, 5)),
     ),
 
-    group("Plant # Seed[s]",
+    group(
+        "Plant # Seed[s]",
         threshold("Bash Bulbs (Depths)", 42178, 47651, 3, hideValue = true),
         threshold("Sela Flowers (Wastes)", 42178, 16254, 3, hideValue = true),
         threshold("Blue Moss (Pools)", 42178, 64583, 3, hideValue = true),
@@ -229,7 +239,8 @@ fun generatePool() = mutableListOf(
         maxRepeats = 2,
         countGoal = { it.nextTriangular(2, 6, 3) },
     ),
-    group( "Get # Pickups from Spirit Light Containers",
+    group(
+        "Get # Pickups from Spirit Light Containers",
         bool("EastHollow.RightKwolokEX", 58674, 20983),
         bool("WoodsMain.ShrineEX", 58674, 32647),
         bool("WoodsMain.BehindDoorRoofEX", 58674, 64057),
@@ -378,11 +389,12 @@ fun generatePool() = mutableListOf(
         bool("InnerWellspring.ThreeWheelsEX", 37858, 45906),
         bool("InnerWellspring.AboveTpEX", 37858, 2797),
         bool("LowerWastes.MuncherClimbEX", 20120, 57133),
-        countGoal = { it.nextTriangular(20, 100, 50)},
+        countGoal = { it.nextTriangular(20, 100, 50) },
         maxRepeats = 1,
         subsetGoal = false
     ),
-    group( "Get # Pickups from Energy Fragment[s]",
+    group(
+        "Get # Pickups from Energy Fragment[s]",
         bool("MarshSpawn.BashEC", 21786, 7152),
         bool("MarshSpawn.LeverEC", 21786, 17920),
         bool("MarshSpawn.FangEC", 21786, 61706),
@@ -407,11 +419,12 @@ fun generatePool() = mutableListOf(
         bool("LowerWastes.UpperPathEC", 20120, 50026),
         bool("UpperWastes.LedgeEC", 20120, 22354),
         bool("WindtornRuins.EscapeRevisitEC", 10289, 44555),
-        countGoal = { it.nextTriangular(4, 24, 10)},
+        countGoal = { it.nextTriangular(4, 24, 10) },
         maxRepeats = 1,
         subsetGoal = false
     ),
-    group("Get # Pickups From Shard[s]",
+    group(
+        "Get # Pickups From Shard[s]",
         bool("MarshSpawn.ResilienceShard", 23987, 59173),
         bool("MarshSpawn.LifepactShard", 23987, 50415),
         bool("MarshSpawn.RecklessShard", 23987, 9864),
@@ -435,11 +448,12 @@ fun generatePool() = mutableListOf(
         bool("LowerDepths.SpiritSurgeShard", 23987, 986),
         bool("LowerWastes.LastStandShard", 23987, 50364),
         bool("UpperWastes.TurmoilShard", 23987, 48605),
-        countGoal = { it.nextTriangular(4, 18, 8)},
+        countGoal = { it.nextTriangular(4, 18, 8) },
         maxRepeats = 1,
         subsetGoal = false
     ),
-    group("Get # Pickups from Keystone[s]",
+    group(
+        "Get # Pickups from Keystone[s]",
         bool("MarshSpawn.CaveKS", 21786, 64677),
         bool("MidnightBurrows.LeftKS", 24922, 60358),
         bool("MidnightBurrows.RightKS", 24922, 47244),
@@ -471,11 +485,12 @@ fun generatePool() = mutableListOf(
         bool("UpperDepths.RightHealthKS", 18793, 23986),
         bool("UpperWastes.LowerKS", 7228, 20282),
         bool("UpperWastes.UpperKS", 7228, 62117),
-        countGoal = { it.nextTriangular(6, 30, 10)},
+        countGoal = { it.nextTriangular(6, 30, 10) },
         maxRepeats = 1,
         subsetGoal = false
     ),
-    group("Break # Floor[s] or Ceiling[s]",
+    group(
+        "Break # Floor[s] or Ceiling[s]",
         bool("lumaPoolsStateGroup.breakableWall", 5377, 64337),
         bool("Den Ore Access", 21786, 808),
         bool("baursReachGroup.breakableRocksE", 28895, 38120),
@@ -495,11 +510,12 @@ fun generatePool() = mutableListOf(
         bool("baursReachGroup.stompableFloorA", 28895, 8664),
         bool("wellspringGladesGroup.stompableFloorA", 44310, 55192),
 
-        countGoal = {it.nextTriangular(4, 16, 8)},
+        countGoal = { it.nextTriangular(4, 16, 8) },
         maxRepeats = 1,
         subsetGoal = false
     ),
-    group("Break # Wall[s]",
+    group(
+        "Break # Wall[s]",
         bool("swampStateGroup.creepDoorD", 21786, 876),
         bool("swampStateGroup.creepDoorE", 21786, 25291),
         bool("swampStateGroup.creepDoorB", 21786, 29636),
@@ -568,38 +584,41 @@ fun generatePool() = mutableListOf(
         bool("howlsOriginGroup.secretWallA", 24922, 2524),
         bool("_petrifiedForestGroup.stompableFloor", 58674, 29622),
         bool("swampStateGroup.secretWall", 21786, 44253),
-        countGoal = {it.nextTriangular(12, 56, 23)},
+        countGoal = { it.nextTriangular(12, 56, 23) },
         maxRepeats = 1,
         subsetGoal = false
     ),
     nof(
         2,
-        group("Melt # Ice barrier[s]",
+        group(
+            "Melt # Ice barrier[s]",
             bool("baursReachGroup.breakableRocksE", 28895, 38120),
             bool("baursReachGroup.breakableWallA", 28895, 17510),
             bool("baursReachGroup.breakableWallB", 28895, 8934),
             bool("baursReachGroup.breakableRocksA", 28895, 7616),
             bool("baursReachGroup.breakableRockWall", 28895, 20731),
-            countGoal = { it.nextTriangular(1,5, 2)},
+            countGoal = { it.nextTriangular(1, 5, 2) },
             subsetGoal = false,
             maxRepeats = 1,
         ),
-        group("Light # Lantern[s]",
+        group(
+            "Light # Lantern[s]",
             bool("baursReachGroup.grenadeSwitchA", 28895, 59394),
             bool("baursReachGroup.grenadeSwitchA", 28895, 48757),
             bool("baursReachGroup.doorOpened", 28895, 58337),
             bool("baursReachGroup.grenadeSwitchA", 28895, 37287),
-            countGoal = { it.nextTriangular(1,4, 2)},
+            countGoal = { it.nextTriangular(1, 4, 2) },
             subsetGoal = false,
             maxRepeats = 1,
         ),
-        group("Scatter # leaf pile[s]",
+        group(
+            "Scatter # leaf pile[s]",
             bool("_petrifiedForestGroup.leafPileB", 58674, 9239),
             bool("_petrifiedForestGroup.leafPile", 58674, 10877),
             bool("_petrifiedForestGroup.leafPile", 58674, 20143),
             bool("hubUberStateGroup.leafPileC", 42178, 5630),
             bool("_petrifiedForestGroup.leafPile", 58674, 37037),
-            countGoal = { it.nextTriangular(1,5, 3)},
+            countGoal = { it.nextTriangular(1, 5, 3) },
             subsetGoal = false,
             maxRepeats = 1,
         )
@@ -608,7 +627,8 @@ fun generatePool() = mutableListOf(
         bool("Ring the Bells (forwards)", 24922, 13349),
         bool("Ring the Bells (backwards)", 24922, 59146),
     ),
-    group( "Get # Pickups from Gorlek Ore",
+    group(
+        "Get # Pickups from Gorlek Ore",
         bool("MarshSpawn.ResilienceOre", 21786, 29892),
         bool("MarshSpawn.CaveOre", 9593, 23858),
         bool("MarshSpawn.BurrowOre", 9593, 20382),
@@ -647,11 +667,12 @@ fun generatePool() = mutableListOf(
         bool("WeepingRidge.Ore", 36153, 3013),
         bool("WillowsEnd.SpikesOre", 16155, 38979),
         bool("WillowsEnd.WindSpinOre", 16155, 9230),
-        countGoal = { it.nextTriangular(6, 30, 10)},
+        countGoal = { it.nextTriangular(6, 30, 10) },
         maxRepeats = 1,
         subsetGoal = false
     ),
-    group("Open # Keystone Door[s]",
+    group(
+        "Open # Keystone Door[s]",
         bool("Light Burst Tree Door", 28895, 49900),
         bool("Reach Trial Door", 28895, 4290),
         bool("Regen Tree Door", 21786, 42309),
@@ -662,11 +683,12 @@ fun generatePool() = mutableListOf(
         bool("Mouldwood Lower Door", 18793, 10758),
         bool("Silent Woods West Door", 58674, 21500),
         bool("Silent Woods East Door", 18793, 41544),
-        bool("Midnight Burrows Door",  18793, 3171),
+        bool("Midnight Burrows Door", 18793, 3171),
         bool("Windswept Wastes Door", 20120, 28786),
-        countGoal = { it.nextTriangular(2, 10, 5)},
+        countGoal = { it.nextTriangular(2, 10, 5) },
     ),
-    group("Find # Underwater Pickup[s]",
+    group(
+        "Find # Underwater Pickup[s]",
         bool("WestPools.BurrowOre", 5377, 65019),
         bool("WestPools.BurrowEX", 5377, 62180),
         bool("WestPools.EscapeRevisitEX", 5377, 44122),
@@ -689,9 +711,9 @@ fun generatePool() = mutableListOf(
         bool("InnerWellspring.WaterSwitchEX", 37858, 45656),
         bool("InnerWellspring.SwimOre", 37858, 32932),
         bool("UpperReach.SwimEX", 28895, 40242),
-        countGoal = { it.nextTriangular(2, 20, 12)},
+        countGoal = { it.nextTriangular(2, 20, 12) },
         subsetGoal = false,
-        ),
+    ),
     group(
         "Activate # Teleporter[s]",
         bool("Midnight Burrows", 24922, 42531),
@@ -712,7 +734,7 @@ fun generatePool() = mutableListOf(
         bool("Shriek", 16155, 50867, countOnly = true),
         bool("Inkwater Marsh", 21786, 10185, countOnly = true),
         bool("Glades", 42178, 42096),
-        countGoal = { it.nextTriangular(4, 16, 6)},
+        countGoal = { it.nextTriangular(4, 16, 6) },
     ),
     group(
         "Complete # Quest[s]",
@@ -734,29 +756,31 @@ fun generatePool() = mutableListOf(
         threshold("Hand to Hand", 14019, 26318, 11, hideValue = true, countOnly = true),
         threshold("Rebuilding the Glades", 14019, 44578, 2, hideValue = true, countOnly = true),
         threshold("Regrowing the Glades", 14019, 26394, 2, hideValue = true, countOnly = true),
-        countGoal = { it.nextTriangular(2, 16, 6)},
+        countGoal = { it.nextTriangular(2, 16, 6) },
         maxRepeats = 2,
-        ),
-    group("Complete # Quest[s]", // same as above but it's only the bad quests
-            threshold("Hand to Hand", 14019, 26318, 11, hideValue = true),
-            threshold("Rebuilding the Glades", 14019, 44578, 2, hideValue = true),
-            threshold("Regrowing the Glades", 14019, 26394, 2, hideValue = true),
+    ),
+    group(
+        "Complete # Quest[s]", // same as above but it's only the bad quests
+        threshold("Hand to Hand", 14019, 26318, 11, hideValue = true),
+        threshold("Rebuilding the Glades", 14019, 44578, 2, hideValue = true),
+        threshold("Regrowing the Glades", 14019, 26394, 2, hideValue = true),
         orChance = .75
     ).weighted(10),
-    group("Get # Pickup[s]",
+    group(
+        "Get # Pickup[s]",
         bool("Marsh Burrow Fight Shard", 23987, 50415),
         bool("Howl's Den Door HC", 9593, 61304),
         bool("Right Launch Tree EX", 36153, 36521),
-        bool("Lower Depths Swim EC", 18793,  28175),
+        bool("Lower Depths Swim EC", 18793, 28175),
         bool("Wastes Sand Puzzle Shard", 23987, 50364),
         bool("Reach Hut Seed", 14019, 32376),
         bool("Woods Race End Shard", 23987, 25183),
-        bool("Above East Pools TP HC",5377, 63201),
+        bool("Above East Pools TP HC", 5377, 63201),
         bool("Wellspring Escape Revisit EX", 37858, 56444),
         bool("Glades Burrow Swim HC", 44310, 17523),
         bool("Above Depths Entry EX", 18793, 42980),
         bool("Wellspring Wheel Room Ore", 37858, 47533),
-        bool("Burrows Tablet", 14019, 52747 )
+        bool("Burrows Tablet", 14019, 52747)
     ),
     oneof(
         threshold("Trade for some Soup (Glades)", 14019, 26318, 4, hideValue = true).weighted(80),
@@ -779,7 +803,8 @@ fun generatePool() = mutableListOf(
         threshold("Spend Spirit Light", 6, 4, triag(2000, 6000, 3000)),
     ),
     bool("Open Wellspring 2nd floor", 37858, 9487),
-    group( "Pull # levers",
+    group(
+        "Pull # levers",
         bool("swampStateGroup.elevatorDown", 21786, 55881),
         bool("convertedSetupsGymGroup.leverAndDoor", 26019, 23382),
         bool("waterMillStateGroupDescriptor.bottomDoorLever", 37858, 9487),
@@ -801,7 +826,7 @@ fun generatePool() = mutableListOf(
         threshold("waterMillStateGroupDescriptor.rotationState", 37858, 36070, 3, hideValue = true),
         threshold("kwolokGroupDescriptor.recedingWaterSetup", 937, 42245, 1, hideValue = true),
         threshold("kwolokGroupDescriptor.recedingWaterSetup", 937, 42245, 2, hideValue = true),
-        countGoal = { it.nextTriangular(3, 15, 6)},
+        countGoal = { it.nextTriangular(3, 15, 6) },
         maxRepeats = 1,
         subsetGoal = false
     ),
@@ -817,7 +842,7 @@ fun generatePool() = mutableListOf(
         bool("Glades", 44310, 47361),
         bool("Woods (upper)", 58674, 17742),
         bool("Woods (lower)", 58674, 5285),
-        countGoal = { it.nextTriangular(1, 3, 2)},
+        countGoal = { it.nextTriangular(1, 3, 2) },
     ),
     group(
         "Destroy # Starfish (Bubbles)",
@@ -826,13 +851,14 @@ fun generatePool() = mutableListOf(
         bool("keystone room", 5377, 15754),
         bool("left waterdash room", 5377, 24765),
         bool("right waterdash room", 5377, 58278),
-        countGoal = { it.nextTriangular(1, 5, 2)},
+        countGoal = { it.nextTriangular(1, 5, 2) },
         subsetGoal = false
     ),
 )
 
 object pickupsIn {
-    val marsh = group("Collect # Pickups In Inkwater Marsh",
+    val marsh = group(
+        "Collect # Pickups In Inkwater Marsh",
         bool("MarshSpawn.RockHC", 21786, 60210),
         bool("MarshSpawn.FirstPickupEX", 21786, 49485),
         bool("MarshSpawn.GrappleHC", 21786, 25761),
@@ -857,7 +883,7 @@ object pickupsIn {
         bool("MarshSpawn.RecklessShard", 23987, 9864),
         bool("MarshSpawn.FangEC", 21786, 61706),
         bool("MarshSpawn.FangQI", 14019, 27539),
-        threshold("MarshSpawn.MokkFangQuest", 14019, 15983,3, true),
+        threshold("MarshSpawn.MokkFangQuest", 14019, 15983, 3, true),
         bool("MarshSpawn.DamageTree", 0, 121),
         bool("HowlsDen.UpperEX", 21786, 43668),
         bool("HowlsDen.RightHC", 21786, 28908),
@@ -888,7 +914,8 @@ object pickupsIn {
         bool("MarshPastOpher.PoolsPathEX", 945, 10833),
         bool("PoolsApproach.BurrowsPathEX", 21786, 21727),
         countGoal = { it.nextTriangular(10, 50, 30) },
-        subsetGoal = false)
+        subsetGoal = false
+    )
     val hollow = group(
         "Collect # Pickups in Kwolok's Hollow",
         bool("WestHollow.CrusherHC", 937, 61897),
@@ -922,7 +949,8 @@ object pickupsIn {
         bool("EastHollow.KwolokSwimRightEX", 46462, 20780),
         bool("EastHollow.DepthsExteriorEX", 18793, 42980),
         countGoal = { it.nextTriangular(6, 28, 14) },
-        subsetGoal = false)
+        subsetGoal = false
+    )
     val glades = group(
         "Collect # Pickups in Wellspring Glades",
         threshold("GladesTown.HandToHandPouch", 14019, 26318, 2, true),
@@ -969,7 +997,8 @@ object pickupsIn {
         countGoal = { it.nextTriangular(5, 36, 20) },
         subsetGoal = false
     )
-    val wellspring = group("Collect # Pickups from The Wellspring",
+    val wellspring = group(
+        "Collect # Pickups from The Wellspring",
         threshold("OuterWellspring.TheLostCompass", 14019, 20667, 3, true),
         threshold("InnerWellspring.HandToHandHerbs", 14019, 26318, 3, true),
         bool("OuterWellspring.RightWallOre", 53632, 25556),
@@ -1009,7 +1038,8 @@ object pickupsIn {
         countGoal = { it.nextTriangular(5, 34, 18) },
         subsetGoal = false
     )
-    val burrows = group("Collect # Pickups from Midnight Burrows",
+    val burrows = group(
+        "Collect # Pickups from Midnight Burrows",
         bool("MidnightBurrows.LeftKS", 24922, 60358),
         bool("MidnightBurrows.RightKS", 24922, 47244),
         bool("MidnightBurrows.UpperKS", 24922, 34250),
@@ -1018,8 +1048,9 @@ object pickupsIn {
         bool("MidnightBurrows.TabletQI", 14019, 52747),
         countGoal = { it.nextTriangular(2, 6, 4) },
         subsetGoal = false
-        )
-    val pools = group("Collect # Pickups from Luma Pools",
+    )
+    val pools = group(
+        "Collect # Pickups from Luma Pools",
         threshold("EastPools.HandToHandSpyglass", 14019, 26318, 8, true),
         bool("PoolsApproach.CurrentEX", 945, 10682),
         bool("PoolsApproach.AboveWheelEX", 945, 14530),
@@ -1062,7 +1093,8 @@ object pickupsIn {
         countGoal = { it.nextTriangular(5, 37, 18) },
         subsetGoal = false
     )
-    val woods = group("Collect # Pickups from Silent Woods",
+    val woods = group(
+        "Collect # Pickups from Silent Woods",
         threshold("WoodsEntry.LastTreeBranch", 14019, 59708, 1, true),
         bool("WoodsEntry.DollQI", 14019, 57399),
         bool("WoodsEntry.TreeSeed", 14019, 7470),
@@ -1097,18 +1129,19 @@ object pickupsIn {
         countGoal = { it.nextTriangular(5, 29, 12) },
         subsetGoal = false
     )
-    val reach = group("Collect # Pickups from Baur's Reach",
+    val reach = group(
+        "Collect # Pickups from Baur's Reach",
         threshold("LowerReach.HandToHandHat", 14019, 26318, 5, true),
         bool("LowerReach.BelowBaurEX", 28895, 55384),
         bool("LowerReach.AboveBaurLowerEX", 28895, 24533),
-        bool("LowerReach.AboveBaurUpperEX", 28895,3777),
+        bool("LowerReach.AboveBaurUpperEX", 28895, 3777),
         bool("LowerReach.IcefallOre", 28895, 58675),
         bool("LowerReach.IcefallEX", 28895, 45337),
         bool("LowerReach.AboveDoorEX", 28895, 38143),
         bool("LowerReach.HiddenOre", 28895, 47529),
         bool("LowerReach.MeltIceEX", 28895, 4301),
         bool("LowerReach.BurrowEX", 28895, 45066),
-        bool("LowerReach.TPLeftEX", 28895,36231),
+        bool("LowerReach.TPLeftEX", 28895, 36231),
         bool("LowerReach.BelowLupoEX", 28895, 38049),
         bool("LowerReach.BreakWallEX", 42178, 40609),
         bool("LowerReach.WindBottomEX", 28895, 35045),
@@ -1142,7 +1175,8 @@ object pickupsIn {
         countGoal = { it.nextTriangular(10, 40, 18) },
         subsetGoal = false
     )
-    val depths = group("Collect # Pickups from Mouldwood Depths",
+    val depths = group(
+        "Collect # Pickups from Mouldwood Depths",
         bool("UpperDepths.EntrySpikesEX", 18793, 19004),
         bool("UpperDepths.EntryRoofEX", 18793, 15396),
         bool("UpperDepths.EntryOre", 18793, 35351),
@@ -1169,7 +1203,8 @@ object pickupsIn {
         countGoal = { it.nextTriangular(4, 24, 14) },
         subsetGoal = false
     )
-    val wastes = group("Collect # Pickups from Windswept Wastes",
+    val wastes = group(
+        "Collect # Pickups from Windswept Wastes",
         threshold("LowerWastes.HandToHandMapstone", 14019, 26318, 10, true),
         bool("LowerWastes.WestTPOre", 7228, 54494),
         bool("LowerWastes.PurpleWallEX", 7228, 56821),
@@ -1210,7 +1245,8 @@ object pickupsIn {
         countGoal = { it.nextTriangular(6, 35, 18) },
         subsetGoal = false
     )
-    val willow = group("Collect # Pickups in Willow's End",
+    val willow = group(
+        "Collect # Pickups in Willow's End",
         bool("WillowsEnd.SpikesOre", 16155, 38979),
         bool("WillowsEnd.EntryEX", 16155, 49381),
         bool("WillowsEnd.PoisonfallHC", 16155, 46270),
@@ -1221,7 +1257,8 @@ object pickupsIn {
         countGoal = { it.nextTriangular(2, 7, 5) },
         subsetGoal = false
     )
-    val houses = group("Collect # Pickups in Houses",
+    val houses = group(
+        "Collect # Pickups in Houses",
         bool("Teddy Bear", 14019, 57399),
         bool("Reach seed", 14019, 32376),
         bool("Family Reunion SL", 42178, 51934),
@@ -1236,26 +1273,36 @@ object pickupsIn {
 }
 
 class BingoBoardGenerator {
-    fun generateBoard(props: MultiverseCreationConfig? = null): BingoCard {
+    fun generateBoard(props: MultiverseCreationConfig? = null): BingoBoard {
         val random = Random(props?.seedGroupId?.hashCode() ?: Instant.now().epochSecond.toInt())
         val pool = generatePool()
-        val counts = (pool.map {it to 0}).toMap().toMutableMap()
+        val counts = (pool.map { it to 0 }).toMap().toMutableMap()
 
         val config = GeneratorConfig(random)
 
-        val discoverySquares = (1..5).flatMap{x -> (1..5).map { x to it }}
-            .shuffled(random).take(props?.bingo?.discovery ?: 0).toSet()
+        val boardSize = min(props?.bingoConfig?.size ?: 5, 7) // Maximum can be increased once we have more goals
 
-        val card = BingoCard(config = BingoConfig(discovery = discoverySquares, lockout =  props?.bingo?.lockout ?: false, manualSquareCompletion = props?.bingo?.manualGoalCompletion ?: false))
-        for (x in (1..5).shuffled(random))
-            for (y in (1..5).shuffled(random)) {
+        val discoverySquares = (1..boardSize).flatMap { x -> (1..boardSize).map { x to it } }
+            .shuffled(random).take(props?.bingoConfig?.discovery ?: 0).toSet()
+
+        val card = BingoBoard(
+            config = BingoConfig(
+                discovery = discoverySquares,
+                lockout = props?.bingoConfig?.lockout ?: false,
+                manualSquareCompletion = props?.bingoConfig?.manualGoalCompletion ?: false,
+                boardSize = boardSize,
+            ),
+        )
+
+        for (x in (1..boardSize).shuffled(random))
+            for (y in (1..boardSize).shuffled(random)) {
                 var generatedGoal: BingoGoal? = null
-                while(generatedGoal == null){
+                while (generatedGoal == null) {
                     val goal = pool.weightedRandom(random)
                     generatedGoal = goal.gen(config, counts[goal] ?: 0)
-                    if(generatedGoal == null) {
+                    if (generatedGoal == null) {
                         pool -= goal
-                    }  else {
+                    } else {
                         counts[goal] = 1 + (counts[goal] ?: 0)
                     }
                 }
@@ -1266,7 +1313,7 @@ class BingoBoardGenerator {
     }
 }
 
-fun main(){
+fun main() {
     println(System.currentTimeMillis())
     //println(Json{allowStructuredMapKeys = true}.encodeToString(BingoBoardGenerator().generateBoard(BingoGenProperties("roastbeef", 2, true))))
     println(System.currentTimeMillis())
