@@ -219,7 +219,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 world.delete()
             }
 
-            if (world.universe.worlds.all { world.members.empty() } && newWorld?.universe != world.universe) {
+            if (world.universe.worlds.all { it.members.empty() } && newWorld?.universe != world.universe) {
                 universesQueuedForDeletion += world.universe
             }
         }
