@@ -240,7 +240,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 return
             }
 
-            val memberNames = members.map { member -> member.name }
+            val memberNames = world.members.map { member -> member.name }
 
             when (memberNames.size) {
                 0 -> {
