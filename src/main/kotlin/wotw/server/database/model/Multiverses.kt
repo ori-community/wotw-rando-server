@@ -11,6 +11,7 @@ import wotw.server.database.jsonb
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.sync.ShareScope
 import wotw.server.sync.StateCache
+import wotw.server.util.assertTransaction
 import java.util.*
 import kotlin.math.ceil
 import kotlin.to
@@ -228,6 +229,39 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }
 
         return affectedMultiverseIds
+    }
+
+    fun updateAutomaticWorldNames() {
+        assertTransaction()
+
+        var nextEmptyWorldNumber = 1;
+        for (world in worlds) {
+            if (world.hasCustomName) {
+                return
+            }
+
+            val memberNames = members.map { member -> member.name }
+
+            when (memberNames.size) {
+                0 -> {
+                    world.name = "Empty world $nextEmptyWorldNumber"
+                    nextEmptyWorldNumber++
+                }
+                1 -> {
+                    world.name = memberNames[0];
+                }
+                2 -> {
+                    if (memberNames.contains("Appletree") && memberNames.contains("zre")) {
+                        world.name = "Applezree"
+                    } else {
+                        world.name = "${memberNames[0]} and ${memberNames[1]}"
+                    }
+                }
+                else -> {
+                    world.name = "${memberNames[0]} & Co."
+                }
+            }
+        }
     }
 
     companion object : LongEntityClass<Multiverse>(Multiverses)

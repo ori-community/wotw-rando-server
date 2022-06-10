@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.select
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.Multiverses.nullable
 import wotw.server.database.model.Spectator.Companion.referrersOn
+import wotw.server.util.assertTransaction
 
 object Universes : LongIdTable() {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
@@ -33,13 +34,15 @@ object Worlds : LongIdTable() {
     val universeId = reference("universe_id", Universes, ReferenceOption.CASCADE)
     val name = varchar("name", 255)
     val seed = reference("seed", Seeds).nullable()
+    val hasCustomName = bool("has_custom_name").default(false)
 }
 
 class World(id: EntityID<Long>) : LongEntity(id) {
     var universe by Universe referencedOn Worlds.universeId
     var name by Worlds.name
     var seed by Seed optionalReferencedOn Worlds.seed
-    val members by User optionalReferrersOn  Users.currentWorldId
+    val members by User optionalReferrersOn Users.currentWorldId
+    val hasCustomName by Worlds.hasCustomName
 
     companion object : LongEntityClass<World>(Worlds) {
         fun new(universe: Universe, name: String, seed: Seed? = null): World {

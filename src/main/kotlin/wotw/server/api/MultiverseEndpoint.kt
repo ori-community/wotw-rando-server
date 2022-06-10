@@ -177,6 +177,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     server.multiverseUtil.movePlayerToWorld(player, world)
                     multiverse.deleteEmptyWorlds(world)
+                    multiverse.updateAutomaticWorldNames()
 
                     multiverse.refresh(true)
 
@@ -212,6 +213,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     if (!world.members.contains(player)) {
                         server.multiverseUtil.movePlayerToWorld(player, world)
                         multiverse.deleteEmptyWorlds(world)
+                        multiverse.updateAutomaticWorldNames()
 
                         server.connections.toPlayers(
                             (multiverse.players - world.universe.members - player).map { it.id.value },

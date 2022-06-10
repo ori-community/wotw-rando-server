@@ -20,6 +20,7 @@ class MultiverseUtil(val server: WotwBackendServer) {
             player.currentWorld = null
 
             if (previousMultiverseId != dontNotifyMultiverseId) {
+                world.universe.multiverse.updateAutomaticWorldNames()
                 server.connections.broadcastMultiverseInfoMessage(previousMultiverseId)
             }
         }
