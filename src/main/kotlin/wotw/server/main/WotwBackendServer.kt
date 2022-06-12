@@ -68,8 +68,8 @@ class WotwBackendServer {
                 }
 
                 Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-                    logger().error(throwable)
                     Sentry.captureException(throwable)
+                    throw throwable
                 }
                 logger().info("Error tracking enabled")
             }
