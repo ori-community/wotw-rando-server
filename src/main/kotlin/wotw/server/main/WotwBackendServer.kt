@@ -154,7 +154,7 @@ class WotwBackendServer {
         sync.purgeCache(60)
 
         gameHandlerRegistry.cacheEntries.filter { cacheEntry ->
-            !cacheEntry.isDisposable().also { disposable ->
+            cacheEntry.isDisposable().also { disposable ->
                 if (disposable) {
                     cacheEntry.handler.let { handler ->
                         logger.info("Disposed handler for multiverse ${handler.multiverseId}")
@@ -162,6 +162,8 @@ class WotwBackendServer {
                     }
                 }
             }
+        }.forEach { cacheEntry ->
+            gameHandlerRegistry.purgeFromCache(cacheEntry.handler.multiverseId)
         }
     }
 
