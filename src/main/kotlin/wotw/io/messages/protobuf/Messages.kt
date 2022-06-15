@@ -300,3 +300,25 @@ data class PlayerUsedCatchingAbilityMessage(
 data class PlayerCaughtMessage(
     @ProtoNumber(1) val playerId: String,
 )
+
+@Serializable
+data class SpendResourceTarget(
+    @ProtoNumber(1) val uberId: UberId,
+    @ProtoNumber(2) val value: Double,
+    @ProtoNumber(3) val updateIf: Int = UPDATE_IF_LARGER,
+) {
+    companion object {
+        const val UPDATE_IF_LARGER = 0
+        const val UPDATE_IF_SMALLER = 1
+        const val UPDATE_IF_DIFFERENT = 2
+    }
+}
+
+@Serializable
+data class SpendResourceRequestMessage(
+    @ProtoNumber(1) val requestId: Byte,
+    @ProtoNumber(2) val resourceUberId: UberId,
+    @ProtoNumber(3) val relative: Boolean,
+    @ProtoNumber(4) val amount: Int,
+    @ProtoNumber(5) @Required val target: SpendResourceTarget? = null,
+)
