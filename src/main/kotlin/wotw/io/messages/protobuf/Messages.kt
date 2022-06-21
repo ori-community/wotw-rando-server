@@ -315,7 +315,7 @@ data class SpendResourceTarget(
 }
 
 @Serializable
-data class SpendResourceRequestMessage(
+data class ResourceRequestMessage(
     @ProtoNumber(1) val resourceUberId: UberId,
     @ProtoNumber(2) val relative: Boolean,
     @ProtoNumber(3) val amount: Int,

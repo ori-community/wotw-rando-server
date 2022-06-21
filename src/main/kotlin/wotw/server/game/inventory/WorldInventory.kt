@@ -1,7 +1,7 @@
 package wotw.server.game.inventory
 
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.protobuf.SpendResourceRequestMessage
+import wotw.io.messages.protobuf.ResourceRequestMessage
 import wotw.io.messages.protobuf.SpendResourceTarget
 import wotw.io.messages.protobuf.UberId
 import wotw.io.messages.protobuf.UberStateUpdateMessage
@@ -14,7 +14,7 @@ class WorldInventory(private val gameState: GameState) {
     /**
      * Returns true if the request was handled successfully, otherwise false
      */
-    fun handleRequest(request: SpendResourceRequestMessage): UberStateUpdateMessage? {
+    fun handleRequest(request: ResourceRequestMessage): UberStateUpdateMessage? {
         assertTransaction()
 
         request.target?.let { target ->

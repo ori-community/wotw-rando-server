@@ -36,7 +36,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             )
         }
 
-        messageEventBus.register(this, SpendResourceRequestMessage::class) { message, playerId ->
+        messageEventBus.register(this, ResourceRequestMessage::class) { message, playerId ->
             val playerPopulationCache = server.populationCache.get(playerId)
 
             newSuspendedTransaction {
