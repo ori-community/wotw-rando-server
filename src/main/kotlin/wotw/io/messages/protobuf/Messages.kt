@@ -316,9 +316,8 @@ data class SpendResourceTarget(
 
 @Serializable
 data class SpendResourceRequestMessage(
-    @ProtoNumber(1) val requestId: Byte,
-    @ProtoNumber(2) val resourceUberId: UberId,
-    @ProtoNumber(3) val relative: Boolean,
-    @ProtoNumber(4) val amount: Int,
-    @ProtoNumber(5) @Required val target: SpendResourceTarget? = null,
+    @ProtoNumber(1) val resourceUberId: UberId,
+    @ProtoNumber(2) val relative: Boolean,
+    @ProtoNumber(3) val amount: Int,
+    @ProtoNumber(4) @Required val target: SpendResourceTarget? = null,
 )
