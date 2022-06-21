@@ -3,7 +3,10 @@ package wotw.server.game.inventory
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.SpendResourceRequestMessage
 import wotw.io.messages.protobuf.SpendResourceTarget
+import wotw.io.messages.protobuf.UberId
+import wotw.io.messages.protobuf.UberStateUpdateMessage
 import wotw.server.database.model.GameState
+import wotw.server.util.assertTransaction
 import wotw.server.util.logger
 
 class WorldInventory(private val gameState: GameState) {
@@ -11,26 +14,26 @@ class WorldInventory(private val gameState: GameState) {
     /**
      * Returns true if the request was handled successfully, otherwise false
      */
-    suspend fun handleRequest(request: SpendResourceRequestMessage): Boolean {
-        return newSuspendedTransaction {
-            request.target?.let { target ->
-                if (!canUpdateTarget(target)) {
-                    logger().info("Target condition not met, not handling resource request")
-                    return@newSuspendedTransaction false
-                }
+    fun handleRequest(request: SpendResourceRequestMessage): UberStateUpdateMessage? {
+        assertTransaction()
 
-                gameState.uberStateData[target.uberId] = target.value
+        request.target?.let { target ->
+            if (!canUpdateTarget(target)) {
+                logger().info("Target condition not met, not handling resource request")
+                return null
             }
 
-            var value = request.amount.toDouble();
-            if (request.relative) {
-                value += gameState.uberStateData[request.resourceUberId] ?: 0.0
-            }
-
-            gameState.uberStateData[request.resourceUberId] = value
-
-            return@newSuspendedTransaction true
+            gameState.uberStateData[target.uberId] = target.value
         }
+
+        var value = request.amount.toDouble();
+        if (request.relative) {
+            value += gameState.uberStateData[request.resourceUberId] ?: 0.0
+        }
+
+        gameState.uberStateData[request.resourceUberId] = value
+
+        return UberStateUpdateMessage(request.resourceUberId, value)
     }
 
     private fun canUpdateTarget(target: SpendResourceTarget): Boolean {

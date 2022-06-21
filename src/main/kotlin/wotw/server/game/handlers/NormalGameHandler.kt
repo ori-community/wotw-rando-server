@@ -1,13 +1,12 @@
 package wotw.server.game.handlers
 
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.protobuf.PlayerPositionMessage
-import wotw.io.messages.protobuf.UberStateBatchUpdateMessage
-import wotw.io.messages.protobuf.UberStateUpdateMessage
-import wotw.io.messages.protobuf.UpdatePlayerPositionMessage
+import wotw.io.messages.protobuf.*
 import wotw.server.api.*
+import wotw.server.database.model.GameState
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
+import wotw.server.game.inventory.WorldInventory
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.ShareScope
 import wotw.server.sync.multiStates
@@ -35,6 +34,28 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                 UpdatePlayerPositionMessage(playerId, message.x, message.y),
                 unreliable = true,
             )
+        }
+
+        messageEventBus.register(this, SpendResourceRequestMessage::class) { message, playerId ->
+            val playerPopulationCache = server.populationCache.get(playerId)
+
+            newSuspendedTransaction {
+                playerPopulationCache.worldId?.let { worldId ->
+                    GameState.findWorldState(worldId)?.let { gameState ->
+                        val inventory = WorldInventory(gameState)
+
+                        val targetPlayers = playerPopulationCache.worldMemberIds
+                        val uberStateUpdateMessage = inventory.handleRequest(message)
+
+                        if (uberStateUpdateMessage != null) {
+                            server.connections.toPlayers(
+                                targetPlayers,
+                                uberStateUpdateMessage,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
