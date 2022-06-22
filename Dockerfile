@@ -1,3 +1,6 @@
+ARG SEEDGEN_TAG=latest
+ARG SEEDGEN_IMAGE=ghcr.io/ori-rando/wotw-seedgen:$SEEDGEN_TAG
+
 FROM gradle:7-jdk17 as build-jar
 
 WORKDIR /app
@@ -5,9 +8,6 @@ COPY . /app
 
 RUN gradle jar
 
-
-ARG SEEDGEN_TAG=latest
-ARG SEEDGEN_IMAGE=ghcr.io/ori-rando/wotw-seedgen:$SEEDGEN_TAG
 
 FROM $SEEDGEN_IMAGE as seedgen
 
