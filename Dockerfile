@@ -7,8 +7,9 @@ RUN gradle jar
 
 
 ARG SEEDGEN_TAG=latest
+ARG SEEDGEN_IMAGE=ghcr.io/ori-rando/wotw-seedgen:$SEEDGEN_TAG
 
-FROM ghcr.io/ori-rando/wotw-seedgen:${SEEDGEN_TAG} as seedgen
+FROM $SEEDGEN_IMAGE as seedgen
 
 
 FROM openjdk:17-slim
