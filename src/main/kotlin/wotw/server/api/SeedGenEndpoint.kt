@@ -62,11 +62,13 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
         get("seedgen/world-presets") {
             val dir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("presets")
 
-            val worldPresetFileMap = dir.toFile().listFiles()?.map {
-                logger.info(it.name)
-                it.name.substringAfterLast("/").substringBeforeLast(".json") to
-                        relaxedJson.decodeFromString(WorldPresetFile.serializer(), it.readText())
-            }?.toMap() ?: emptyMap()
+            val worldPresetFileMap = dir.toFile().listFiles()
+                .filter { it.isFile }
+                .map {
+                    it.name.substringAfterLast("/").substringBeforeLast(".json") to
+                            relaxedJson.decodeFromString(WorldPresetFile.serializer(), it.readText())
+                }
+                .toMap()
 
             val result = worldPresetFileMap.map {
                 it.value.resolveAndMergeIncludes(worldPresetFileMap)
