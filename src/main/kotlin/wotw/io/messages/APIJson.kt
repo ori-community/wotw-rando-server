@@ -1,6 +1,7 @@
 package wotw.io.messages
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 import wotw.io.messages.protobuf.UserInfo
 
 @Serializable
@@ -22,9 +23,9 @@ data class HeaderFileEntry(
 
 @Serializable
 data class HeaderConfig(
-    val headerName: String,
-    val configName: String,
-    var configValue: String,
+    @JsonNames("header_name") val headerName: String,
+    @JsonNames("config_name") val configName: String,
+    @JsonNames("config_value") var configValue: String,
 )
 
 @Serializable
@@ -55,6 +56,13 @@ data class WorldPresetFile(
     val headerConfig: List<HeaderConfig> = emptyList(),
     val inlineHeaders: List<InlineHeader> = emptyList(),
 ) {
+    private var presetName: String? = null
+
+    fun withPresetName(name: String): WorldPresetFile {
+        presetName = name
+        return this
+    }
+
     fun resolveAndMergeIncludes(availablePresets: Map<String, WorldPresetFile>): WorldPresetFile {
         val resolvedIncludes = this.includes
             .mapNotNull { includedPresetId ->
@@ -90,8 +98,9 @@ data class WorldPresetFile(
         )
     }
 
-    fun toPreset(name: String): WorldPreset {
+    fun toWorldPreset(name: String): WorldPreset {
         return WorldPreset(
+            presetName ?: throw Exception("Cannot convert to WorldPreset without a name!"),
             includes,
             worldName,
             spawn,
@@ -108,6 +117,7 @@ data class WorldPresetFile(
 
 @Serializable
 data class WorldPreset(
+    val name: String,
     val includes: Set<String> = emptySet(),
     val worldName: String? = null,
     val spawn: String? = null,
