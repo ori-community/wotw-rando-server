@@ -29,14 +29,22 @@ const val JWT_AUTH = "jwt"
 
 class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
+        get("/login") {
+            call.request.queryParameters["redirect"]?.let { redirectTo ->
+                call.response.cookies.append("redirect-after-auth", redirectTo)
+            }
+
+            call.respondRedirect("/api/auth/handle-login")
+        }
+
         authenticate(DISCORD_OAUTH) {
-            route("/login") {
+            route("/auth/handle-login") {
                 handle {
                     val principal =
                         call.authentication.principal<OAuthAccessTokenResponse.OAuth2>() ?: error("No Principal")
                     val user = handleOAuthToken(principal.accessToken)
 
-                    var redir = call.request.cookies["authRedir"]
+                    var redir = call.request.cookies["redirect-after-auth"]
                     if (redir != null) {
                         try {
                             val url = Url(redir)
@@ -52,10 +60,9 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
                     }
 
-                    call.response.cookies.appendExpired("authRedir")
+                    call.response.cookies.appendExpired("redirect-after-auth")
 
-                    if (redir == null)
-                        call.respondText("Hi ${user.name}! Your ID is ${user.id.value}")
+                    if (redir == null) call.respondText("Hi ${user.name}! Your ID is ${user.id.value}")
                     else {
                         val token = createJWTToken(user, Scope.TOKEN_CREATE) {
                             withExpiresAt(Date(getTimeMillis() + 1000 * 60))
@@ -91,8 +98,7 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
     private suspend fun handleOAuthToken(accessToken: String): User {
         val jsonResponse = HttpClient().get("https://discord.com/api/users/@me") {
             header("Authorization", "Bearer $accessToken")
-        }
-            .body<String>()
+        }.body<String>()
         val json = json.parseToJsonElement(jsonResponse).jsonObject
         val userId = json["id"]?.jsonPrimitive?.contentOrNull ?: ""
         val discordUserName = json["username"]?.jsonPrimitive?.contentOrNull
@@ -100,8 +106,7 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
         return newSuspendedTransaction {
             User.findById(userId)?.also {
-                if (!it.isCustomName && discordUserName != null && it.name != discordUserName)
-                    it.name = discordUserName
+                if (!it.isCustomName && discordUserName != null && it.name != discordUserName) it.name = discordUserName
                 it.avatarId = avatarId
             } ?: User.new(userId) {
                 this.name = discordUserName ?: "unknown"
@@ -120,8 +125,9 @@ data class WotwUserPrincipal(val userId: String, private val scopes: Set<String>
         val queriedSegments = scope.split(".")
         return scopes.any {
             val providedSegments = it.split(".")
-            it == "*" || queriedSegments.size >= providedSegments.size
-                    && providedSegments == queriedSegments.take(providedSegments.size)
+            it == "*" || queriedSegments.size >= providedSegments.size && providedSegments == queriedSegments.take(
+                providedSegments.size
+            )
         }
     }
 
@@ -129,25 +135,18 @@ data class WotwUserPrincipal(val userId: String, private val scopes: Set<String>
 
     fun require(vararg scopes: String) {
         val missing = scopes.filter { !hasScope(it) }
-        if (missing.isNotEmpty())
-            throw ForbiddenException(missing)
+        if (missing.isNotEmpty()) throw ForbiddenException(missing)
     }
 
     fun requireAny(vararg scopes: String) {
-        if (!scopes.any { hasScope(it) })
-            throw ForbiddenException()
+        if (!scopes.any { hasScope(it) }) throw ForbiddenException()
     }
 }
 
 fun createJWTToken(
-    user: User,
-    vararg scopes: String,
-    block: JWTCreator.Builder.() -> JWTCreator.Builder = { this }
+    user: User, vararg scopes: String, block: JWTCreator.Builder.() -> JWTCreator.Builder = { this }
 ): String {
-    return JWT.create()
-        .withClaim("user_id", user.id.value)
-        .withArrayClaim("scopes", scopes)
-        .also { block(it) }
+    return JWT.create().withClaim("user_id", user.id.value).withArrayClaim("scopes", scopes).also { block(it) }
         .sign(Algorithm.HMAC256(System.getenv("JWT_SECRET")))
 
 }

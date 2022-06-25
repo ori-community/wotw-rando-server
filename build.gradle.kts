@@ -16,7 +16,7 @@ val ktor_version = "2.0.2"
 val logback_version = "1.2.11"
 val exposed_version = "0.38.2"
 val serialization_version = "1.3.3"
-val krontab_version = "0.7.1"
+val krontab_version = "0.7.2"
 // val protobuf_version = "3.19.4"
 
 plugins {
@@ -36,10 +36,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
     implementation("dev.inmo:krontab:$krontab_version")
 
-    implementation("io.github.classgraph:classgraph:4.8.146")
-    implementation("io.sentry:sentry:5.7.4")
+    implementation("io.github.classgraph:classgraph:4.8.147")
+    implementation("io.sentry:sentry:6.0.0")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt"){
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2"){
         version {
             strictly("1.6.0-native-mt")
         }
@@ -55,9 +55,9 @@ dependencies {
 
     implementation("com.zaxxer:HikariCP:5.0.1")
 
-    implementation("org.postgresql:postgresql:42.3.4")
+    implementation("org.postgresql:postgresql:42.3.6")
 
-    implementation("dev.kord:kord-core:0.7.4")
+    implementation("dev.kord:kord-core:0.8.0-M14")
 
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")

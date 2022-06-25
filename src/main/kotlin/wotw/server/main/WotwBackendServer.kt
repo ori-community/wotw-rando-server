@@ -71,10 +71,10 @@ class WotwBackendServer {
             if (System.getenv("SENTRY_DSN") != null) {
                 Sentry.init { options ->
                     options.dsn = System.getenv("SENTRY_DSN")
-                    options.enableUncaughtExceptionHandler = false
+                    options.setEnableUncaughtExceptionHandler(false)
                 }
 
-                Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+                Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
                     Sentry.captureException(throwable)
                     throw throwable
                 }
@@ -275,12 +275,11 @@ class WotwBackendServer {
                     requestMethod = HttpMethod.Post,
                 )
 
-                val redirectCookiePahse = PipelinePhase("RedirCookiePhase")
                 install(Authentication) {
                     oauth(DISCORD_OAUTH) {
                         client = HttpClient()
                         providerLookup = { discordOauthProvider }
-                        urlProvider = { redirectUrl("/api/login") }
+                        urlProvider = { redirectUrl("/api/auth/handle-login") }
                     }
 
                     jwt(JWT_AUTH) {
