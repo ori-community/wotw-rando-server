@@ -1,8 +1,8 @@
 package wotw.server.io
 
-import io.ktor.application.*
-import io.ktor.http.cio.websocket.*
+import io.ktor.server.application.*
 import io.ktor.websocket.*
+import io.ktor.server.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import wotw.server.api.WotwUserPrincipal
 import wotw.server.exception.UnauthorizedException

@@ -1,9 +1,9 @@
 package wotw.server.util
 
-import io.ktor.application.*
+import io.ktor.server.application.*
 import io.ktor.http.*
-import io.ktor.request.*
-import io.ktor.routing.*
+import io.ktor.server.request.*
+import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -17,7 +17,6 @@ import java.util.concurrent.Executor
 
 inline fun <reified T : Any> T.logger() = LoggerFactory.getLogger(T::class.java)
 
-@ContextDsl
 @JvmName("putTyped")
 inline fun <reified R : Any> Route.put(
     path: String,
@@ -29,7 +28,8 @@ inline fun <reified R : Any> Route.put(
         }
     }
 }
-object CompletableFuture{
+
+object CompletableFuture {
     fun <T> supplyAsync(executor: Executor? = null, block: () -> T) =
         if (executor == null) CompletableFuture.supplyAsync { block() } else CompletableFuture.supplyAsync(
             { block() },
@@ -37,21 +37,22 @@ object CompletableFuture{
         )
 }
 
-fun randomString(length: Int) : String {
+fun randomString(length: Int): String {
     val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
     return (1..length)
         .map { allowedChars.random() }
         .joinToString("")
 }
 
-fun makeServerTextMessage(text: String, time: Float = 3.0f, replace: Boolean = false): PrintTextMessage = PrintTextMessage(
-    time = time,
-    text = text,
-    position = Vector2(0f, -2f),
-    screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
-    queue = "server",
-    id = 0,
-)
+fun makeServerTextMessage(text: String, time: Float = 3.0f, replace: Boolean = false): PrintTextMessage =
+    PrintTextMessage(
+        time = time,
+        text = text,
+        position = Vector2(0f, -2f),
+        screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+        queue = "server",
+        id = 0,
+    )
 
 fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
 

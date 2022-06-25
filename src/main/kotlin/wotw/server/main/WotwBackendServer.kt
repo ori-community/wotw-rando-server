@@ -5,26 +5,33 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.application.*
-import io.ktor.auth.*
-import io.ktor.auth.jwt.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.client.*
-import io.ktor.features.*
+import io.ktor.server.plugins.*
 import io.ktor.http.*
-import io.ktor.http.cio.websocket.*
+import io.ktor.websocket.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
-import io.ktor.request.*
-import io.ktor.response.*
-import io.ktor.routing.*
-import io.ktor.serialization.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.autohead.AutoHeadResponse
+import io.ktor.server.plugins.callloging.CallLogging
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.httpsredirect.HttpsRedirect
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.util.*
 import io.ktor.util.network.*
 import io.ktor.util.pipeline.*
 import io.ktor.utils.io.core.*
-import io.ktor.websocket.*
+import io.ktor.server.websocket.*
 import io.sentry.Sentry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -218,43 +225,46 @@ class WotwBackendServer {
                     level = Level.INFO
                 }
                 install(CORS) {
-                    method(HttpMethod.Options)
-                    method(HttpMethod.Put)
+                    methods.add(HttpMethod.Options)
+                    methods.add(HttpMethod.Put)
+                    headers.add(HttpHeaders.Authorization)
+                    headers.add(HttpHeaders.AccessControlAllowOrigin)
+                    headers.add(HttpHeaders.Origin)
                     allowNonSimpleContentTypes = true
-                    header(HttpHeaders.Authorization)
-                    header(HttpHeaders.AccessControlAllowOrigin)
-                    header(HttpHeaders.Origin)
                     allowXHttpMethodOverride()
                     anyHost()
                 }
+
                 install(ContentNegotiation) {
                     json(wotw.io.messages.json)
                 }
+
                 install(AutoHeadResponse)
                 install(StatusPages) {
-                    exception<Throwable> { exception ->
+                    exception<Throwable> { call, exception ->
                         exception.printStackTrace()
                         call.respond(HttpStatusCode.InternalServerError)
                     }
-                    exception<AlreadyExistsException> { _ ->
+                    exception<AlreadyExistsException> { call, _ ->
                         call.respond(HttpStatusCode.Conflict)
                     }
-                    exception<ConflictException> { _ ->
+                    exception<ConflictException> { call, _ ->
                         call.respond(HttpStatusCode.Conflict)
                     }
-                    exception<UnauthorizedException> { _ ->
+                    exception<UnauthorizedException> { call, _ ->
                         call.respond(HttpStatusCode.Unauthorized)
                     }
-                    exception<BadRequestException> {
-                        call.respond(HttpStatusCode.BadRequest, it.message ?: "")
+                    exception<BadRequestException> { call, exception ->
+                        call.respond(HttpStatusCode.BadRequest, exception.message ?: "")
                     }
-                    exception<NotFoundException> {
-                        call.respond(HttpStatusCode.NotFound, it.message ?: "")
+                    exception<NotFoundException> { call, exception ->
+                        call.respond(HttpStatusCode.NotFound, exception.message ?: "")
                     }
-                    exception<ForbiddenException> {
-                        call.respond(HttpStatusCode.Forbidden, it.message ?: "")
+                    exception<ForbiddenException> { call, exception ->
+                        call.respond(HttpStatusCode.Forbidden, exception.message ?: "")
                     }
                 }
+
                 val discordOauthProvider = OAuthServerSettings.OAuth2ServerSettings(
                     name = "discord",
                     clientId = System.getenv("DISCORD_CLIENT_ID"),
@@ -262,7 +272,7 @@ class WotwBackendServer {
                     authorizeUrl = "https://discord.com/api/oauth2/authorize",
                     accessTokenUrl = "https://discord.com/api/oauth2/token",
                     defaultScopes = listOf("identify"),
-                    requestMethod = HttpMethod.Post
+                    requestMethod = HttpMethod.Post,
                 )
 
                 val redirectCookiePahse = PipelinePhase("RedirCookiePhase")
@@ -271,13 +281,8 @@ class WotwBackendServer {
                         client = HttpClient()
                         providerLookup = { discordOauthProvider }
                         urlProvider = { redirectUrl("/api/login") }
-                        pipeline.insertPhaseBefore(AuthenticationPipeline.RequestAuthentication, redirectCookiePahse)
-                        pipeline.intercept(redirectCookiePahse) {
-                            call.request.queryParameters["redir"]?.also {
-                                call.response.cookies.append("authRedir", it)
-                            }
-                        }
                     }
+
                     jwt(JWT_AUTH) {
                         realm = "wotw-backend-server"
                         verifier(getJwtVerifier())
@@ -316,7 +321,8 @@ class WotwBackendServer {
             }
 
             val udpSocketBuilder = aSocket(ActorSelectorManager(Dispatchers.IO)).udp()
-            udpSocket = udpSocketBuilder.bind(NetworkAddress("0.0.0.0", (System.getenv("UDP_PORT") ?: "31415").toInt()))
+
+            udpSocket = udpSocketBuilder.bind(InetSocketAddress("0.0.0.0", (System.getenv("UDP_PORT") ?: "31415").toInt()))
 
             // TODO: Move this out of main class
             udpSocket?.let {
@@ -332,7 +338,7 @@ class WotwBackendServer {
     }
 
     private suspend fun handleUdpPackets(udpSocket: BoundDatagramSocket) {
-        logger.info("UDP socket listening on port ${udpSocket.localAddress.port}")
+        logger.info("UDP socket listening on port ${udpSocket.localAddress.toJavaAddress().port}")
 
         for (datagram in udpSocket.incoming) {
             try {

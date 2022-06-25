@@ -3,14 +3,15 @@ package wotw.server.api
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTCreator
 import com.auth0.jwt.algorithms.Algorithm
-import io.ktor.application.*
-import io.ktor.auth.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.client.*
+import io.ktor.client.call.body
 import io.ktor.client.request.*
-import io.ktor.features.*
+import io.ktor.server.plugins.*
 import io.ktor.http.*
-import io.ktor.response.*
-import io.ktor.routing.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.ktor.util.date.*
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -88,9 +89,10 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
     }
 
     private suspend fun handleOAuthToken(accessToken: String): User {
-        val jsonResponse = HttpClient().get<String>("https://discord.com/api/users/@me") {
+        val jsonResponse = HttpClient().get("https://discord.com/api/users/@me") {
             header("Authorization", "Bearer $accessToken")
         }
+            .body<String>()
         val json = json.parseToJsonElement(jsonResponse).jsonObject
         val userId = json["id"]?.jsonPrimitive?.contentOrNull ?: ""
         val discordUserName = json["username"]?.jsonPrimitive?.contentOrNull

@@ -1,6 +1,6 @@
 package wotw.server.database
 
-import io.ktor.features.*
+import io.ktor.server.plugins.*
 import kotlinx.html.currentTimeMillis
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.dao.EntityHook
@@ -17,6 +17,7 @@ open class EntityCache<KEY : Any, VALUE : Any>(
 ) {
 
     protected data class CacheEntry<T>(var value: T, var lastAccess: Long)
+
     private val cache: ConcurrentHashMap<KEY, CacheEntry<VALUE?>> = ConcurrentHashMap()
 
     suspend fun get(key: KEY): VALUE {

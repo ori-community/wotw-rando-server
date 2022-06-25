@@ -1,6 +1,6 @@
 package wotw.server.api
 
-import io.ktor.http.cio.websocket.*
+import io.ktor.websocket.*
 import io.ktor.util.collections.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.RequestFullUpdate
@@ -111,10 +111,16 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     }
 
     fun setSpectating(multiverseId: Long, playerId: String, spectating: Boolean) {
-        multiverseObserverConnections[multiverseId].filter { it.playerId == playerId }.map { it.spectating = spectating }
+        multiverseObserverConnections[multiverseId].filter { it.playerId == playerId }
+            .map { it.spectating = spectating }
     }
 
-    suspend fun registerRemoteTrackerEndpoint(clientConnection: ClientConnection, userId: String, reusePreviousEndpointId: Boolean, useStaticEndpointId: Boolean): String {
+    suspend fun registerRemoteTrackerEndpoint(
+        clientConnection: ClientConnection,
+        userId: String,
+        reusePreviousEndpointId: Boolean,
+        useStaticEndpointId: Boolean
+    ): String {
         cleanupRemoteTrackerEndpoints()
 
         var endpointId: String
@@ -191,7 +197,8 @@ class ConnectionRegistry(val server: WotwBackendServer) {
                     remoteTrackerEndpoints.remove(endpointId)
                     logger.info("Deleted expired Remote Tracker endpoint $endpointId")
                 } else if (it.broadcasterConnection == null && it.listeners.isEmpty()) {
-                    it.expires = System.currentTimeMillis() + 30 * 60 * 1000 // Keep the endpoint around for at least 30 minutes...
+                    it.expires =
+                        System.currentTimeMillis() + 30 * 60 * 1000 // Keep the endpoint around for at least 30 minutes...
                     logger.info("Marked Remote Tracker endpoint $endpointId deletable in 30 minutes from now")
                 }
             }
@@ -227,7 +234,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             }
             affectedPlayers.map { it.id.value }.toMutableList()
         }
-        if(excludePlayer)
+        if (excludePlayer)
             targets -= playerId
 
         toPlayers(targets, messages.toList(), unreliable)

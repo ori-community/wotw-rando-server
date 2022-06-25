@@ -1,6 +1,6 @@
 package wotw.server.game
 
-import io.ktor.features.*
+import io.ktor.server.plugins.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.EntityChangeType
 import org.jetbrains.exposed.dao.EntityHook
@@ -36,7 +36,8 @@ class GameHandlerRegistry(val server: WotwBackendServer) {
     suspend fun getHandler(multiverseId: Long): GameHandler<out Any> {
         return handlers[multiverseId]?.handler ?: newSuspendedTransaction {
             val multiverse = Multiverse.findById(multiverseId)
-            val handler = multiverse?.let { getHandler(it) } ?: throw NotFoundException("Could not load handler for multiverse $multiverseId: Multiverse does not exist")
+            val handler = multiverse?.let { getHandler(it) }
+                ?: throw NotFoundException("Could not load handler for multiverse $multiverseId: Multiverse does not exist")
             val cacheEntry = GameHandlerCacheEntry(handler)
             handlers[multiverseId] = cacheEntry
             cacheEntry

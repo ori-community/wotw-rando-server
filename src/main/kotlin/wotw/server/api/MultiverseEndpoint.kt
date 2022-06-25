@@ -1,14 +1,14 @@
 package wotw.server.api
 
-import io.ktor.application.*
-import io.ktor.auth.*
-import io.ktor.features.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.plugins.*
 import io.ktor.http.*
-import io.ktor.http.cio.websocket.*
-import io.ktor.request.*
-import io.ktor.response.*
-import io.ktor.routing.*
 import io.ktor.websocket.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.serializer
 import org.jetbrains.exposed.dao.EntityChange
@@ -91,9 +91,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     Multiverse.new {
                         if (props?.hideAndSeekConfig != null) {
                             gameHandlerType = GameHandlerType.HIDE_AND_SEEK
-                            gameHandlerStateJson = json.encodeToString(serializer(), HideAndSeekGameHandlerState(
-                                secondsUntilCatchPhase = props.hideAndSeekConfig.secondsUntilCatchPhase,
-                            ))
+                            gameHandlerStateJson = json.encodeToString(
+                                serializer(), HideAndSeekGameHandlerState(
+                                    secondsUntilCatchPhase = props.hideAndSeekConfig.secondsUntilCatchPhase,
+                                )
+                            )
                         } else {
                             if (props?.seedGroupId != null)
                                 seedGroup = SeedGroup.findById(props.seedGroupId) ?: throw NotFoundException()
@@ -287,7 +289,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 call.parameters["event"]?.let { event ->
                     newSuspendedTransaction {
-                        val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
+                        val multiverse =
+                            Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
 
                         if (!multiverse.members.contains(authenticatedUser())) {
                             throw BadRequestException("You cannot trigger custom events on this multiverse since you are not part of it")
@@ -325,7 +328,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList()
                     }
 
-                    server.connections.registerMultiverseConnection(socketConnection, playerId, setupResult.multiverseId)
+                    server.connections.registerMultiverseConnection(
+                        socketConnection,
+                        playerId,
+                        setupResult.multiverseId
+                    )
 
                     // Check if all players are online
                     val allPlayersOnline = multiversePlayerIds.all {

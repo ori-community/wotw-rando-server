@@ -3,14 +3,14 @@ package wotw.server.io
 import com.auth0.jwt.impl.JWTParser
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
-import io.ktor.auth.jwt.*
-import io.ktor.http.cio.websocket.*
+import io.ktor.server.auth.jwt.*
+import io.ktor.websocket.*
 import io.ktor.network.sockets.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
-import io.ktor.websocket.*
+import io.ktor.server.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
@@ -61,7 +61,7 @@ class ClientConnectionUDPRegistry() {
 
 class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: EventBus) {
     var udpId: Int? = null
-    var udpAddress: NetworkAddress? = null
+    var udpAddress: SocketAddress? = null
     val udpKey = ByteArray(16)
 
     var principal: WotwUserPrincipal? = null
@@ -95,7 +95,14 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
 
                                 val userInfo = newSuspendedTransaction {
                                     val user = User.findById(it.userId)!!
-                                    UserInfo(user.id.value, user.name, user.avatarId, null, user.currentMultiverse?.id?.value, user.isDeveloper)
+                                    UserInfo(
+                                        user.id.value,
+                                        user.name,
+                                        user.avatarId,
+                                        null,
+                                        user.currentMultiverse?.id?.value,
+                                        user.isDeveloper
+                                    )
                                 }
 
                                 logger().info("ClientConnection: User ${userInfo.name} (${userInfo.id}) authenticated a WebSocket connection")
@@ -139,7 +146,11 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
         }
     }
 
-    suspend inline fun <reified T : Any> sendMessage(message: T, unreliable: Boolean = false, ignoreAuthentication: Boolean = false) {
+    suspend inline fun <reified T : Any> sendMessage(
+        message: T,
+        unreliable: Boolean = false,
+        ignoreAuthentication: Boolean = false
+    ) {
         if (principal != null || ignoreAuthentication) {
             val binaryData =
                 Packet.serialize(message) ?: throw IOException("Cannot serialize object: $message | ${message::class}")

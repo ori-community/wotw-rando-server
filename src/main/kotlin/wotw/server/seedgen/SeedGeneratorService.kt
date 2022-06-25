@@ -1,6 +1,6 @@
 package wotw.server.seedgen
 
-import io.ktor.features.*
+import io.ktor.server.plugins.*
 import kotlinx.coroutines.future.await
 import wotw.io.messages.SeedGenConfig
 import wotw.server.database.model.Seed

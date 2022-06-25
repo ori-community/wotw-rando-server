@@ -1,13 +1,13 @@
 package wotw.server.api
 
-import io.ktor.application.*
-import io.ktor.auth.*
-import io.ktor.features.*
-import io.ktor.http.cio.websocket.*
-import io.ktor.response.*
-import io.ktor.routing.*
-import io.ktor.util.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.plugins.*
 import io.ktor.websocket.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.util.*
+import io.ktor.server.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.BingoData
 import wotw.io.messages.protobuf.BingothonBoard
@@ -111,7 +111,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
                 onError {
                     if (it !is CancellationException) {
-                        logger().error(it)
+                        logger().error(it.message)
                     }
                     server.connections.unregisterObserverConnection(socketConnection, null, playerId)
                     this@webSocket.close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "an error occurred"))
