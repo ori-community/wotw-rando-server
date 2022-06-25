@@ -25,46 +25,30 @@ enum class SeedgenDifficulty(val level: Int) {
     UNSAFE(3),
 }
 
-fun Collection<Preset>.implies(preset: Preset): Boolean {
-    return preset in this ||
-            (preset.webConn != true || any { it.webConn == true })
-            && (preset.hard != true || any { it.hard == true })
-            && !any { it.difficultyEnum.level < preset.difficultyEnum.level }
-            && (preset.spoilers != false || any { it.spoilers == false })
-            && (preset.worlds == null || any { it.worlds != null && it.worlds >= preset.worlds })
-            && (preset.goalmodes.all { g -> any { g in it.goalmodes } })
-            && (preset.headerList.all { h -> any { h in it.headerList } })
-            && (preset.glitches.all { h -> any { h in it.glitches } })
-            && (preset.players.all { p -> any { p in it.players } })
-            && (preset.presets.all { p -> any { it.name == p || p in it.presets } })
-}
+@Serializable
+data class HeaderConfig(
+    val headerName: String,
+    val configName: String,
+    val configValue: String,
+)
 
 @Serializable
 data class PresetFile(
-    val worlds: Int,
-    val presets: Set<String>,
-    val players: List<String>,
-    val glitches: Set<String>,
-    val difficulty: String,
-    val goalmodes: Set<String>,
-    val headerList: Set<String>,
-    val spoilers: Boolean,
-    val webConn: Boolean,
-    val hard: Boolean,
-    val spawnLoc: JsonElement,
-    val headerArgs: List<String>,
+    val includes: Set<String> = emptySet(),
+    val worldName: String? = null,
+    val spawn: String? = null,
+    val difficulty: String? = null,
+    val tricks: Set<String> = emptySet(),
+    val goals: Set<String> = emptySet(),
+    val headers: Set<String> = emptySet(),
+    val headerConfig: List<HeaderConfig> = emptyList(),
+    val inlineHeaders: List<String> = emptyList(), // TODO: ???
 ) {
-    private val spawnLocString: String = if (spawnLoc is JsonPrimitive) {
-        spawnLoc.content.lowercase() // Random → random
-    } else {
-        spawnLoc.jsonObject["Set"]!!.jsonPrimitive.content
-    }
-
     private val difficultyEnum: SeedgenDifficulty
         get() = SeedgenDifficulty.valueOf(difficulty.uppercase())
 
     fun fullResolve(presets: Map<String, PresetFile>): PresetFile {
-        val merged = this.presets.mapNotNull {
+        val merged = this.includes.mapNotNull {
             presets[it]?.fullResolve(presets)
         }.reduceOrNull { p1, p2 -> p1.merge(p2) }
         return if (merged == null) this else merge(merged)
@@ -98,7 +82,7 @@ data class PresetFile(
 
         return Preset(
             worlds,
-            presets,
+            includes,
             players,
             glitches.map { Glitch.valueOf(it.uppercase()) }.toSet(),
             difficulty,
