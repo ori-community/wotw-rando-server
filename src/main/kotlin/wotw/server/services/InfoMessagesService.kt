@@ -28,7 +28,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
             .mapIndexed { index, universe -> generateUniverseInfo(universe, COLORS[index % COLORS.size]) },
         multiverse.board != null,
         multiverse.spectators.map { generateUserInfo(it) },
-        multiverse.seedGroup?.id?.value,
+        multiverse.seed?.id?.value,
         multiverse.gameHandlerType,
         server.gameHandlerRegistry.getHandler(multiverse).getSerializedClientInfo()
     )

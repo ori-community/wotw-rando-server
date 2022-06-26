@@ -5,7 +5,6 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -13,7 +12,6 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.client.*
 import io.ktor.server.plugins.*
 import io.ktor.http.*
-import io.ktor.websocket.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.server.request.*
@@ -27,9 +25,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.httpsredirect.HttpsRedirect
 import io.ktor.server.plugins.statuspages.*
-import io.ktor.util.*
 import io.ktor.util.network.*
-import io.ktor.util.pipeline.*
 import io.ktor.utils.io.core.*
 import io.ktor.server.websocket.*
 import io.sentry.Sentry
@@ -124,8 +120,7 @@ class WotwBackendServer {
             this.password = password
             driverClassName = "org.postgresql.Driver"
         }
-        this.db =
-            Database.connect(ds)//"jdbc:postgresql://$host:$port/$db?user=$user&password=$password", "org.postgresql.Driver")
+        this.db = Database.connect(ds)
 
         transaction {
             SchemaUtils.createMissingTablesAndColumns(
@@ -136,8 +131,8 @@ class WotwBackendServer {
                 Users,
                 BingoEvents,
                 Spectators,
-                SeedGroups,
                 Seeds,
+                WorldSeeds,
             )
         }
     }

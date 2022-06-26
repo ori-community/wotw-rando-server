@@ -9,7 +9,7 @@ import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.*
 import wotw.server.database.model.Seed
-import wotw.server.database.model.SeedGroup
+import wotw.server.database.model.WorldSeed
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.then
@@ -20,31 +20,36 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
         get("seedgen/headers") {
             val dir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("headers")
-            val result = dir.toFile().listFiles()?.map {
-                val lines = it.readText().split(System.lineSeparator())
-                val descrLines = lines.filter { it.startsWith("/// ") }.map { it.substringAfter("/// ") }
-                val params = lines.mapIndexedNotNull { i, s ->
-                    if (s.startsWith("!!parameter ")) {
-                        val (name, info) = s.substringAfter("!!parameter ").split(" ", limit = 2)
-                        val (type, default) = if (info.contains(":")) {
-                            info.split(":", limit = 2)
-                        } else listOf("string", info)
-                        HeaderParameterDef(
-                            name,
-                            default,
-                            type,
-                            lines.subList(0, i).takeLastWhile { it.startsWith("//// ") }
-                                .map { it.substringAfter("//// ") })
-                    } else null
+
+            val result = dir.toFile().listFiles()
+                ?.filter { it.isFile }
+                ?.map {
+                    val lines = it.readText().split(System.lineSeparator())
+                    val descrLines = lines.filter { line -> line.startsWith("/// ") }.map { line -> line.substringAfter("/// ") }
+                    val params = lines.mapIndexedNotNull { i, s ->
+                        if (s.startsWith("!!parameter ")) {
+                            val (name, info) = s.substringAfter("!!parameter ").split(" ", limit = 2)
+                            val (type, default) = if (info.contains(":")) {
+                                info.split(":", limit = 2)
+                            } else listOf("string", info)
+                            HeaderParameterDef(
+                                name,
+                                default,
+                                type,
+                                lines.subList(0, i).takeLastWhile { it.startsWith("//// ") }
+                                    .map { it.substringAfter("//// ") })
+                        } else null
+                    }
+
+                    HeaderFileEntry(
+                        it.name.substringAfterLast("/").substringBeforeLast("."),
+                        lines.firstOrNull()?.startsWith("#hide") == true,
+                        descrLines.firstOrNull(),
+                        descrLines,
+                        params
+                    )
                 }
-                HeaderFileEntry(
-                    it.name.substringAfterLast("/").substringBeforeLast("."),
-                    lines.firstOrNull()?.startsWith("#hide") == true,
-                    descrLines.firstOrNull(),
-                    descrLines,
-                    params
-                )
-            }?.toList() ?: emptyList()
+                ?.toList() ?: emptyList()
             call.respond(result)
         }
 
@@ -64,63 +69,60 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
             val worldPresetFileMap = dir.toFile().listFiles()
                 .filter { it.isFile }
-                .map {
+                .associate {
                     it.name.substringAfterLast("/").substringBeforeLast(".json") to
                             relaxedJson.decodeFromString(WorldPresetFile.serializer(), it.readText())
                 }
-                .toMap()
 
-            val result = worldPresetFileMap.map {
-                it.value.resolveAndMergeIncludes(worldPresetFileMap)
-                    .withPresetName(it.key)
-                    .toWorldPreset(it.key)
+            val result = worldPresetFileMap.mapValues {
+                it.value.resolveAndMergeIncludes(worldPresetFileMap).toWorldPreset()
             }
 
             call.respond(result)
         }
 
-        get("seed-groups/{id}") {
+        get("seeds/{id}") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
-            val seedGroupInfo = newSuspendedTransaction {
-                val seedGroup = SeedGroup.findById(id) ?: throw NotFoundException()
-                SeedGroupInfo(
-                    seedGroup.id.value,
-                    seedGroup.seeds.map { it.id.value },
-                    seedGroup.creator?.let { server.infoMessagesService.generateUserInfo(it) },
-                    seedGroup.generatorConfig
+            val seedInfo = newSuspendedTransaction {
+                val seed = Seed.findById(id) ?: throw NotFoundException()
+
+                SeedInfo(
+                    seed.id.value,
+                    seed.worldSeeds.map { it.id.value },
+                    seed.creator?.let { server.infoMessagesService.generateUserInfo(it) },
+                    seed.seedgenConfig,
                 )
             }
-            call.respond(seedGroupInfo)
+            call.respond(seedInfo)
         }
 
-        get("seeds/{id}/file") {
+        get("world-seeds/{id}/file") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
 
-            val (seedGroupFile, seedFile) = newSuspendedTransaction {
-                val seed = Seed.findById(id) ?: throw NotFoundException("Seed not found")
-
-                seed.group.file to seed.file
+            val worldSeedContent = newSuspendedTransaction {
+                val worldSeed = WorldSeed.findById(id) ?: throw NotFoundException("World seed not found")
+                worldSeed.content
             }
 
-            call.respond(server.seedGeneratorService.seedFile(seedGroupFile, seedFile).readBytes())
+            call.respond(worldSeedContent)
         }
 
         authenticate(JWT_AUTH, optional = true) {
-            post<SeedGenConfig>("seeds") { config ->
-                val (result, seedGroupId, seedIds) = newSuspendedTransaction {
-                    val result = server.seedGeneratorService.generateSeedGroup(config, authenticatedUserOrNull())
+            post<Preset>("seeds") { config ->
+                val (result, seedId, worldSeedIds) = newSuspendedTransaction {
+                    val result = server.seedGeneratorService.generateSeed(config, authenticatedUserOrNull())
 
                     result.generationResult then
-                            (result.seedGroup?.id?.value ?: 0L) then
-                            (result.seedGroup?.seeds?.map { it.id.value } ?: listOf())
+                            (result.seed?.id?.value ?: 0L) then
+                            (result.seed?.worldSeeds?.map { it.id.value } ?: listOf())
                 }
 
                 if (result.isSuccess) {
                     call.respond(
                         HttpStatusCode.Created, SeedGenResponse(
                             result = SeedGenResult(
-                                seedGroupId = seedGroupId,
-                                seedIds = seedIds,
+                                seedId = seedId,
+                                worldSeedIds = worldSeedIds,
                             ),
                             warnings = result.getOrNull()?.warnings?.ifBlank { null },
                         )

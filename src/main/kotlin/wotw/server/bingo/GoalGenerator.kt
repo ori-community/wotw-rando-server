@@ -1274,7 +1274,7 @@ object pickupsIn {
 
 class BingoBoardGenerator {
     fun generateBoard(props: MultiverseCreationConfig? = null): BingoBoard {
-        val random = Random(props?.seedGroupId?.hashCode() ?: Instant.now().epochSecond.toInt())
+        val random = Random(props?.seedId?.hashCode() ?: Instant.now().epochSecond.toInt())
         val pool = generatePool()
         val counts = (pool.map { it to 0 }).toMap().toMutableMap()
 

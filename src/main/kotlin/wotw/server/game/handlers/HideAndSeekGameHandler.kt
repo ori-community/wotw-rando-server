@@ -3,7 +3,9 @@ package wotw.server.game.handlers
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.SeedGenConfig
+import wotw.io.messages.InlineHeader
+import wotw.io.messages.Preset
+import wotw.io.messages.WorldPreset
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
@@ -82,46 +84,53 @@ class HideAndSeekGameHandler(
 
     private val BLAZE_UBER_ID = UberId(6, 1115)
 
-    private val seekerSeedgenConfig = SeedGenConfig(
-        flags = listOf("--multiplayer"),
-        presets = listOf("qol", "rspawn"),
+    private val seekerSeedgenConfig = WorldPreset(
+        includes = setOf(
+            "presets/overlays/qol",
+            "presets/overlays/rspawn"
+        ),
         difficulty = "gorlek",
-        headers = listOf(
+        headers = setOf(
             "vanilla_opher_upgrades",
             "black_market",
             "key_hints",
             "zone_hints",
             "trial_hints",
         ),
-        customHeaders = listOf(
-            """
-                Flags: Hide and Seek (Seeker)
-                
-                !!remove 2|115  // Remove Blaze
-                3|0|2|100
-                3|0|2|5
-                3|0|2|97
-                3|0|2|101
-                3|0|9|0
-                3|0|2|118
-                
-                // Hide and Seek specific bonus items
-                !!add 5x 8|9|10|int|+1
-                !!name 8|9|10|int|+1 <hex_ff008d>Reveal Spell (useless)</>
-                !!icon 8|9|10|int|+1 shard:0
-
-                !!add 5x 8|9|10|int|+1
-                !!name 8|9|10|int|+1 <hex_ff008d>Vanish Spell (useless)</>
-                !!icon 8|9|10|int|+1 shard:0
-            """.trimIndent()
-        ),
+        inlineHeaders = listOf(
+            InlineHeader(
+                "hide_and_seek_seeker",
+                """
+                    Flags: Hide and Seek (Seeker)
+                    
+                    !!remove 2|115  // Remove Blaze
+                    3|0|2|100
+                    3|0|2|5
+                    3|0|2|97
+                    3|0|2|101
+                    3|0|9|0
+                    3|0|2|118
+                    
+                    // Hide and Seek specific bonus items
+                    !!add 5x 8|9|10|int|+1
+                    !!name 8|9|10|int|+1 <hex_ff008d>Reveal Spell (useless)</>
+                    !!icon 8|9|10|int|+1 shard:0
+    
+                    !!add 5x 8|9|10|int|+1
+                    !!name 8|9|10|int|+1 <hex_ff008d>Vanish Spell (useless)</>
+                    !!icon 8|9|10|int|+1 shard:0
+                """.trimIndent()
+            )
+        )
     )
 
-    private val hiderSeedgenConfig = SeedGenConfig(
-        flags = listOf("--multiplayer"),
-        presets = listOf("qol", "rspawn"),
+    private val hiderSeedgenConfig = WorldPreset(
+        includes = setOf(
+            "presets/overlays/qol",
+            "presets/overlays/rspawn"
+        ),
         difficulty = "gorlek",
-        headers = listOf(
+        headers = setOf(
             "teleporters",
             "tp_zone_hints",
             "vanilla_opher_upgrades",
@@ -130,12 +139,15 @@ class HideAndSeekGameHandler(
             "zone_hints",
             "trial_hints",
         ),
-        customHeaders = listOf(
-            """
-                Flags: Hide and Seek (Hider)
-            """.trimIndent()
+        inlineHeaders = listOf(
+            InlineHeader(
+                "hide_and_seek_hider",
+                """
+                    Flags: Hide and Seek (Hider)
+                """.trimIndent()
+            )
         ),
-        goals = listOf("trees"),
+        goals = setOf("trees")
     )
 
     private val scheduler = Scheduler {
@@ -511,16 +523,21 @@ class HideAndSeekGameHandler(
             logger().info("world created: ${message.world.id.value}")
 
             // TODO: Make better
-            val result = server.seedGeneratorService.generateSeedGroup(
-                if (state.seekerWorlds.isEmpty()) {
-                    seekerSeedgenConfig
-                } else {
-                    hiderSeedgenConfig
-                }
+            val result = server.seedGeneratorService.generateSeed(
+                Preset(
+                    worldSettings = listOf(
+                        if (state.seekerWorlds.isEmpty()) {
+                            seekerSeedgenConfig
+                        } else {
+                            hiderSeedgenConfig
+                        }
+                    ),
+                    online = true,
+                )
             )
 
-            result.seedGroup?.let { seedGroup ->
-                message.world.seed = seedGroup.seeds.firstOrNull()
+            result.seed?.let { seed ->
+                message.world.seed = seed.worldSeeds.firstOrNull()
             }
 
             doAfterTransaction {

@@ -1,82 +1,47 @@
 package wotw.server.seedgen
 
-import io.ktor.server.plugins.*
 import kotlinx.coroutines.future.await
-import wotw.io.messages.SeedGenConfig
-import wotw.server.database.model.Seed
-import wotw.server.database.model.SeedGroup
-import wotw.server.database.model.User
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import wotw.io.messages.Preset
+import wotw.io.messages.SeedgenCliOutput
+import wotw.io.messages.json
+import wotw.server.database.model.*
 import wotw.server.exception.ServerConfigurationException
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.CompletableFuture
 import wotw.server.util.logger
-import wotw.server.util.then
 import java.io.File
-import java.nio.file.Path
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 data class SeedGeneratorGenerationResult(
     val warnings: String,
+    val output: SeedgenCliOutput,
 )
 
-data class SeedGeneratorSeedGroupResult(
+data class SeedGeneratorSeedResult(
     val generationResult: Result<SeedGeneratorGenerationResult>,
-    val seedGroup: SeedGroup?,
+    val seed: Seed?,
 )
 
 class SeedGeneratorService(private val server: WotwBackendServer) {
-    private val numThreads = System.getenv("SEEDGEN_TRHEADS")?.toIntOrNull() ?: 4
+
     private val threadPool = Executors.newFixedThreadPool(4)
     private val seedgenExec =
         System.getenv("SEEDGEN_PATH") ?: throw ServerConfigurationException("No seed generator available!")
-    val invalidCharacterRegex = Regex("[^a-zA-Z0-9_]")
-    fun sanitizedPlayerName(player: String) = player.replace(invalidCharacterRegex, "_")
 
-    fun filesForSeed(seedId: String): List<File> {
-        var pathString = "${System.getenv("SEED_DIR")}${File.separator}${seedId}"
-
-        val dir = Path.of(pathString).toFile()
-        if (dir.exists() && dir.isDirectory) {
-            return dir.listFiles { _, name ->
-                name.endsWith(".wotwr") && !name.endsWith(".spoiler.wotwr")
-            }?.toList() ?: emptyList()
-        }
-
-        pathString += ".wotwr"
-        val file = Path.of(pathString).toFile()
-        if (!file.exists() || file.isDirectory)
-            return emptyList()
-
-        return listOf(file)
-    }
-
-    fun seedFile(seed: Seed) = seedFile(seed.group.file, seed.file)
-
-    fun seedFile(seedGroupFile: String, seedFile: String? = null): File {
-        var pathString = "${System.getenv("SEED_DIR")}${File.separator}${seedGroupFile}"
-
-        if (File(pathString).isDirectory && seedFile != null) {
-            val sanitized = server.seedGeneratorService.sanitizedPlayerName(seedFile)
-            pathString += "${File.separator}$sanitized"
-        }
-
-        pathString += ".wotwr"
-        val file = Path.of(pathString).toFile()
-        if (!file.exists() || file.isDirectory)
-            throw NotFoundException()
-        return file
-    }
-
-    suspend fun generate(seedGroupFileName: String, config: SeedGenConfig): Result<SeedGeneratorGenerationResult> {
-        val commandString = buildSeedGenCommand(seedGroupFileName, config)
-
-        logger().info("Generating seed using command:")
-        logger().info(commandString.joinToString(" "))
+    suspend fun generate(config: Preset): Result<SeedGeneratorGenerationResult> {
         val timeout = System.getenv("SEEDGEN_TIMEOUT")?.toLongOrNull() ?: 30000
 
-        val processBuilder = ProcessBuilder(*commandString)
+        val processBuilder = ProcessBuilder(
+            seedgenExec,
+            "seed",
+            "--verbose",
+            "--tostdout",
+            "--json",
+        )
             .directory(File(seedgenExec.substringBeforeLast(File.separator)))
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
@@ -87,17 +52,12 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             val process = processBuilder.start()
             handle = process
 
-            if (config.customHeaders != null) {
-                process.outputStream.writer().use { writer ->
-                    config.customHeaders.flatMap { it.split("\n") }.flatMap { it.split("\r") }
-                        .filter { it.isNotBlank() }.forEach {
-                            writer.write(it)
-                            writer.write("\r\n")
-                        }
-                }
+            process.outputStream.writer().use { writer ->
+                writer.write(json.encodeToString(config))
             }
-            process.outputStream.close()
-            process.inputStream.readAllBytes()
+
+            val outputString = process.inputStream.readAllBytes().toString(Charsets.UTF_8)
+            val output = json.decodeFromString<SeedgenCliOutput>(outputString)
 
             val stderrOutput = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
             val exitCode = process.waitFor()
@@ -109,7 +69,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             if (exitCode != 0)
                 Result.failure(Exception(stderrOutput))
             else {
-                Result.success(SeedGeneratorGenerationResult(stderrOutput))
+                Result.success(SeedGeneratorGenerationResult(stderrOutput, output))
             }
         }
 
@@ -121,93 +81,30 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         }
     }
 
-    private fun buildSeedGenCommand(seedGroupFileName: String, config: SeedGenConfig): Array<String> {
-        var command = "$seedgenExec seed --verbose".split(" ").toTypedArray() + config.flags.flatMap { it.split(" ") }
-
-        command += "--difficulty"
-        command += config.difficulty
-
-        if (config.goals.isNotEmpty()) {
-            command += "--goals"
-            command += config.goals.map { it.lowercase() }
-        }
-        if (config.glitches.isNotEmpty()) {
-            command += "--glitches"
-            command += config.glitches.map { it.lowercase() }
-        }
-        if (config.presets.isNotEmpty()) {
-            command += "--preset"
-            command += config.presets
-        }
-        if (config.headers.isNotEmpty()) {
-            command += "--headers"
-            command += config.headers
-        }
-        if (!config.multiNames.isNullOrEmpty()) {
-            command += "--names"
-            command += config.multiNames.map { sanitizedPlayerName(it) }
-            command += "--worlds"
-            command += config.multiNames.size.toString()
-        }
-        if (!config.seed.isNullOrBlank()) {
-            command += "--seed"
-            command += config.seed
-        }
-        if (!config.spawn.isNullOrBlank()) {
-            command += "--spawn"
-            command += config.spawn
-        }
-
-        if (!config.headerArgs.isNullOrEmpty()) {
-            config.headerArgs.map { "${it.key}=${it.value}" }.forEach {
-                command += "--args"
-                command += it
-            }
-        }
-
-        command += "--"
-        command += seedGroupFileName
-
-        return command
-    }
-
-    suspend fun generateSeedGroup(config: SeedGenConfig, creator: User? = null): SeedGeneratorSeedGroupResult {
-        val seedGroup = SeedGroup.new {
-            this.generatorConfig = config
-            this.creator = creator
-        }
-
-        val seedGroupFile = "${seedGroup.id.value}"
-        val result = server.seedGeneratorService.generate(seedGroupFile, config)
+    suspend fun generateSeed(config: Preset, creator: User? = null): SeedGeneratorSeedResult {
+        val result = server.seedGeneratorService.generate(config)
 
         if (result.isSuccess) {
-            val seedGroupGeneratedFiles = server.seedGeneratorService.filesForSeed(seedGroup.id.value.toString())
+            val seed = Seed.new {
+                this.seedgenConfig = config
+                this.creator = creator
+            }
 
-            // If the user did not explicitly request a seed, read it from the generated seed and save it
-            if (config.seed == null) {
-                val firstSeedLines = seedGroupGeneratedFiles.first().readLines()
+            val output = result.getOrThrow().output
 
-                if (firstSeedLines.size > 3) {
-                    val actualSeed = firstSeedLines[firstSeedLines.size - 3].substringAfter("Seed: ")
-                    seedGroup.generatorConfig = seedGroup.generatorConfig.copy(seed = actualSeed)
+            output.seedFiles.forEachIndexed { index, seedFile ->
+                WorldSeed.new {
+                    this.content = seedFile
+                    this.worldIndex = index
+                    this.seed = seed
                 }
             }
 
-            seedGroup.file = seedGroupFile
+            seed.refresh(true)
 
-            seedGroupGeneratedFiles.map { seedGroupGeneratedFile ->
-                Seed.new {
-                    group = seedGroup
-                    file = seedGroupGeneratedFile.nameWithoutExtension
-                }
-            }
-            seedGroup.refresh(true)
-
-            return SeedGeneratorSeedGroupResult(result, seedGroup)
+            return SeedGeneratorSeedResult(result, seed)
         } else {
-            seedGroup.delete()
+            return SeedGeneratorSeedResult(result, null)
         }
-
-        return SeedGeneratorSeedGroupResult(result, seedGroup)
     }
 }

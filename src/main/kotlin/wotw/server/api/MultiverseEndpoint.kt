@@ -97,8 +97,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 )
                             )
                         } else {
-                            if (props?.seedGroupId != null)
-                                seedGroup = SeedGroup.findById(props.seedGroupId) ?: throw NotFoundException()
+                            if (props?.seedId != null)
+                                seed = Seed.findById(props.seedId) ?: throw NotFoundException()
                             if (props?.bingoConfig != null)
                                 board = BingoBoardGenerator().generateBoard(props)
                         }
@@ -124,7 +124,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val world =
                         if (universeId != null) {
-                            if (multiverse.seedGroup != null)
+                            if (multiverse.seed != null)
                                 throw ConflictException("Cannot manually create or remove worlds from seed-linked universes")
                             val universe =
                                 Universe.findById(universeId) ?: throw NotFoundException("Universe does not exist!")
@@ -162,11 +162,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 this.uberStateData = UberStateMap()
                             }
 
-                            multiverse.seedGroup?.let { seedGroup ->
+                            multiverse.seed?.let { seed ->
                                 var first: World? = null
 
-                                seedGroup.seeds.forEach { seed ->
-                                    val world = World.new(universe, seed.id.value.toString(), seed)
+                                seed.worldSeeds.forEach { worldSeed ->
+                                    val world = World.new(universe, worldSeed.id.value.toString(), worldSeed)
                                     if (first == null) {
                                         first = world
                                     }

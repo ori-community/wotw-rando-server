@@ -17,7 +17,7 @@ import kotlin.math.ceil
 import kotlin.to
 
 object Multiverses : LongIdTable("multiverse") {
-    val seedGroup = reference("seed_group_id", SeedGroups).nullable()
+    val seed = reference("seed_id", Seeds).nullable()
     val board = jsonb("board", BingoBoard.serializer()).nullable()
 
     val gameHandlerActive = bool("game_handler_active").default(false)
@@ -27,7 +27,7 @@ object Multiverses : LongIdTable("multiverse") {
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var board by Multiverses.board
-    var seedGroup by SeedGroup optionalReferencedOn Multiverses.seedGroup
+    var seed by Seed optionalReferencedOn Multiverses.seed
     val universes by Universe referrersOn Universes.multiverseId
     val worlds: Collection<World>
         get() = universes.flatMap { it.worlds }

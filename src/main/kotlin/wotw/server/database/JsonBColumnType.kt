@@ -1,7 +1,9 @@
 package wotw.server.database
 
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import wotw.server.database.JsonbColumnType.Companion.JSONB
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.Function
@@ -54,6 +56,15 @@ fun <T : Any> Table.jsonb(
     serializer: KSerializer<T>,
     jsonSerializer: Json = json
 ): Column<T> = jsonb(name, { jsonSerializer.encodeToString(serializer, it) }, { jsonSerializer.decodeFromString(serializer, it) })
+
+
+/**
+ * jsonb column with kotlinx.serialization as JSON serializer
+ */
+fun Table.jsonb(
+    name: String,
+    jsonSerializer: Json = json
+): Column<JsonElement> = jsonb(name, { jsonSerializer.encodeToString(it) }, { jsonSerializer.parseToJsonElement(it) })
 
 
 class JsonValue<T>(

@@ -2,6 +2,7 @@ package wotw.io.messages
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
+import kotlinx.serialization.json.JsonObject
 import wotw.io.messages.protobuf.UserInfo
 
 @Serializable
@@ -56,13 +57,6 @@ data class WorldPresetFile(
     val headerConfig: List<HeaderConfig> = emptyList(),
     val inlineHeaders: List<InlineHeader> = emptyList(),
 ) {
-    private var presetName: String? = null
-
-    fun withPresetName(name: String): WorldPresetFile {
-        presetName = name
-        return this
-    }
-
     fun resolveAndMergeIncludes(availablePresets: Map<String, WorldPresetFile>): WorldPresetFile {
         val resolvedIncludes = this.includes
             .mapNotNull { includedPresetId ->
@@ -98,9 +92,8 @@ data class WorldPresetFile(
         )
     }
 
-    fun toWorldPreset(name: String): WorldPreset {
+    fun toWorldPreset(): WorldPreset {
         return WorldPreset(
-            presetName ?: throw Exception("Cannot convert to WorldPreset without a name!"),
             includes,
             worldName,
             spawn,
@@ -117,7 +110,6 @@ data class WorldPresetFile(
 
 @Serializable
 data class WorldPreset(
-    val name: String,
     val includes: Set<String> = emptySet(),
     val worldName: String? = null,
     val spawn: String? = null,
@@ -129,31 +121,27 @@ data class WorldPreset(
     val inlineHeaders: List<InlineHeader> = emptyList(),
 )
 
-infix fun Boolean?.or(other: Boolean?): Boolean? =
-    if (this == null) other else if (other == null) this else this || other
-
-
 @Serializable
-data class SeedGroupInfo(
+data class SeedInfo(
     val id: Long,
-    val seedIds: List<Long>,
+    val worldSeedIds: List<Long>,
     val creator: UserInfo?,
-    val config: SeedGenConfig,
+    val config: Preset,
 )
 
 @Serializable
-data class SeedGenConfig(
-    val flags: List<String> = emptyList(),
-    val headers: List<String> = emptyList(),
-    val presets: List<String> = emptyList(),
-    val glitches: List<String> = emptyList(),
-    val difficulty: String = "moki",
-    val goals: List<String> = emptyList(),
-    val multiNames: List<String>? = null,
+data class Preset(
+    val worldSettings: List<WorldPreset>,
+    val disableLogicFilter: Boolean = false,
     val seed: String? = null,
-    val spawn: String? = null,
-    val customHeaders: List<String>? = null,
-    val headerArgs: Map<String, String>? = null,
+    val online: Boolean = false,
+)
+
+@Serializable
+data class SeedgenCliOutput(
+    val seedFiles: List<String>,
+    val spoiler: JsonObject, // Don't need structured data here since we just put that as a json file somewhere
+    val spoilerText: String,
 )
 
 @Serializable
@@ -171,15 +159,15 @@ data class HideAndSeekConfig(
 
 @Serializable
 data class MultiverseCreationConfig(
-    val seedGroupId: Long? = null,
+    val seedId: Long? = null,
     val bingoConfig: BingoCreationConfig? = null,
     val hideAndSeekConfig: HideAndSeekConfig? = null,
 )
 
 @Serializable
 data class SeedGenResult(
-    val seedGroupId: Long,
-    val seedIds: List<Long> = emptyList(),
+    val seedId: Long,
+    val worldSeedIds: List<Long> = emptyList(),
 )
 
 @Serializable
