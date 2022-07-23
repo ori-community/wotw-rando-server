@@ -48,11 +48,14 @@ fun difficultyLevel(difficulty: String?): Int {
 @Serializable
 data class WorldPresetFile(
     val includes: Set<String> = emptySet(),
-    val worldName: String? = null,
     val spawn: String? = null,
     val difficulty: String? = null,
     val tricks: Set<String> = emptySet(),
+    val hard: Boolean = false,
+
+    @Deprecated("Will be deprecated soon when goals are headerified")
     val goals: Set<String> = emptySet(),
+
     val headers: Set<String> = emptySet(),
     val headerConfig: List<HeaderConfig> = emptyList(),
     val inlineHeaders: List<InlineHeader> = emptyList(),
@@ -81,10 +84,10 @@ data class WorldPresetFile(
 
         return WorldPresetFile(
             includes + other.includes,
-            other.worldName ?: worldName,
             other.spawn ?: spawn,
             if (difficultyLevel(other.difficulty) > difficultyLevel(difficulty)) other.difficulty else difficulty,
             tricks + other.tricks,
+            hard || other.hard,
             goals + other.goals,
             headers + other.headers,
             mergedHeaderConfig,
@@ -95,10 +98,10 @@ data class WorldPresetFile(
     fun toWorldPreset(): WorldPreset {
         return WorldPreset(
             includes,
-            worldName,
             spawn,
             difficulty,
             tricks,
+            hard,
             goals,
             headers,
             headerConfig,
@@ -111,11 +114,14 @@ data class WorldPresetFile(
 @Serializable
 data class WorldPreset(
     val includes: Set<String> = emptySet(),
-    val worldName: String? = null,
     val spawn: String? = null,
     val difficulty: String? = null,
     val tricks: Set<String> = emptySet(),
+    val hard: Boolean = false,
+
+    @Deprecated("Will be deprecated soon when goals are headerified")
     val goals: Set<String> = emptySet(),
+
     val headers: Set<String> = emptySet(),
     val headerConfig: List<HeaderConfig> = emptyList(),
     val inlineHeaders: List<InlineHeader> = emptyList(),
