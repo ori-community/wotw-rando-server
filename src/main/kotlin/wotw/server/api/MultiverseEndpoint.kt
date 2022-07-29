@@ -26,6 +26,7 @@ import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
+import wotw.server.exception.ForbiddenException
 import wotw.server.game.DeveloperEvent
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.GameHandlerType
@@ -288,6 +289,38 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
 
                 call.respond(HttpStatusCode.Created)
+            }
+
+            post("multiverses/{multiverse_id}/toggle-lock") {
+                val multiverseId =
+                    call.parameters["multiverse_id"]?.toLongOrNull()
+                        ?: throw BadRequestException("Unparsable MultiverseID")
+
+                val multiverseInfo = newSuspendedTransaction {
+                    val player = authenticatedUser()
+                    wotwPrincipal().require(Scope.MULTIVERSE_LOCK)
+
+                    val multiverse =
+                        Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
+
+                    if (!multiverse.players.contains(player)) {
+                        throw ForbiddenException("You cannot lock/unlock this multiverse since you are not an active player in it")
+                    }
+
+                    multiverse.locked = !multiverse.locked
+
+                    server.connections.toPlayers(
+                        multiverse.players.map { it.id.value }, makeServerTextMessage(
+                            "${player.name} ${if (multiverse.locked) "locked" else "unlocked"} this game",
+                        )
+                    )
+
+                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+                }
+
+                server.connections.toObservers(multiverseId, message = multiverseInfo)
+
+                call.respond(HttpStatusCode.OK)
             }
 
             post("multiverses/{multiverse_id}/event/{event}") {

@@ -42,10 +42,7 @@ import wotw.io.messages.protobuf.UdpPacket
 import wotw.server.api.*
 import wotw.server.database.PlayerUniversePopulationCache
 import wotw.server.database.model.*
-import wotw.server.exception.AlreadyExistsException
-import wotw.server.exception.ConflictException
-import wotw.server.exception.ForbiddenException
-import wotw.server.exception.UnauthorizedException
+import wotw.server.exception.*
 import wotw.server.game.GameHandlerRegistry
 import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.seedgen.SeedGeneratorService
@@ -254,6 +251,9 @@ class WotwBackendServer {
                     }
                     exception<NotFoundException> { call, exception ->
                         call.respond(HttpStatusCode.NotFound, exception.message ?: "")
+                    }
+                    exception<MissingScopeException> { call, exception ->
+                        call.respond(HttpStatusCode.Forbidden, exception.message ?: "")
                     }
                     exception<ForbiddenException> { call, exception ->
                         call.respond(HttpStatusCode.Forbidden, exception.message ?: "")
