@@ -23,6 +23,7 @@ object Multiverses : LongIdTable("multiverse") {
     val gameHandlerActive = bool("game_handler_active").default(false)
     val gameHandlerType = integer("game_handler_type").default(GameHandlerType.NORMAL)
     val gameHandlerStateJson = jsonb("game_handler_state", { s -> s }, { s -> s }).nullable()
+    val locked = bool("locked").default(false)
 }
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
@@ -38,6 +39,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var gameHandlerType by Multiverses.gameHandlerType
     var gameHandlerActive by Multiverses.gameHandlerActive
     var gameHandlerStateJson by Multiverses.gameHandlerStateJson
+    var locked by Multiverses.locked
 
     val universeStates
         get() = states.filter { it.world == null }.mapNotNull { it.universe?.let { universe -> universe to it } }
@@ -208,9 +210,11 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }.sortedByDescending { it.rank }
     }
 
-    fun deleteEmptyWorlds(newWorld: World? = null): HashSet<Long> {
-        val affectedMultiverseIds = hashSetOf<Long>()
-
+    /**
+     * Deletes empty worlds and universes and unlocks the game
+     * if no members are left
+     */
+    fun cleanup(newWorld: World? = null) {
         val universesQueuedForDeletion = mutableSetOf<Universe>()
 
         for (world in worlds) {
@@ -228,7 +232,11 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             universe.delete()
         }
 
-        return affectedMultiverseIds
+        this.refresh(true)
+
+        if (players.isEmpty()) {
+            this.locked = false
+        }
     }
 
     fun updateAutomaticWorldNames() {

@@ -14,13 +14,17 @@ import wotw.server.sync.ShareScope
 import wotw.server.sync.StateCache
 
 class MultiverseUtil(val server: WotwBackendServer) {
-    suspend fun removePlayerFromCurrentWorld(player: User, dontNotifyMultiverseId: Long? = null) {
+    suspend fun removePlayerFromCurrentWorld(player: User, cleanupCurrentMultiverse: Boolean = false) {
         player.currentWorld?.let { world ->
             val previousMultiverseId = world.universe.multiverse.id.value
             player.currentWorld = null
 
-            if (previousMultiverseId != dontNotifyMultiverseId) {
-                world.universe.multiverse.updateAutomaticWorldNames()
+            if (cleanupCurrentMultiverse) {
+                world.universe.multiverse.let { multiverse ->
+                    multiverse.cleanup()
+                    multiverse.updateAutomaticWorldNames()
+                }
+
                 server.connections.broadcastMultiverseInfoMessage(previousMultiverseId)
             }
         }
@@ -28,7 +32,7 @@ class MultiverseUtil(val server: WotwBackendServer) {
 
     suspend fun movePlayerToWorld(player: User, world: World) {
         if (player.currentWorld != world) {
-            removePlayerFromCurrentWorld(player, world.universe.multiverse.id.value)
+            removePlayerFromCurrentWorld(player, player.currentWorld?.universe?.multiverse?.id?.value != world.universe.multiverse.id.value)
 
             player.currentWorld = world
             player.flush()
@@ -43,6 +47,12 @@ class MultiverseUtil(val server: WotwBackendServer) {
             val worldMemberIds = world.members.map { it.id.value }
 
             logger().info("Moving ${player.name} to world ${world.id.value}")
+
+            world.universe.multiverse.let { multiverse ->
+                multiverse.refresh()
+                multiverse.cleanup()
+                multiverse.updateAutomaticWorldNames()
+            }
 
             doAfterTransaction {
                 worldMemberIds.forEach { worldMemberId ->

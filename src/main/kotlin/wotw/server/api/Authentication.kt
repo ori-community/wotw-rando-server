@@ -20,7 +20,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.TokenRequest
 import wotw.io.messages.json
 import wotw.server.database.model.User
-import wotw.server.exception.ForbiddenException
+import wotw.server.exception.MissingScopeException
 import wotw.server.main.WotwBackendServer
 import java.util.*
 
@@ -135,11 +135,11 @@ data class WotwUserPrincipal(val userId: String, private val scopes: Set<String>
 
     fun require(vararg scopes: String) {
         val missing = scopes.filter { !hasScope(it) }
-        if (missing.isNotEmpty()) throw ForbiddenException(missing)
+        if (missing.isNotEmpty()) throw MissingScopeException(missing)
     }
 
     fun requireAny(vararg scopes: String) {
-        if (!scopes.any { hasScope(it) }) throw ForbiddenException()
+        if (!scopes.any { hasScope(it) }) throw MissingScopeException()
     }
 }
 
@@ -155,6 +155,7 @@ object Scope {
     const val MULTIVERSE_CONNECT = "multiverses.connect"
     const val MULTIVERSE_CREATE = "multiverses.create"
     const val MULTIVERSE_SPECTATE = "multiverses.spectate"
+    const val MULTIVERSE_LOCK = "multiverses.lock"
     const val WORLD_CREATE = "worlds.create"
     const val WORLD_JOIN = "worlds.join"
     const val USER_INFO_READ = "user.info.read"
