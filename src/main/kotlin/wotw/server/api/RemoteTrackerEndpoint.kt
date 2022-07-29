@@ -19,11 +19,11 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 var endpointId: String? = null
 
                 afterAuthenticated {
-                    if (!principal.hasScope(Scope.MULTIVERSE_CONNECT))
+                    if (!principal.hasScope(Scope.REMOTE_TRACKER_CREATE))
                         this@webSocket.close(
                             CloseReason(
                                 CloseReason.Codes.VIOLATED_POLICY,
-                                "You are not allowed to connect with these credentials!"
+                                "You are not allowed to create a remote tracker with these credentials!"
                             )
                         )
 
