@@ -266,7 +266,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
 
                     if (multiverse.members.contains(player)) {
-                        server.multiverseUtil.removePlayerFromCurrentWorld(player, false)
+                        server.multiverseUtil.removePlayerFromCurrentWorld(player, true)
                     }
 
                     if (!multiverse.spectators.contains(player)) {
