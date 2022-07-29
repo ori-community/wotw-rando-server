@@ -41,7 +41,8 @@ data class MultiverseInfoMessage(
     @ProtoNumber(5) val seedId: Long?,
     @ProtoNumber(6) val gameHandlerType: Int,
     @ProtoNumber(7) val gameHandlerClientInfo: ByteArray,
-    @ProtoNumber(8) val locked: Boolean,
+    // @ProtoNumber(8) @Required val playerVisibilities: SetVisibilityMessage? = null,
+    @ProtoNumber(9) val locked: Boolean,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -56,6 +57,7 @@ data class MultiverseInfoMessage(
         if (seedId != other.seedId) return false
         if (gameHandlerType != other.gameHandlerType) return false
         if (!gameHandlerClientInfo.contentEquals(other.gameHandlerClientInfo)) return false
+        if (locked != other.locked) return false
 
         return true
     }
@@ -67,6 +69,7 @@ data class MultiverseInfoMessage(
         result = 31 * result + spectators.hashCode()
         result = 31 * result + (seedId?.hashCode() ?: 0)
         result = 31 * result + gameHandlerType
+        result = 31 * result + locked.hashCode()
         result = 31 * result + gameHandlerClientInfo.contentHashCode()
         return result
     }
