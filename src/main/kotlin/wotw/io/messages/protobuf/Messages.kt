@@ -41,6 +41,7 @@ data class MultiverseInfoMessage(
     @ProtoNumber(5) val seedId: Long?,
     @ProtoNumber(6) val gameHandlerType: Int,
     @ProtoNumber(7) val gameHandlerClientInfo: ByteArray,
+    @ProtoNumber(8) val locked: Boolean,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

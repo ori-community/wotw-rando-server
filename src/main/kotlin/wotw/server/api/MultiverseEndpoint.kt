@@ -119,8 +119,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val multiverse =
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
 
-                    if (multiverse.spectators.contains(player))
+                    if (multiverse.spectators.contains(player)) {
                         throw ConflictException("You cannot join this multiverse because you are spectating")
+                    }
+
+                    if (multiverse.locked)
+                        throw ConflictException("You cannot join this multiverse because it is locked")
 
                     val world =
                         if (universeId != null) {
@@ -178,7 +182,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
 
                     server.multiverseUtil.movePlayerToWorld(player, world)
-                    multiverse.deleteEmptyWorlds(world)
                     multiverse.updateAutomaticWorldNames()
 
                     multiverse.refresh(true)
@@ -209,12 +212,15 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         throw ConflictException("You cannot join this multiverse because you are spectating")
                     }
 
+                    if (multiverse.locked) {
+                        throw ConflictException("You cannot join this multiverse because it is locked")
+                    }
+
                     val world = multiverse.worlds.firstOrNull { it.id.value == worldId }
                         ?: throw NotFoundException("World does not exist!")
 
                     if (!world.members.contains(player)) {
                         server.multiverseUtil.movePlayerToWorld(player, world)
-                        multiverse.deleteEmptyWorlds(world)
                         multiverse.updateAutomaticWorldNames()
 
                         server.connections.toPlayers(
@@ -260,17 +266,19 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
 
                     if (multiverse.members.contains(player)) {
-                        server.multiverseUtil.removePlayerFromCurrentWorld(player, multiverseId)
+                        server.multiverseUtil.removePlayerFromCurrentWorld(player, false)
                     }
 
                     if (!multiverse.spectators.contains(player)) {
                         multiverse.spectators = SizedCollection(multiverse.spectators + player)
 
-                        server.connections.toPlayers(
-                            multiverse.players.map { it.id.value }, makeServerTextMessage(
-                                "${player.name} is now spectating this game",
+                        if (!multiverse.locked) {
+                            server.connections.toPlayers(
+                                multiverse.players.map { it.id.value }, makeServerTextMessage(
+                                    "${player.name} is now spectating this game",
+                                )
                             )
-                        )
+                        }
                     }
 
                     server.infoMessagesService.generateMultiverseInfoMessage(multiverse) to player.id.value
@@ -283,6 +291,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             post("multiverses/{multiverse_id}/event/{event}") {
+                requireDeveloper()
+
                 val multiverseId =
                     call.parameters["multiverse_id"]?.toLongOrNull()
                         ?: throw BadRequestException("Unparsable MultiverseID")

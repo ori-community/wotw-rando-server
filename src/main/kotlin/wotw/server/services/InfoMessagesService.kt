@@ -30,7 +30,8 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         multiverse.spectators.map { generateUserInfo(it) },
         multiverse.seed?.id?.value,
         multiverse.gameHandlerType,
-        server.gameHandlerRegistry.getHandler(multiverse).getSerializedClientInfo()
+        server.gameHandlerRegistry.getHandler(multiverse).getSerializedClientInfo(),
+        multiverse.locked,
     )
 
     fun generateUniverseInfo(universe: Universe, color: String? = null) = UniverseInfo(
