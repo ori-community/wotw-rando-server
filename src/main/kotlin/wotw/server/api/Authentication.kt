@@ -91,6 +91,10 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     })
 
                 }
+
+                get("/test") {
+                    call.response.status(HttpStatusCode.OK)
+                }
             }
         }
     }
