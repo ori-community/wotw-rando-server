@@ -25,7 +25,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 ?.filter { it.isFile }
                 ?.map {
                     val lines = it.readText().split(System.lineSeparator())
-                    val descrLines = lines.filter { line -> line.startsWith("/// ") }.map { line -> line.substringAfter("/// ") }
+                    val description = lines.filter { line -> line.startsWith("/// ") }.map { line -> line.substringAfter("/// ") }
                     val params = lines.mapIndexedNotNull { i, s ->
                         if (s.startsWith("!!parameter ")) {
                             val (name, info) = s.substringAfter("!!parameter ").split(" ", limit = 2)
@@ -44,8 +44,8 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     HeaderFileEntry(
                         it.name.substringAfterLast("/").substringBeforeLast("."),
                         lines.firstOrNull()?.startsWith("#hide") == true,
-                        descrLines.firstOrNull(),
-                        descrLines,
+                        description.firstOrNull(),
+                        description,
                         params
                     )
                 }
@@ -131,7 +131,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     call.respondText(
                         result.exceptionOrNull()?.message ?: "Unknown seedgen error",
                         ContentType.Text.Plain,
-                        HttpStatusCode.InternalServerError
+                        HttpStatusCode.InternalServerError,
                     )
                 }
             }

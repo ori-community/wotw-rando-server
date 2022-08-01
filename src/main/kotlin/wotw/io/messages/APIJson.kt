@@ -52,6 +52,7 @@ data class WorldPresetFile(
     val difficulty: String? = null,
     val tricks: Set<String> = emptySet(),
     val hard: Boolean = false,
+    val presetGroup: String? = null,
 
     @Deprecated("Will be deprecated soon when goals are headerified")
     val goals: Set<String> = emptySet(),
@@ -88,6 +89,7 @@ data class WorldPresetFile(
             if (difficultyLevel(other.difficulty) > difficultyLevel(difficulty)) other.difficulty else difficulty,
             tricks + other.tricks,
             hard || other.hard,
+            presetGroup,
             goals + other.goals,
             headers + other.headers,
             mergedHeaderConfig,
@@ -102,6 +104,7 @@ data class WorldPresetFile(
             difficulty,
             tricks,
             hard,
+            presetGroup,
             goals,
             headers,
             headerConfig,
@@ -118,6 +121,7 @@ data class WorldPreset(
     val difficulty: String? = null,
     val tricks: Set<String> = emptySet(),
     val hard: Boolean = false,
+    val presetGroup: String? = null,
 
     @Deprecated("Will be deprecated soon when goals are headerified")
     val goals: Set<String> = emptySet(),
