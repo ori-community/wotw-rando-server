@@ -108,7 +108,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
 
         authenticate(JWT_AUTH, optional = true) {
-            post<Preset>("seeds") { config ->
+            post<GamePreset>("seeds") { config ->
                 val (result, seedId, worldSeedIds) = newSuspendedTransaction {
                     val result = server.seedGeneratorService.generateSeed(config, authenticatedUserOrNull())
 

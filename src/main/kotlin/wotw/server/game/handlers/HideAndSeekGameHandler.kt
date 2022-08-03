@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.InlineHeader
-import wotw.io.messages.Preset
+import wotw.io.messages.GamePreset
 import wotw.io.messages.WorldPreset
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
@@ -524,7 +524,7 @@ class HideAndSeekGameHandler(
 
             // TODO: Make better
             val result = server.seedGeneratorService.generateSeed(
-                Preset(
+                GamePreset(
                     worldSettings = listOf(
                         if (state.seekerWorlds.isEmpty()) {
                             seekerSeedgenConfig

@@ -46,7 +46,15 @@ fun difficultyLevel(difficulty: String?): Int {
 }
 
 @Serializable
+data class PresetInfo(
+    val name: String? = null,
+    val description: String? = null,
+    val group: String? = null,
+)
+
+@Serializable
 data class WorldPresetFile(
+    val info: PresetInfo? = null,
     val includes: Set<String> = emptySet(),
     val spawn: String? = null,
     val difficulty: String? = null,
@@ -84,6 +92,7 @@ data class WorldPresetFile(
         }
 
         return WorldPresetFile(
+            info,
             includes + other.includes,
             other.spawn ?: spawn,
             if (difficultyLevel(other.difficulty) > difficultyLevel(difficulty)) other.difficulty else difficulty,
@@ -99,6 +108,7 @@ data class WorldPresetFile(
 
     fun toWorldPreset(): WorldPreset {
         return WorldPreset(
+            info,
             includes,
             spawn,
             difficulty,
@@ -116,6 +126,7 @@ data class WorldPresetFile(
 
 @Serializable
 data class WorldPreset(
+    val info: PresetInfo? = null,
     val includes: Set<String> = emptySet(),
     val spawn: String? = null,
     val difficulty: String? = null,
@@ -136,11 +147,12 @@ data class SeedInfo(
     val id: Long,
     val worldSeedIds: List<Long>,
     val creator: UserInfo?,
-    val config: Preset,
+    val config: GamePreset,
 )
 
 @Serializable
-data class Preset(
+data class GamePreset(
+    val info: PresetInfo? = null,
     val worldSettings: List<WorldPreset>,
     val disableLogicFilter: Boolean = false,
     val seed: String? = null,

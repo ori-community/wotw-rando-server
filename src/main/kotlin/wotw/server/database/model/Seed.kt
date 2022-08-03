@@ -7,11 +7,11 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.datetime
-import wotw.io.messages.Preset
+import wotw.io.messages.GamePreset
 import wotw.server.database.jsonb
 
 object Seeds : LongIdTable("seeds") {
-    val seedgenConfig = jsonb("seedgen_config", serializer<Preset>())
+    val seedgenConfig = jsonb("seedgen_config", serializer<GamePreset>())
     val spoiler = jsonb("spoiler")
     val spoilerText = text("spoiler_text")
     val creator = optReference("creator_id", Users)
