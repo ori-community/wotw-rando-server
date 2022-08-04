@@ -16,7 +16,6 @@ val tpIds = mapOf(
     "savePedestalWellspring" to UberId(53632, 18181),
     "savePedestalBaursReach" to UberId(28895, 54235),
     "savePedestalKwoloksHollow" to UberId(937, 26601),
-    "kwoloksHollowBackupState" to UberId(6, 106),
     "savePedestalMouldwood" to UberId(18793, 38871),
     "savePedestalWillowsEnd" to UberId(16155, 41465),
     "savePedestalWillowsEndShriek" to UberId(16155, 50867),
