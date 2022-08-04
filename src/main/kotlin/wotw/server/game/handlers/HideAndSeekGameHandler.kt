@@ -86,8 +86,8 @@ class HideAndSeekGameHandler(
 
     private val seekerSeedgenConfig = WorldPreset(
         includes = setOf(
-            "presets/overlays/qol",
-            "presets/overlays/rspawn"
+            "world_presets/qol",
+            "world_presets/rspawn"
         ),
         difficulty = "gorlek",
         headers = setOf(
@@ -126,8 +126,8 @@ class HideAndSeekGameHandler(
 
     private val hiderSeedgenConfig = WorldPreset(
         includes = setOf(
-            "presets/overlays/qol",
-            "presets/overlays/rspawn"
+            "world_presets/qol",
+            "world_presets/rspawn"
         ),
         difficulty = "gorlek",
         headers = setOf(

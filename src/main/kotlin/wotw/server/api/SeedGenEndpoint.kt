@@ -65,7 +65,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
 
         get("seedgen/world-presets") {
-            val dir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("presets")
+            val dir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("world_presets")
 
             val worldPresetFileMap = dir.toFile().listFiles()
                 .filter { it.isFile }
