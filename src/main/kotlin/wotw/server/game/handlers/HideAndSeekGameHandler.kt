@@ -3,8 +3,8 @@ package wotw.server.game.handlers
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.io.messages.InlineHeader
 import wotw.io.messages.GamePreset
+import wotw.io.messages.Header
 import wotw.io.messages.WorldPreset
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
@@ -98,7 +98,7 @@ class HideAndSeekGameHandler(
             "trial_hints",
         ),
         inlineHeaders = listOf(
-            InlineHeader(
+            Header(
                 "hide_and_seek_seeker",
                 """
                     Flags: Hide and Seek (Seeker)
@@ -140,7 +140,7 @@ class HideAndSeekGameHandler(
             "trial_hints",
         ),
         inlineHeaders = listOf(
-            InlineHeader(
+            Header(
                 "hide_and_seek_hider",
                 """
                     Flags: Hide and Seek (Hider)

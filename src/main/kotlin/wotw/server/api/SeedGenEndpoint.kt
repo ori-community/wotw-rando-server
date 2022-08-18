@@ -6,6 +6,7 @@ import io.ktor.server.plugins.*
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.*
 import wotw.server.database.model.Seed
@@ -13,72 +14,44 @@ import wotw.server.database.model.WorldSeed
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.then
+import java.util.Date
 import kotlin.io.path.Path
 
 class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
-    val logger = logger()
+    private val logger = logger()
+
+    private val seedgenLibrary: SeedgenLibrary
+    private val seedgenLibraryVersion: String = System.currentTimeMillis().toString(16)
+
+    init {
+        val worldPresetsPath = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("world_presets")
+        val worldPresets = worldPresetsPath.toFile().listFiles()!!
+            .filter { it.isFile }
+            .associate {
+                it.name.substringAfterLast("/").substringBeforeLast(".json") to
+                        relaxedJson.decodeFromString(WorldPreset.serializer(), it.readText())
+            }
+
+        val headersPath = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("headers")
+        val headers = headersPath.toFile().listFiles()!!
+            .filter { it.isFile }
+            .associate {
+                val name = it.name.substringAfterLast("/").substringBeforeLast(".wotwrh")
+                name to Header(name, it.readText())
+            }
+
+        seedgenLibrary = SeedgenLibrary(
+            "Official",
+            "Official Library of presets and headers",
+            seedgenLibraryVersion,
+            worldPresets,
+            headers,
+        )
+    }
+
     override fun Route.initRouting() {
-        get("seedgen/headers") {
-            val dir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("headers")
-
-            val result = dir.toFile().listFiles()
-                ?.filter { it.isFile }
-                ?.map {
-                    val lines = it.readText().split(System.lineSeparator())
-                    val description = lines.filter { line -> line.startsWith("/// ") }.map { line -> line.substringAfter("/// ") }
-                    val params = lines.mapIndexedNotNull { i, s ->
-                        if (s.startsWith("!!parameter ")) {
-                            val (name, info) = s.substringAfter("!!parameter ").split(" ", limit = 2)
-                            val (type, default) = if (info.contains(":")) {
-                                info.split(":", limit = 2)
-                            } else listOf("string", info)
-                            HeaderParameterDef(
-                                name,
-                                default,
-                                type,
-                                lines.subList(0, i).takeLastWhile { it.startsWith("//// ") }
-                                    .map { it.substringAfter("//// ") })
-                        } else null
-                    }
-
-                    HeaderFileEntry(
-                        it.name.substringAfterLast("/").substringBeforeLast("."),
-                        lines.firstOrNull()?.startsWith("#hide") == true,
-                        description.firstOrNull(),
-                        description,
-                        params
-                    )
-                }
-                ?.toList() ?: emptyList()
-            call.respond(result)
-        }
-
-        get("seedgen/headers/{name}/file") {
-            val headersDir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("headers")
-            val headerFile = headersDir.resolve(call.parameters["name"] + ".wotwrh")
-
-            if (headerFile.parent != headersDir) {
-                throw BadRequestException("Invalid header requested")
-            }
-
-            call.respond(HttpStatusCode.OK, headerFile.toFile().readText())
-        }
-
-        get("seedgen/world-presets") {
-            val dir = Path(System.getenv("SEEDGEN_PATH")).parent.resolve("world_presets")
-
-            val worldPresetFileMap = dir.toFile().listFiles()
-                .filter { it.isFile }
-                .associate {
-                    it.name.substringAfterLast("/").substringBeforeLast(".json") to
-                            relaxedJson.decodeFromString(WorldPresetFile.serializer(), it.readText())
-                }
-
-            val result = worldPresetFileMap.mapValues {
-                it.value.resolveAndMergeIncludes(worldPresetFileMap).toWorldPreset()
-            }
-
-            call.respond(result)
+        get("seedgen/library") {
+            call.respond(seedgenLibrary)
         }
 
         get("seeds/{id}") {

@@ -9,18 +9,24 @@ import wotw.io.messages.protobuf.UserInfo
 @Deprecated("Kept around for historical preservation of monuments")
 data class VerseProperties(val isMulti: Boolean = false, val isCoop: Boolean = false)
 
-@Serializable
-data class HeaderParameterDef(val name: String, val default: String, val type: String, val description: List<String>)
 
 @Serializable
-data class HeaderFileEntry(
-    val headerName: String,
-    val hidden: Boolean,
+data class SeedgenLibrary(
+    val name: String,
+    val description: String,
+    val version: String,
+    val worldPresets: Map<String, WorldPreset>,
+    val headers: Map<String, Header>,
+) {
+    val apiVersion: String = "1.0.0"
+}
+
+
+@Serializable
+data class Header(
     val name: String?,
-    val description: List<String>?,
-    val params: List<HeaderParameterDef>
+    val content: String,
 )
-
 
 @Serializable
 data class HeaderConfig(
@@ -30,99 +36,11 @@ data class HeaderConfig(
 )
 
 @Serializable
-data class InlineHeader(
-    val name: String?,
-    val content: String,
-)
-
-fun difficultyLevel(difficulty: String?): Int {
-    return when (difficulty?.lowercase()) {
-        "moki" -> 1
-        "gorlek" -> 2
-        "kii" -> 3
-        "unsafe" -> 4
-        else -> 0
-    }
-}
-
-@Serializable
 data class PresetInfo(
     val name: String? = null,
     val description: String? = null,
     val group: String? = null,
 )
-
-@Serializable
-data class WorldPresetFile(
-    val info: PresetInfo? = null,
-    val includes: Set<String> = emptySet(),
-    val spawn: String? = null,
-    val difficulty: String? = null,
-    val tricks: Set<String> = emptySet(),
-    val hard: Boolean = false,
-    val presetGroup: String? = null,
-
-    @Deprecated("Will be deprecated soon when goals are headerified")
-    val goals: Set<String> = emptySet(),
-
-    val headers: Set<String> = emptySet(),
-    val headerConfig: List<HeaderConfig> = emptyList(),
-    val inlineHeaders: List<InlineHeader> = emptyList(),
-) {
-    fun resolveAndMergeIncludes(availablePresets: Map<String, WorldPresetFile>): WorldPresetFile {
-        val resolvedIncludes = this.includes
-            .mapNotNull { includedPresetId ->
-                availablePresets[includedPresetId]?.resolveAndMergeIncludes(availablePresets)
-            }
-            .reduceOrNull { p1, p2 -> p1.mergeWith(p2) } ?: return this
-
-        return mergeWith(resolvedIncludes)
-    }
-
-    private fun mergeWith(other: WorldPresetFile): WorldPresetFile {
-        val mergedHeaderConfig = headerConfig.toMutableList()
-
-        // Override values for existing header configs
-        other.headerConfig.forEach { otherHeaderConfig ->
-            mergedHeaderConfig
-                .find { h -> h.headerName == otherHeaderConfig.headerName && h.configName == otherHeaderConfig.configName }
-                ?.let { headerConfig ->
-                    headerConfig.configValue = otherHeaderConfig.configValue
-                } ?: mergedHeaderConfig.add(otherHeaderConfig)
-        }
-
-        return WorldPresetFile(
-            info,
-            includes + other.includes,
-            other.spawn ?: spawn,
-            if (difficultyLevel(other.difficulty) > difficultyLevel(difficulty)) other.difficulty else difficulty,
-            tricks + other.tricks,
-            hard || other.hard,
-            presetGroup,
-            goals + other.goals,
-            headers + other.headers,
-            mergedHeaderConfig,
-            inlineHeaders + other.inlineHeaders,
-        )
-    }
-
-    fun toWorldPreset(): WorldPreset {
-        return WorldPreset(
-            info,
-            includes,
-            spawn,
-            difficulty,
-            tricks,
-            hard,
-            presetGroup,
-            goals,
-            headers,
-            headerConfig,
-            inlineHeaders,
-        )
-    }
-
-}
 
 @Serializable
 data class WorldPreset(
@@ -132,14 +50,13 @@ data class WorldPreset(
     val difficulty: String? = null,
     val tricks: Set<String> = emptySet(),
     val hard: Boolean = false,
-    val presetGroup: String? = null,
 
     @Deprecated("Will be deprecated soon when goals are headerified")
     val goals: Set<String> = emptySet(),
 
     val headers: Set<String> = emptySet(),
     val headerConfig: List<HeaderConfig> = emptyList(),
-    val inlineHeaders: List<InlineHeader> = emptyList(),
+    val inlineHeaders: List<Header> = emptyList(),
 )
 
 @Serializable
