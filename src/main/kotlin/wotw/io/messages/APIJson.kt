@@ -1,7 +1,6 @@
 package wotw.io.messages
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.JsonObject
 import wotw.io.messages.protobuf.UserInfo
 
@@ -30,9 +29,9 @@ data class Header(
 
 @Serializable
 data class HeaderConfig(
-    @JsonNames("header_name") val headerName: String,
-    @JsonNames("config_name") val configName: String,
-    @JsonNames("config_value") var configValue: String,
+    val headerName: String,
+    val configName: String,
+    var configValue: String,
 )
 
 @Serializable
