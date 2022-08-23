@@ -197,7 +197,7 @@ val pickupIds = mapOf(
     "GladesTown.HandToHandSoup" to UberId(14019, 26318),
     "GladesTown.FamilyReunionKey" to UberId(14019, 27804),
     "GladesTown.AcornQI" to UberId(14019, 2782),
-    "GladesTown.MokiAcornQuest" to UberId(14019, 33776),
+    // "GladesTown.MokiAcornQuest" to UberId(14019, 33776),
     "GladesTown.HoleHutEC" to UberId(42178, 52786),
     "GladesTown.AboveGromHC" to UberId(44310, 29043),
     "GladesTown.LupoSwimHC" to UberId(44310, 17523),
@@ -683,6 +683,10 @@ val normalWorldSyncAggregationStrategy by lazy {
             sync(18793, 26713).on(threshold = 7),  // mora fight
             sync(37858, 10720).on(threshold = 2), // Wellspring escape
             sync(937, 34641).with(UberStateSyncStrategy.MIN).on(threshold = 4), // Prevent Silent Teeth quest from syncing value=5
+
+            /// Quests
+            // TODO: Add all quests here
+            sync(14019, 33776).with(UberStateSyncStrategy.MAX_THRESHOLD(3.0)), // Acorn Quest
         )
     }
 }

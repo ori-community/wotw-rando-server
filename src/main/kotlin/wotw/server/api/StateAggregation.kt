@@ -8,7 +8,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 
-data class UberStateSyncStrategy(val aggregation: (Double, Double) -> Double,
+data class UberStateSyncStrategy(val aggregation: (old: Double, new: Double) -> Double,
                    val trigger: (Double?, Double) -> Boolean = {_, _ -> true},
                    val group: NotificationGroup = DIFFERENT,
                    val scope: ShareScope = ShareScope.WORLD
@@ -19,6 +19,10 @@ data class UberStateSyncStrategy(val aggregation: (Double, Double) -> Double,
         val ALWAYS_OVERWRITE = UberStateSyncStrategy({ _, v -> v })
         val KEEP = UberStateSyncStrategy({ v, _ -> v })
         val AVG = UberStateSyncStrategy({ o, n -> (o + n) / 2 })
+
+        fun MAX_THRESHOLD(threshold: Double): UberStateSyncStrategy {
+            return UberStateSyncStrategy({ old, new -> min(MAX.aggregation(old, new), threshold) })
+        }
     }
 
     enum class NotificationGroup {
