@@ -662,6 +662,7 @@ val unsortedCoop = listOf(
     UberId(9593, 47420),      // inkwaterMarshStateGroup.secretWallA
     UberId(9593, 59418),      // inkwaterMarshStateGroup.enemyRoom
     UberId(9593, 9229),      // inkwaterMarshStateGroup.lanternAndCreepA
+    UberId(18793, 13352),      // mouldwoodDepthsGroup.darknessLiftedUberState
 )
 
 val normalWorldSyncAggregationStrategy by lazy {
