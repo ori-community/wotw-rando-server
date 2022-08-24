@@ -324,7 +324,7 @@ class HideAndSeekGameHandler(
                 if (senderInfo.type == PlayerType.Seeker) {
                     server.connections.toPlayers(
                         cache.universeMemberIds - playerId,
-                        UpdatePlayerPositionMessage(playerId, message.x, message.y),
+                        UpdatePlayerPositionMessage(playerId, message.x, message.y, message.ghostFrameData),
                         unreliable = true,
                     )
                 } else {
@@ -336,7 +336,7 @@ class HideAndSeekGameHandler(
                     } else if (senderInfo.hiddenInWorldSeconds == 0) {
                         server.connections.toPlayers(
                             cache.universeMemberIds - playerId,
-                            UpdatePlayerWorldPositionMessage(playerId, message.x, message.y),
+                            UpdatePlayerWorldPositionMessage(playerId, message.x, message.y, message.ghostFrameData),
                             unreliable = true,
                         )
                     }

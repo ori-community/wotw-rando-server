@@ -203,14 +203,60 @@ data class UpdatePlayerPositionMessage(
     @ProtoNumber(1) val playerId: String,
     @ProtoNumber(2) val x: Float,
     @ProtoNumber(3) val y: Float,
-)
+    @ProtoNumber(4) val ghostFrameData: ByteArray,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as UpdatePlayerPositionMessage
+
+        if (playerId != other.playerId) return false
+        if (x != other.x) return false
+        if (y != other.y) return false
+        if (!ghostFrameData.contentEquals(other.ghostFrameData)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = playerId.hashCode()
+        result = 31 * result + x.hashCode()
+        result = 31 * result + y.hashCode()
+        result = 31 * result + ghostFrameData.contentHashCode()
+        return result
+    }
+}
 
 @Serializable
 data class UpdatePlayerWorldPositionMessage(
     @ProtoNumber(1) val playerId: String,
     @ProtoNumber(2) val x: Float,
     @ProtoNumber(3) val y: Float,
-)
+    @ProtoNumber(4) val ghostFrameData: ByteArray,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as UpdatePlayerWorldPositionMessage
+
+        if (playerId != other.playerId) return false
+        if (x != other.x) return false
+        if (y != other.y) return false
+        if (!ghostFrameData.contentEquals(other.ghostFrameData)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = playerId.hashCode()
+        result = 31 * result + x.hashCode()
+        result = 31 * result + y.hashCode()
+        result = 31 * result + ghostFrameData.contentHashCode()
+        return result
+    }
+}
 
 @Serializable
 data class UpdatePlayerMapPositionMessage(
@@ -229,7 +275,28 @@ data class SetVisibilityMessage(
 data class PlayerPositionMessage(
     @ProtoNumber(1) val x: Float,
     @ProtoNumber(2) val y: Float,
-)
+    @ProtoNumber(3) val ghostFrameData: ByteArray,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as PlayerPositionMessage
+
+        if (x != other.x) return false
+        if (y != other.y) return false
+        if (!ghostFrameData.contentEquals(other.ghostFrameData)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = x.hashCode()
+        result = 31 * result + y.hashCode()
+        result = 31 * result + ghostFrameData.contentHashCode()
+        return result
+    }
+}
 
 @Serializable
 data class AuthenticatedMessage(
