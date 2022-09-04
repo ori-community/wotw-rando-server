@@ -551,6 +551,7 @@ val unsortedCoop = listOf(
     UberId(21786, 33430),      // swampStateGroup.creepDoor
     UberId(21786, 34008),      // swampStateGroup.breakableWallB
     UberId(21786, 35166),      // swampStateGroup.creepDoorA
+    UberId(21786, 808),      // swampStateGroup.boneBridgeBroken
     // UberId(21786, 35350),      // swampStateGroup.attackableSwitchC ()
     UberId(21786, 35598),      // swampStateGroup.enemyArenaComplete
     UberId(21786, 35925),      // swampStateGroup.breakableWallA

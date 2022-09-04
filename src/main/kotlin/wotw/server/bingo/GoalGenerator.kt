@@ -509,6 +509,7 @@ fun generatePool() = mutableListOf(
         bool("lumaPoolsStateGroup.breakableWallA", 5377, 8451),
         bool("baursReachGroup.stompableFloorA", 28895, 8664),
         bool("wellspringGladesGroup.stompableFloorA", 44310, 55192),
+        bool("swampStateGroup.boneBridgeBroken", 21786, 808),
 
         countGoal = { it.nextTriangular(4, 16, 8) },
         maxRepeats = 1,
