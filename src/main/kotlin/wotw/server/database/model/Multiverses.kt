@@ -82,8 +82,12 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     ): BingoBoardMessage {
         val board = board ?: return BingoBoardMessage()
 
+        val universeInThisMultiverse = if (universe?.multiverse == this)
+            universe
+            else null
+
         val state =
-            if (universe != null) StateCache.get(ShareScope.UNIVERSE to universe.id.value) else UberStateMap.empty//universeStates[universe]?.uberStateData ?: UberStateMap.empty
+            if (universeInThisMultiverse != null) StateCache.get(ShareScope.UNIVERSE to universeInThisMultiverse.id.value) else UberStateMap.empty // universeStates[universe]?.uberStateData ?: UberStateMap.empty
 
         var goals = board.goals.map { (position, goal) ->
             Position(position.first, position.second) to BingoSquare(
@@ -96,12 +100,12 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             forceAllVisible -> goals
             spectator -> {
                 //spectator board: show everything anyone can see
-                goals.filter {
-                    states.any { s ->
-                        val u = s.universe
-                        u != null && board.goalVisible(
-                            it.first.x to it.first.y,
-                            StateCache.get(ShareScope.UNIVERSE to u.id.value)
+                goals.filter { goal ->
+                    states.any { state ->
+                        val stateUniverse = state.universe
+                        stateUniverse != null && board.goalVisible(
+                            goal.first.x to goal.first.y,
+                            StateCache.get(ShareScope.UNIVERSE to stateUniverse.id.value)
                         )
                     }
                 }

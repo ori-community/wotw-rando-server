@@ -6,7 +6,6 @@ import io.ktor.server.plugins.*
 import io.ktor.websocket.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.*
 import io.ktor.server.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.BingoData
@@ -77,12 +76,12 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 newSuspendedTransaction {
                     val boardData = newSuspendedTransaction {
                         val player = authenticatedUserOrNull()
-                        val world = player?.currentWorld
+                        val currentPlayerWorld = player?.currentWorld
 
                         val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
                         multiverse.board ?: throw NotFoundException()
                         val info = multiverse.bingoUniverseInfo()
-                        BingoData(multiverse.createSyncableBoard(world?.universe, playerIsSpectator), info)
+                        BingoData(multiverse.createSyncableBoard(currentPlayerWorld?.universe, playerIsSpectator), info)
                     }
                     call.respond(boardData)
                 }
