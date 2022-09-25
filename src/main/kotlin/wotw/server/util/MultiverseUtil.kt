@@ -19,6 +19,12 @@ class MultiverseUtil(val server: WotwBackendServer) {
             val previousMultiverseId = world.universe.multiverse.id.value
             player.currentWorld = null
 
+            world.universe.members.forEach { user ->
+                doAfterTransaction {
+                    server.populationCache.invalidate(user.id.value)
+                }
+            }
+
             if (cleanupCurrentMultiverse) {
                 world.universe.multiverse.let { multiverse ->
                     multiverse.cleanup()

@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.statements.StatementInterceptor
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.slf4j.LoggerFactory
@@ -64,7 +65,7 @@ fun assertTransaction() {
 
 fun doAfterTransaction(action: suspend () -> Unit) {
     TransactionManager.current().registerInterceptor(object : StatementInterceptor {
-        override fun afterCommit() {
+        override fun afterCommit(transaction: Transaction) {
             runBlocking {
                 launch {
                     action()

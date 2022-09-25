@@ -7,6 +7,7 @@ import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.server.database.model.Universe
 import wotw.server.database.model.User
 import wotw.server.database.model.World
 import java.util.concurrent.ConcurrentHashMap
@@ -113,17 +114,4 @@ class PlayerUniversePopulationCache : EntityCache<String, PlayerUniversePopulati
         retrieveFn()
     }
 }, { _, _ -> }) {
-    init {
-        EntityHook.subscribe {
-            it.toEntity(User.Companion)?.let { player ->
-                invalidate(player.id.value)
-            }
-
-            it.toEntity(World.Companion)?.let { world ->
-                world.universe.members.forEach { player ->
-                    invalidate(player.id.value)
-                }
-            }
-        }
-    }
 }
