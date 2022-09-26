@@ -23,7 +23,6 @@ class User(id: EntityID<String>) : StringEntity(id) {
     var isCustomName by Users.isCustomName
     var avatarId by Users.avatarId
     var isDeveloper by Users.isDeveloper
-    val games by Multiverse via GameStates
     var currentWorld by World optionalReferencedOn Users.currentWorldId
 
     val currentMultiverse: Multiverse?
