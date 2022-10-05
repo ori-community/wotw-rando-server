@@ -86,7 +86,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(JWT_AUTH) {
             post("multiverses") {
                 wotwPrincipal().require(Scope.MULTIVERSE_CREATE)
-                val props = call.receiveOrNull<MultiverseCreationConfig>()
+                val props = kotlin.runCatching { call.receiveNullable<MultiverseCreationConfig>() }.getOrNull()
 
                 val multiverse = newSuspendedTransaction {
                     Multiverse.new {
@@ -350,7 +350,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
 
         webSocket("game_sync/") {
-            handleClientSocket() {
+            handleClientSocket {
                 var playerId = ""
                 var connectionHandler: GameConnectionHandler? = null
 
