@@ -3,14 +3,13 @@ package wotw.server.io
 import com.auth0.jwt.impl.JWTParser
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
-import io.ktor.server.auth.jwt.*
-import io.ktor.websocket.*
 import io.ktor.network.sockets.*
-import io.ktor.util.network.*
+import io.ktor.server.auth.jwt.*
+import io.ktor.server.websocket.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
-import io.ktor.server.websocket.*
+import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
@@ -20,10 +19,7 @@ import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.makeServerTextMessage
 import wotw.util.EventBus
-import java.lang.Exception
 import java.util.*
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 import kotlin.text.String
 
 // ktor WHYYYY

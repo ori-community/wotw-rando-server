@@ -60,19 +60,38 @@ data class WorldPreset(
 )
 
 @Serializable
+data class WorldSettings(
+    val spawn: String,
+    val difficulty: String,
+    val tricks: Set<String> = emptySet(),
+    val hard: Boolean = false,
+    val headers: Set<String> = emptySet(),
+    val headerConfig: List<HeaderConfig> = emptyList(),
+    val inlineHeaders: List<Header> = emptyList(),
+)
+
+@Serializable
 data class SeedInfo(
     val id: Long,
     val worldSeedIds: List<Long>,
     val creator: UserInfo?,
-    val config: GamePreset,
+    val config: UniversePreset, // TODO: Save used settings, not preset
 )
 
 @Serializable
-data class GamePreset(
+data class UniversePreset(
     val info: PresetInfo? = null,
     val worldSettings: List<WorldPreset>,
     val disableLogicFilter: Boolean = false,
     val seed: String? = null,
+    val online: Boolean = false,
+)
+
+@Serializable
+data class UniverseSettings(
+    val worldSettings: List<WorldSettings>,
+    val disableLogicFilter: Boolean = false,
+    val seed: String,
     val online: Boolean = false,
 )
 

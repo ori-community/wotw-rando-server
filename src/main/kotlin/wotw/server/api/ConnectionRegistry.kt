@@ -1,7 +1,8 @@
 package wotw.server.api
 
-import io.ktor.websocket.*
+import io.ktor.server.websocket.*
 import io.ktor.util.collections.*
+import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.RequestFullUpdate
 import wotw.server.database.model.Multiverse
@@ -228,8 +229,10 @@ class ConnectionRegistry(val server: WotwBackendServer) {
                 ShareScope.PLAYER -> setOf(player)
                 ShareScope.WORLD -> multiverse.worlds.firstOrNull { player in it.members }?.members?.toList()
                     ?: emptySet()
+
                 ShareScope.UNIVERSE -> multiverse.universes.firstOrNull { it.worlds.any { player in it.members } }?.worlds?.flatMap { it.members }
                     ?: emptySet()
+
                 ShareScope.MULTIVERSE -> multiverse.players
             }
             affectedPlayers.map { it.id.value }.toMutableList()

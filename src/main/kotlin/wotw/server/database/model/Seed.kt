@@ -7,11 +7,13 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.datetime
-import wotw.io.messages.GamePreset
+import wotw.io.messages.UniversePreset
+import wotw.io.messages.UniverseSettings
 import wotw.server.database.jsonb
 
 object Seeds : LongIdTable("seeds") {
-    val seedgenConfig = jsonb("seedgen_config", serializer<GamePreset>())
+    // TODO: Make seedgen return the used UniverseSettings and save them here instead of the preset
+    val seedgenConfig = jsonb("seedgen_config", serializer<UniversePreset>())
     val spoiler = jsonb("spoiler")
     val spoilerText = text("spoiler_text")
     val creator = optReference("creator_id", Users)

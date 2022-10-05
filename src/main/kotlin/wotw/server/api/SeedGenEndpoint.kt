@@ -6,7 +6,6 @@ import io.ktor.server.plugins.*
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.*
 import wotw.server.database.model.Seed
@@ -14,7 +13,6 @@ import wotw.server.database.model.WorldSeed
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.then
-import java.util.Date
 import kotlin.io.path.Path
 
 class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -81,7 +79,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
 
         authenticate(JWT_AUTH, optional = true) {
-            post<GamePreset>("seeds") { config ->
+            post<UniversePreset>("seeds") { config ->
                 val (result, seedId, worldSeedIds) = newSuspendedTransaction {
                     val result = server.seedGeneratorService.generateSeed(config, authenticatedUserOrNull())
 

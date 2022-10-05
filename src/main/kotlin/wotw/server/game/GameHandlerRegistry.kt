@@ -96,9 +96,11 @@ class GameHandlerRegistry(val server: WotwBackendServer) {
                                     WorldCreatedEvent(world)
                                 )
                             }
+
                             EntityChangeType.Removed -> getHandler(world.universe.multiverse.id.value).onMultiverseEvent(
                                 WorldDeletedEvent(world.id.value)
                             )
+
                             else -> {}
                         }
                     } catch (e: Exception) {

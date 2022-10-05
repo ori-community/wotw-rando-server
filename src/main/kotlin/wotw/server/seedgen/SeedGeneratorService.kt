@@ -3,8 +3,9 @@ package wotw.server.seedgen
 import kotlinx.coroutines.future.await
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import wotw.io.messages.GamePreset
+import wotw.io.messages.UniverseSettings
 import wotw.io.messages.SeedgenCliOutput
+import wotw.io.messages.UniversePreset
 import wotw.io.messages.json
 import wotw.server.database.model.*
 import wotw.server.exception.ServerConfigurationException
@@ -32,7 +33,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
     private val seedgenExec =
         System.getenv("SEEDGEN_PATH") ?: throw ServerConfigurationException("No seed generator available!")
 
-    suspend fun generate(config: GamePreset): Result<SeedGeneratorGenerationResult> {
+    suspend fun generate(config: UniversePreset): Result<SeedGeneratorGenerationResult> {
         val timeout = System.getenv("SEEDGEN_TIMEOUT")?.toLongOrNull() ?: 30000
 
         val processBuilder = ProcessBuilder(
@@ -81,7 +82,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
         }
     }
 
-    suspend fun generateSeed(config: GamePreset, creator: User? = null): SeedGeneratorSeedResult {
+    suspend fun generateSeed(config: UniversePreset, creator: User? = null): SeedGeneratorSeedResult {
         val result = server.seedGeneratorService.generate(config)
 
         if (result.isSuccess) {

@@ -12,7 +12,7 @@ buildscript {
 }
 
 val kotlin_version = "1.7.10"
-val ktor_version = "2.0.3"
+val ktor_version = "2.1.2"
 val logback_version = "1.2.11"
 val exposed_version = "0.39.2"
 val serialization_version = "1.3.3"
@@ -55,7 +55,7 @@ dependencies {
 
     implementation("com.zaxxer:HikariCP:5.0.1")
 
-    implementation("org.postgresql:postgresql:42.3.6")
+    implementation("org.postgresql:postgresql:42.3.7")
 
     implementation("dev.kord:kord-core:0.8.0-M14")
 
