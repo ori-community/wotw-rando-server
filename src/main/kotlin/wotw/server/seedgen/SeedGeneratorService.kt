@@ -85,13 +85,15 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
     suspend fun generateSeed(config: UniversePreset, creator: User? = null): SeedGeneratorSeedResult {
         val result = server.seedGeneratorService.generate(config)
 
-        if (result.isSuccess) {
+        result.getOrNull()?.let { seedgenResult ->
             val seed = Seed.new {
                 this.seedgenConfig = config
                 this.creator = creator
+                this.spoiler = seedgenResult.output.spoiler
+                this.spoilerText = seedgenResult.output.spoilerText
             }
 
-            val output = result.getOrThrow().output
+            val output = seedgenResult.output
 
             output.seedFiles.forEachIndexed { index, seedFile ->
                 WorldSeed.new {
@@ -104,8 +106,8 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             seed.refresh(true)
 
             return SeedGeneratorSeedResult(result, seed)
-        } else {
-            return SeedGeneratorSeedResult(result, null)
         }
+
+        return SeedGeneratorSeedResult(result, null)
     }
 }

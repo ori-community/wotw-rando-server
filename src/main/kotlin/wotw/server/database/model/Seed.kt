@@ -24,6 +24,8 @@ class Seed(id: EntityID<Long>): LongEntity(id){
     companion object : LongEntityClass<Seed>(Seeds)
 
     var seedgenConfig by Seeds.seedgenConfig
+    var spoiler by Seeds.spoiler
+    var spoilerText by Seeds.spoilerText
     var creator by User optionalReferencedOn Seeds.creator
     val worldSeeds by WorldSeed referrersOn WorldSeeds.seed
 }
