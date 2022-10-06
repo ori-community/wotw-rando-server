@@ -860,6 +860,10 @@ fun generatePool() = mutableListOf(
 object pickupsIn {
     val marsh = group(
         "Collect # Pickups In Inkwater Marsh",
+        threshold("MarshPastOpher.SpiritTrial", 44964, 45951, threshold = 2, hideValue = true),
+        threshold("MarshSpawn.TokkKeystoneQuest", 48248, 51645, threshold = 3, hideValue = true),
+        threshold("MarshSpawn.TokkTabletQuest", 48248, 18458, threshold = 4, hideValue = true),
+        threshold("MarshSpawn.MokkFangQuest", 14019, 15983, threshold = 3, hideValue = true),
         bool("MarshSpawn.RockHC", 21786, 60210),
         bool("MarshSpawn.FirstPickupEX", 21786, 49485),
         bool("MarshSpawn.GrappleHC", 21786, 25761),
@@ -873,18 +877,15 @@ object pickupsIn {
         bool("MarshSpawn.LeftTokkEX", 21786, 59513),
         bool("MarshSpawn.FightRoomEX", 9593, 42047),
         bool("MarshSpawn.CaveKS", 21786, 64677),
-        threshold("MarshSpawn.TokkKeystoneQuest", 48248, 51645, 3, true),
         bool("MarshSpawn.CaveOre", 9593, 23858),
         bool("MarshSpawn.LongSwimEX", 21786, 23154),
         bool("MarshSpawn.BurrowOre", 9593, 20382),
         bool("MarshSpawn.LifepactShard", 23987, 50415),
         bool("MarshSpawn.BurrowsApproachLedgeEX", 24922, 32076),
         bool("MarshSpawn.CrusherSwimEX", 24922, 62138),
-        threshold("MarshSpawn.TokkTabletQuest", 48248, 18458, 4, true),
         bool("MarshSpawn.RecklessShard", 23987, 9864),
         bool("MarshSpawn.FangEC", 21786, 61706),
         bool("MarshSpawn.FangQI", 14019, 27539),
-        threshold("MarshSpawn.MokkFangQuest", 14019, 15983, 3, true),
         bool("MarshSpawn.DamageTree", 0, 121),
         bool("HowlsDen.UpperEX", 21786, 43668),
         bool("HowlsDen.RightHC", 21786, 28908),
@@ -919,6 +920,9 @@ object pickupsIn {
     )
     val hollow = group(
         "Collect # Pickups in Kwolok's Hollow",
+        threshold("WestHollow.SpiritTrial", 44964, 25545, threshold = 2, hideValue = true),
+        threshold("EastHollow.HandToHandMap", 14019, 26318, threshold = 1, hideValue = true),
+        threshold("EastHollow.KwolokAmuletQuest", 14019, 50597, threshold = 4, hideValue = true),
         bool("WestHollow.CrusherHC", 937, 61897),
         bool("WestHollow.FarLeftEX", 937, 16163),
         bool("WestHollow.RockPuzzleEX", 937, 2538),
@@ -931,7 +935,6 @@ object pickupsIn {
         bool("WestHollow.DashRightEX", 937, 37926),
         bool("WestHollow.CrusherEX", 937, 50176),
         bool("WestHollow.DashTree", 0, 102),
-        threshold("EastHollow.HandToHandMap", 14019, 26318, 1, true),
         bool("EastHollow.GladesApproachOre", 937, 10729),
         bool("EastHollow.HornBeetleFightEX", 937, 13413),
         bool("EastHollow.SpikeLanternEX", 937, 5568),
@@ -941,7 +944,6 @@ object pickupsIn {
         bool("EastHollow.BashHC", 13428, 59730),
         bool("EastHollow.BashEX", 937, 30182),
         bool("EastHollow.BashTree", 0, 0),
-        threshold("EastHollow.KwolokAmuletQuest", 14019, 50597, 4, true),
         bool("EastHollow.RightKwolokEX", 58674, 20983),
         bool("EastHollow.SilentSwimEC", 58674, 9583),
         bool("EastHollow.SplinterShard", 23987, 62973),
@@ -1000,8 +1002,9 @@ object pickupsIn {
     )
     val wellspring = group(
         "Collect # Pickups from The Wellspring",
-        threshold("OuterWellspring.TheLostCompass", 14019, 20667, 3, true),
-        threshold("InnerWellspring.HandToHandHerbs", 14019, 26318, 3, true),
+        threshold("OuterWellspring.SpiritTrial", 44964, 11512, threshold = 2, hideValue = true),
+        threshold("OuterWellspring.TheLostCompass", 14019, 20667, threshold = 3, hideValue = true),
+        threshold("InnerWellspring.HandToHandHerbs", 14019, 26318, threshold = 3, hideValue = true),
         bool("OuterWellspring.RightWallOre", 53632, 25556),
         bool("OuterWellspring.RightWallEC", 53632, 1911),
         bool("OuterWellspring.RightWallEX", 53632, 51706),
@@ -1052,7 +1055,8 @@ object pickupsIn {
     )
     val pools = group(
         "Collect # Pickups from Luma Pools",
-        threshold("EastPools.HandToHandSpyglass", 14019, 26318, 8, true),
+        threshold("EastPools.SpiritTrial", 44964, 54686, threshold = 2, hideValue = true),
+        threshold("EastPools.HandToHandSpyglass", 14019, 26318, threshold = 8, hideValue = true),
         bool("PoolsApproach.CurrentEX", 945, 10682),
         bool("PoolsApproach.AboveWheelEX", 945, 14530),
         bool("PoolsApproach.MillPathHC", 945, 37243),
@@ -1096,7 +1100,8 @@ object pickupsIn {
     )
     val woods = group(
         "Collect # Pickups from Silent Woods",
-        threshold("WoodsEntry.LastTreeBranch", 14019, 59708, 1, true),
+        threshold("WoodsMain.SpiritTrial", 44964, 22703, threshold = 2, hideValue = true),
+        threshold("WoodsEntry.LastTreeBranch", 14019, 59708, threshold = 1, hideValue = true),
         bool("WoodsEntry.DollQI", 14019, 57399),
         bool("WoodsEntry.TreeSeed", 14019, 7470),
         bool("WoodsEntry.MudPitEX", 58674, 8487),
@@ -1132,7 +1137,8 @@ object pickupsIn {
     )
     val reach = group(
         "Collect # Pickups from Baur's Reach",
-        threshold("LowerReach.HandToHandHat", 14019, 26318, 5, true),
+        threshold("LowerReach.SpiritTrial", 44964, 23661, threshold = 2, hideValue = true),
+        threshold("LowerReach.HandToHandHat", 14019, 26318, threshold = 5, hideValue = true),
         bool("LowerReach.BelowBaurEX", 28895, 55384),
         bool("LowerReach.AboveBaurLowerEX", 28895, 24533),
         bool("LowerReach.AboveBaurUpperEX", 28895, 3777),
@@ -1178,6 +1184,8 @@ object pickupsIn {
     )
     val depths = group(
         "Collect # Pickups from Mouldwood Depths",
+        threshold("LowerDepths.SpiritTrial", 44964, 28552, threshold = 2, hideValue = true),
+        threshold("LowerDepths.HandToHandSilk", 14019, 26318, threshold = 7, hideValue = true),
         bool("UpperDepths.EntrySpikesEX", 18793, 19004),
         bool("UpperDepths.EntryRoofEX", 18793, 15396),
         bool("UpperDepths.EntryOre", 18793, 35351),
@@ -1200,13 +1208,14 @@ object pickupsIn {
         bool("LowerDepths.LeftEX", 18793, 2881),
         bool("LowerDepths.RightEX", 18793, 23799),
         bool("LowerDepths.FlashTree", 0, 62),
-        threshold("LowerDepths.HandToHandSilk", 14019, 26318, 7, true),
+        bool("LowerDepths.LupoMap", 48248, 48423),
         countGoal = { it.nextTriangular(4, 24, 14) },
         subsetGoal = false
     )
     val wastes = group(
         "Collect # Pickups from Windswept Wastes",
-        threshold("LowerWastes.HandToHandMapstone", 14019, 26318, 10, true),
+        threshold("LowerWastes.SpiritTrial", 44964, 30767, threshold = 2, hideValue = true),
+        threshold("LowerWastes.HandToHandMapstone", 14019, 26318, threshold = 10, hideValue = true),
         bool("LowerWastes.WestTPOre", 7228, 54494),
         bool("LowerWastes.PurpleWallEX", 7228, 56821),
         bool("LowerWastes.SunsetViewEX", 7228, 52086),
