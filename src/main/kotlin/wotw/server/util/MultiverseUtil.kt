@@ -61,6 +61,7 @@ class MultiverseUtil(val server: WotwBackendServer) {
             }
 
             doAfterTransaction {
+                server.populationCache.invalidate(player.id.value)
                 worldMemberIds.forEach { worldMemberId ->
                     server.populationCache.invalidate(worldMemberId)
                 }
