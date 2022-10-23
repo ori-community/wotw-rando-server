@@ -507,6 +507,7 @@ class InfectionGameHandler(
                 }
                 "updatePlayerInfoCache" -> {
                     updatePlayerInfoCache()
+                    broadcastPlayerVisibility()
                 }
                 "reset" -> {
                     state = InfectionGameHandlerState()
