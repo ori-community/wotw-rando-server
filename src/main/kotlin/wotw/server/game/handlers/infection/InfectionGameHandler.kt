@@ -33,6 +33,8 @@ data class InfectionGameHandlerState(
     var started: Boolean = false,
     var catchPhase: Boolean = false,
     var secondsUntilCatchPhase: Int = 10,
+
+    var secondsUntilPlayerReveal: Int = 0,
     var playerRevealIntervalIncreasePerSeeker: Int = 10,
 
     var gameSecondsElapsed: Int = 0,
@@ -174,9 +176,9 @@ class InfectionGameHandler(
                     2|22|2|104     // Water Dash
                     
                     3|1|8|1|11074|int|600
-                    3|1|8|1|11098|int|5000
-                    3|1|8|1|11106|int|600
-                    3|1|8|1|11115|int|3500
+                    3|1|8|1|11098|int|3000
+                    3|1|8|1|11106|int|300
+                    3|1|8|1|11115|int|1500
                     
                     3|1|8|2|122|int|1500
                 """.trimIndent()
@@ -193,11 +195,29 @@ class InfectionGameHandler(
                 } else {
                     gameSecondsElapsed++
                     handlePlayerWorldVisibility()
+                    handlePlayerRevealInterval()
                 }
             }
         }
     }
 
+    private suspend fun handlePlayerRevealInterval() = state.apply {
+        secondsUntilPlayerReveal--
+
+        if (secondsUntilPlayerReveal <= 0) {
+            var infectedCount = 0
+
+            playerInfos.values.forEach { playerInfo ->
+                if (playerInfo.type == PlayerType.Hider) {
+                    playerInfo.revealedMapPosition = playerInfo.position
+                } else {
+                    infectedCount++
+                }
+            }
+
+            secondsUntilPlayerReveal = state.playerRevealIntervalIncreasePerSeeker * infectedCount
+        }
+    }
 
     private suspend fun handleCatchPhaseCountdown() = state.apply {
         secondsUntilCatchPhase--
@@ -315,7 +335,7 @@ class InfectionGameHandler(
                     }
 
                     // If there's only one seeker, reveal positions instantly
-                    if (state.seekerWorlds.count() == 1) {
+                    if (playerInfos.values.count { p -> p.type == PlayerType.Infected } == 1) {
                         senderInfo.revealedMapPosition = senderInfo.position
                     }
 
