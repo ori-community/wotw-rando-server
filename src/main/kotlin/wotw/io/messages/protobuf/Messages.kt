@@ -363,6 +363,9 @@ data class SetSeedMessage(
 class PlayerUseCatchingAbilityMessage()
 
 @Serializable
+class PlayerTeleportMessage()
+
+@Serializable
 data class PlayerUsedCatchingAbilityMessage(
     @ProtoNumber(1) val playerId: String,
 )

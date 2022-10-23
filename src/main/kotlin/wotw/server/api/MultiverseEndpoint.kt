@@ -30,7 +30,8 @@ import wotw.server.exception.ForbiddenException
 import wotw.server.game.DeveloperEvent
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.GameHandlerType
-import wotw.server.game.handlers.HideAndSeekGameHandlerState
+import wotw.server.game.handlers.hideandseek.HideAndSeekGameHandlerState
+import wotw.server.game.handlers.infection.InfectionGameHandlerState
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -90,7 +91,14 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 val multiverse = newSuspendedTransaction {
                     Multiverse.new {
-                        if (props?.hideAndSeekConfig != null) {
+                        if (props?.infectionConfig != null) {
+                            gameHandlerType = GameHandlerType.INFECTION
+                            gameHandlerStateJson = json.encodeToString(
+                                serializer(), InfectionGameHandlerState(
+                                    playerRevealIntervalIncreasePerSeeker = props.infectionConfig.playerRevealIntervalIncreasePerSeeker,
+                                )
+                            )
+                        } else if (props?.hideAndSeekConfig != null) {
                             gameHandlerType = GameHandlerType.HIDE_AND_SEEK
                             gameHandlerStateJson = json.encodeToString(
                                 serializer(), HideAndSeekGameHandlerState(

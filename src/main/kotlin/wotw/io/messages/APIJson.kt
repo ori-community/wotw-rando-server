@@ -116,10 +116,16 @@ data class HideAndSeekConfig(
 )
 
 @Serializable
+data class InfectionConfig(
+    val playerRevealIntervalIncreasePerSeeker: Int = 10,
+)
+
+@Serializable
 data class MultiverseCreationConfig(
     val seedId: Long? = null,
     val bingoConfig: BingoCreationConfig? = null,
     val hideAndSeekConfig: HideAndSeekConfig? = null,
+    val infectionConfig: InfectionConfig? = null,
 )
 
 @Serializable

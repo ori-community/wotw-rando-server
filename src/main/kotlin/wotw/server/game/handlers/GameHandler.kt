@@ -7,6 +7,8 @@ import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
 import wotw.server.game.GameConnectionHandler
+import wotw.server.game.handlers.hideandseek.HideAndSeekGameHandler
+import wotw.server.game.handlers.infection.InfectionGameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.util.EventBus
 import wotw.util.EventBusWithMetadata
@@ -19,6 +21,7 @@ typealias PlayerId = String
 object GameHandlerType {
     const val NORMAL = 0
     const val HIDE_AND_SEEK = 1
+    const val INFECTION = 2
 }
 
 abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
@@ -88,6 +91,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         private val handlerTypeMap = biMapOf(
             GameHandlerType.NORMAL to NormalGameHandler::class,
             GameHandlerType.HIDE_AND_SEEK to HideAndSeekGameHandler::class,
+            GameHandlerType.INFECTION to InfectionGameHandler::class,
         )
 
         fun getByGameHandlerByType(type: Int): KClass<out GameHandler<out Any>> {

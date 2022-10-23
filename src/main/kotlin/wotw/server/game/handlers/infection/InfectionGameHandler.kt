@@ -1,4 +1,4 @@
-package wotw.server.game.handlers
+package wotw.server.game.handlers.infection
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
@@ -13,6 +13,8 @@ import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.game.*
+import wotw.server.game.handlers.GameHandler
+import wotw.server.game.handlers.PlayerId
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.ShareScope
 import wotw.server.sync.StateCache
@@ -23,41 +25,35 @@ import wotw.server.util.Scheduler
 import wotw.server.util.doAfterTransaction
 import wotw.server.util.logger
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.pow
 
 
 @Serializable
-data class HideAndSeekGameHandlerState(
+data class InfectionGameHandlerState(
     var started: Boolean = false,
     var catchPhase: Boolean = false,
-    var secondsUntilCatchPhase: Int = 900,
-    var seekerHintBaseInterval: Int = 900,
-    var seekerHintIntervalMultiplier: Float = 0.8f,
-    var seekerHintInterval: Int = seekerHintBaseInterval,
-    var seekerHintMinInterval: Int = 90,
+    var secondsUntilCatchPhase: Int = 10,
+    var playerRevealIntervalIncreasePerSeeker: Int = 10,
+
     var gameSecondsElapsed: Int = 0,
-    var secondsUntilSeekerHint: Int = secondsUntilCatchPhase,
-    var seekerHintsGiven: Int = 0,
-    var seekerWorlds: MutableMap<Long, SeekerWorldInfo> = mutableMapOf(),
+    var seekerWorlds: MutableMap<Long, InfectedWorldInfo> = mutableMapOf(),
 )
 
 @Serializable
-data class SeekerWorldInfo(
+data class InfectedWorldInfo(
     @ProtoNumber(1) val worldId: Long,
     @ProtoNumber(2) val radius: Float,
     @ProtoNumber(3) val cooldown: Float,
 )
 
 @Serializable
-data class HideAndSeekGameHandlerClientInfo(
-    @ProtoNumber(1) val seekerWorldInfos: List<SeekerWorldInfo>,
+data class InfectionGameHandlerClientInfo(
+    @ProtoNumber(1) val infectedWorldInfos: List<InfectedWorldInfo>,
 )
 
 enum class PlayerType {
     Hider,
-    Seeker,
+    Infected,
 }
 
 data class PlayerInfo(
@@ -71,21 +67,22 @@ data class PlayerInfo(
     }
 }
 
-class HideAndSeekGameHandler(
+class InfectionGameHandler(
     multiverseId: Long,
     server: WotwBackendServer,
-) : GameHandler<HideAndSeekGameHandlerClientInfo>(multiverseId, server) {
-    private var state = HideAndSeekGameHandlerState()
+) : GameHandler<InfectionGameHandlerClientInfo>(multiverseId, server) {
+    private var state = InfectionGameHandlerState()
 
     private val playerInfos = mutableMapOf<PlayerId, PlayerInfo>()
 
     private val BLAZE_UBER_ID = UberId(6, 1115)
 
-    private val seekerSeedgenConfig = WorldPreset(
+    private val infectedSeedgenConfig = WorldPreset(
         includes = setOf(
             "world_presets/qol",
             "world_presets/rspawn"
         ),
+        spawn = "FullyRandom",
         difficulty = "gorlek",
         headers = setOf(
             "vanilla_opher_upgrades",
@@ -93,12 +90,13 @@ class HideAndSeekGameHandler(
             "key_hints",
             "zone_hints",
             "trial_hints",
+            "open_mode",
         ),
         inlineHeaders = listOf(
             Header(
-                "hide_and_seek_seeker",
+                "infection_infected",
                 """
-                    Flags: Hide and Seek (Seeker)
+                    Flags: Infection (Infected)
                     
                     !!remove 2|115  // Remove Blaze
                     3|0|2|100
@@ -107,15 +105,23 @@ class HideAndSeekGameHandler(
                     3|0|2|101
                     3|0|9|0
                     3|0|2|118
+                    3|0|2|0
+                    3|0|2|51
+                    3|0|2|98
                     
-                    // Hide and Seek specific bonus items
-                    !!add 5x 8|9|10|int|+1
-                    !!name 8|9|10|int|+1 <hex_ff008d>Reveal Spell (useless)</>
-                    !!icon 8|9|10|int|+1 shard:0
-    
-                    !!add 5x 8|9|10|int|+1
-                    !!name 8|9|10|int|+1 <hex_ff008d>Vanish Spell (useless)</>
-                    !!icon 8|9|10|int|+1 shard:0
+                    1|1074|2|57    // Grapple
+                    1|1098|2|8     // Launch
+                    1|1106|2|77    // Regenerate
+                    1|1115|2|102   // Dash
+                    
+                    2|22|3|39      //  Water Dash
+                    
+                    3|1|8|1|11074|int|600
+                    3|1|8|1|11098|int|5000
+                    3|1|8|1|11106|int|600
+                    3|1|8|1|11115|int|3500
+                    
+                    3|1|8|2|122|int|1500
                 """.trimIndent()
             )
         )
@@ -124,8 +130,10 @@ class HideAndSeekGameHandler(
     private val hiderSeedgenConfig = WorldPreset(
         includes = setOf(
             "world_presets/qol",
-            "world_presets/rspawn"
+            "world_presets/rspawn",
+            "world_presets/full_bonus",
         ),
+        spawn = "FullyRandom",
         difficulty = "gorlek",
         headers = setOf(
             "teleporters",
@@ -135,16 +143,44 @@ class HideAndSeekGameHandler(
             "key_hints",
             "zone_hints",
             "trial_hints",
+            "open_mode",
+            "no_ks_doors",
         ),
         inlineHeaders = listOf(
             Header(
-                "hide_and_seek_hider",
+                "infection_hider",
                 """
-                    Flags: Hide and Seek (Hider)
+                    Flags: Infection (Hider)
+                    
+                    !!remove 2|23   // Remove Water Breath
+                    
+                    3|0|2|100
+                    3|0|2|5
+                    3|0|2|97
+                    3|0|2|101
+                    3|0|9|0
+                    3|0|2|118
+                    3|0|2|0
+                    3|0|2|51
+                    3|0|2|98
+                    
+                    1|1074|2|57    // Grapple
+                    1|1098|2|8     // Launch
+                    1|1106|2|77    // Regenerate
+                    1|1115|2|102   // Dash
+                    
+                    2|22|3|39      //  Water Dash
+                    
+                    3|1|8|1|11074|int|600
+                    3|1|8|1|11098|int|5000
+                    3|1|8|1|11106|int|600
+                    3|1|8|1|11115|int|3500
+                    
+                    3|1|8|2|122|int|1500
                 """.trimIndent()
             )
         ),
-        goals = setOf("trees")
+        goals = setOf()
     )
 
     private val scheduler = Scheduler {
@@ -154,8 +190,6 @@ class HideAndSeekGameHandler(
                     handleCatchPhaseCountdown()
                 } else {
                     gameSecondsElapsed++
-
-                    handleSeekerHint()
                     handlePlayerWorldVisibility()
                 }
             }
@@ -189,16 +223,13 @@ class HideAndSeekGameHandler(
                 0,
                 3f,
                 PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
-                queue = "hide_and_seek",
+                queue = "infection",
             )
 
             broadcastPlayerVisibility()
         } else {
-            val minutesPart = (secondsUntilCatchPhase / 60f).toInt()
-            val secondsPart = secondsUntilCatchPhase % 60
-
             message = PrintTextMessage(
-                "Catching starts in $minutesPart:${secondsPart.toString().padStart(2, '0')}",
+                "Infection starts in $secondsUntilCatchPhase",
                 Vector2(1.5f, 0f),
                 0,
                 3f,
@@ -207,62 +238,11 @@ class HideAndSeekGameHandler(
                 alignment = PrintTextMessage.ALIGNMENT_RIGHT,
                 withBox = false,
                 withSound = false,
-                queue = "hide_and_seek",
+                queue = "infection",
             )
         }
 
         server.connections.toPlayers(playerInfos.keys, message)
-    }
-
-    private suspend fun handleSeekerHint() = state.apply {
-        secondsUntilSeekerHint--
-
-        val seekerHintCountdownSeconds = min(seekerHintInterval / 2, 30)
-
-        if (secondsUntilSeekerHint <= 0) {
-            seekerHintsGiven++
-            seekerHintInterval =
-                max((seekerHintInterval * seekerHintIntervalMultiplier).toInt(), seekerHintMinInterval)
-            secondsUntilSeekerHint = seekerHintInterval
-
-            playerInfos.values.forEach { info ->
-                if (info.type == PlayerType.Hider) {
-                    info.revealedMapPosition = info.position
-                }
-            }
-
-            server.connections.toPlayers(
-                playerInfos.keys, PrintTextMessage(
-                    "Hider positions revealed to seekers!",
-                    Vector2(1.5f, 0f),
-                    0,
-                    3f,
-                    screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
-                    horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
-                    alignment = PrintTextMessage.ALIGNMENT_RIGHT,
-                    withBox = false,
-                    withSound = true,
-                    queue = "hide_and_seek",
-                )
-            )
-
-            broadcastPlayerVisibility()
-        } else if (secondsUntilSeekerHint <= seekerHintCountdownSeconds) {
-            server.connections.toPlayers(
-                playerInfos.keys, PrintTextMessage(
-                    "Revealing hider positions in ${secondsUntilSeekerHint}s",
-                    Vector2(1.5f, 0f),
-                    0,
-                    3f,
-                    screenPosition = PrintTextMessage.SCREEN_POSITION_BOTTOM_RIGHT,
-                    horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_RIGHT,
-                    alignment = PrintTextMessage.ALIGNMENT_RIGHT,
-                    withBox = false,
-                    withSound = true,
-                    queue = "hide_and_seek",
-                )
-            )
-        }
     }
 
     private suspend fun handlePlayerWorldVisibility() = state.apply {
@@ -289,7 +269,7 @@ class HideAndSeekGameHandler(
                         alignment = PrintTextMessage.ALIGNMENT_RIGHT,
                         withBox = false,
                         withSound = true,
-                        queue = "hide_and_seek",
+                        queue = "infection",
                     )
                 )
             }
@@ -314,23 +294,17 @@ class HideAndSeekGameHandler(
     override fun start() {
         messageEventBus.register(this, PlayerPositionMessage::class) { message, playerId ->
             playerInfos[playerId]?.let { senderInfo ->
-                val previousSenderPosition = senderInfo.position
                 senderInfo.position = Vector2(message.x, message.y)
                 val cache = server.populationCache.get(playerId)
 
-                if (senderInfo.type == PlayerType.Seeker) {
+                if (senderInfo.type == PlayerType.Infected) {
                     server.connections.toPlayers(
                         cache.universeMemberIds - playerId,
                         UpdatePlayerPositionMessage(playerId, message.x, message.y, message.ghostFrameData),
                         unreliable = true,
                     )
                 } else {
-                    val positionDistance = previousSenderPosition.distanceSquaredTo(senderInfo.position)
-
-                    if (positionDistance > 2500.0) {
-                        senderInfo.hiddenInWorldSeconds = 15
-                        broadcastPlayerVisibility()
-                    } else if (senderInfo.hiddenInWorldSeconds == 0) {
+                    if (senderInfo.hiddenInWorldSeconds == 0) {
                         server.connections.toPlayers(
                             cache.universeMemberIds - playerId,
                             UpdatePlayerWorldPositionMessage(playerId, message.x, message.y, message.ghostFrameData),
@@ -338,13 +312,27 @@ class HideAndSeekGameHandler(
                         )
                     }
 
+                    // If there's only one seeker, reveal positions instantly
+                    if (state.seekerWorlds.count() == 1) {
+                        senderInfo.revealedMapPosition = senderInfo.position
+                    }
+
                     senderInfo.revealedMapPosition?.let { revealedMapPosition ->
                         server.connections.toPlayers(
-                            playerInfos.filter { (_, info) -> info.type == PlayerType.Seeker }.keys - playerId,
+                            playerInfos.filter { (_, info) -> info.type == PlayerType.Infected }.keys - playerId,
                             UpdatePlayerMapPositionMessage(playerId, revealedMapPosition.x, revealedMapPosition.y),
                             unreliable = true,
                         )
                     }
+                }
+            }
+        }
+
+        messageEventBus.register(this, PlayerTeleportMessage::class) { message, playerId ->
+            playerInfos[playerId]?.let { senderInfo ->
+                if (senderInfo.type == PlayerType.Hider) {
+                    senderInfo.hiddenInWorldSeconds = 10
+                    broadcastPlayerVisibility()
                 }
             }
         }
@@ -377,7 +365,7 @@ class HideAndSeekGameHandler(
                 server.connections.toPlayers(
                     caughtPlayerIds,
                     PrintTextMessage(
-                        "You have been caught by ${seekerName}!\nYou are now a seeker in ${seekerName}'s world.",
+                        "You have been infected by ${seekerName}!",
                         Vector2(0f, 0f),
                         0,
                         5f,
@@ -420,13 +408,34 @@ class HideAndSeekGameHandler(
                         server.connections.toPlayers(
                             playerInfos.keys,
                             PrintTextMessage(
-                                "$caughtPlayerName has been caught by $seekerName!",
+                                "$caughtPlayerName has been infected by $seekerName!",
                                 Vector2(0f, 0f),
                                 time = 3f,
                                 screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
                                 withBox = true,
                                 withSound = true,
-                                queue = "hide_and_seek_caught",
+                                queue = "infection",
+                            )
+                        )
+                    }
+
+                    val remainingPlayers = playerInfos.filter { info -> info.value.type == PlayerType.Hider }
+
+                    if (remainingPlayers.count() == 1) {
+                        val lastRemainingPlayerName = newSuspendedTransaction {
+                            User.findById(remainingPlayers.keys.toList()[0])?.name
+                        }
+
+                        server.connections.toPlayers(
+                            playerInfos.keys,
+                            PrintTextMessage(
+                                "<s_2>${lastRemainingPlayerName ?: "???"} won the game!</>",
+                                Vector2(0f, 0f),
+                                time = 8f,
+                                screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+                                withBox = true,
+                                withSound = true,
+                                queue = "infection",
                             )
                         )
                     }
@@ -456,11 +465,11 @@ class HideAndSeekGameHandler(
                             } ?: listOf()
                         }
 
-                        logger().info("${message.uberId} picked up by $worldNamesThatPickedUpThisItem")
+                        // logger().info("${message.uberId} picked up by $worldNamesThatPickedUpThisItem")
 
                         if (worldNamesThatPickedUpThisItem.isNotEmpty()) {
-                            logger().info(playerInfos[playerId]?.position.toString())
-                            logger().info(playerCache.worldMemberIds.toString())
+                            // logger().info(playerInfos[playerId]?.position.toString())
+                            // logger().info(playerCache.worldMemberIds.toString())
                             server.connections.toPlayers(
                                 playerCache.worldMemberIds,
                                 PrintTextMessage(
@@ -497,7 +506,7 @@ class HideAndSeekGameHandler(
                     updatePlayerInfoCache()
                 }
                 "reset" -> {
-                    state = HideAndSeekGameHandlerState()
+                    state = InfectionGameHandlerState()
                     updatePlayerInfoCache()
                     newSuspendedTransaction {
                         Multiverse.findById(multiverseId)?.let { multiverse ->
@@ -510,9 +519,6 @@ class HideAndSeekGameHandler(
                         }
                     }
                 }
-                "fix1" -> {
-                    state.seekerHintInterval = 500
-                }
             }
         }
 
@@ -524,7 +530,7 @@ class HideAndSeekGameHandler(
                 UniversePreset(
                     worldSettings = listOf(
                         if (state.seekerWorlds.isEmpty()) {
-                            seekerSeedgenConfig
+                            infectedSeedgenConfig
                         } else {
                             hiderSeedgenConfig
                         }
@@ -552,16 +558,12 @@ class HideAndSeekGameHandler(
         }
 
         multiverseEventBus.register(this, PlayerJoinedEvent::class) { message ->
-            logger().info("joined: ${message.worldId}")
-
             doAfterTransaction {
                 updatePlayerInfoCache()
             }
         }
 
         multiverseEventBus.register(this, PlayerLeftEvent::class) { message ->
-            logger().info("left: ${message.worldId}")
-
             doAfterTransaction {
                 updatePlayerInfoCache()
             }
@@ -575,12 +577,12 @@ class HideAndSeekGameHandler(
     }
 
     override fun serializeState(): String {
-        return json.encodeToString(HideAndSeekGameHandlerState.serializer(), state)
+        return json.encodeToString(InfectionGameHandlerState.serializer(), state)
     }
 
     override suspend fun restoreState(serializedState: String?) {
         serializedState?.let {
-            state = json.decodeFromString(HideAndSeekGameHandlerState.serializer(), it)
+            state = json.decodeFromString(InfectionGameHandlerState.serializer(), it)
         }
 
         updatePlayerInfoCache()
@@ -594,8 +596,8 @@ class HideAndSeekGameHandler(
         }
     }
 
-    override fun getClientInfo(): HideAndSeekGameHandlerClientInfo {
-        return HideAndSeekGameHandlerClientInfo(state.seekerWorlds.values.toList())
+    override fun getClientInfo(): InfectionGameHandlerClientInfo {
+        return InfectionGameHandlerClientInfo(state.seekerWorlds.values.toList())
     }
 
     private suspend fun updatePlayerInfoCache() {
@@ -609,7 +611,7 @@ class HideAndSeekGameHandler(
                 multiverse.worlds.firstOrNull()?.let { firstWorld ->
                     if (!state.seekerWorlds.containsKey(firstWorld.id.value)) {
                         state.seekerWorlds.clear()
-                        state.seekerWorlds[firstWorld.id.value] = SeekerWorldInfo(
+                        state.seekerWorlds[firstWorld.id.value] = InfectedWorldInfo(
                             firstWorld.id.value,
                             8f,
                             6f,
@@ -619,7 +621,7 @@ class HideAndSeekGameHandler(
 
                 multiverse.worlds.forEach { world ->
                     val type = if (state.seekerWorlds.containsKey(world.id.value))
-                        PlayerType.Seeker else PlayerType.Hider
+                        PlayerType.Infected else PlayerType.Hider
 
                     world.members.forEach { player ->
                         playerIds.add(player.id.value)
