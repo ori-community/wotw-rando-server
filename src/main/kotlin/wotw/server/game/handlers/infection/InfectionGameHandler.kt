@@ -611,7 +611,10 @@ class InfectionGameHandler(
 
                 // TODO: Hack, remove later.
                 multiverse.refresh()
-                multiverse.worlds.firstOrNull()?.let { firstWorld ->
+
+                val sortedWorlds = multiverse.worlds.sortedBy { w -> w.id.value }
+
+                sortedWorlds.firstOrNull()?.let { firstWorld ->
                     if (!state.seekerWorlds.containsKey(firstWorld.id.value)) {
                         state.seekerWorlds.clear()
                         state.seekerWorlds[firstWorld.id.value] = InfectedWorldInfo(
@@ -622,7 +625,7 @@ class InfectionGameHandler(
                     }
                 }
 
-                multiverse.worlds.forEach { world ->
+                sortedWorlds.forEach { world ->
                     val type = if (state.seekerWorlds.containsKey(world.id.value))
                         PlayerType.Infected else PlayerType.Hider
 
