@@ -539,9 +539,7 @@ class InfectionGameHandler(
             )
 
             result.seed?.let { seed ->
-                newSuspendedTransaction {
-                    message.world.seed = seed.worldSeeds.firstOrNull()
-                }
+                message.world.seed = seed.worldSeeds.firstOrNull()
             }
 
             doAfterTransaction {
