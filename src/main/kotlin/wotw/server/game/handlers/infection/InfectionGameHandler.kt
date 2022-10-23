@@ -137,7 +137,6 @@ class InfectionGameHandler(
         difficulty = "Gorlek",
         headers = setOf(
             "teleporters",
-            "tp_zone_hints",
             "vanilla_opher_upgrades",
             "black_market",
             "key_hints",
@@ -540,7 +539,9 @@ class InfectionGameHandler(
             )
 
             result.seed?.let { seed ->
-                message.world.seed = seed.worldSeeds.firstOrNull()
+                newSuspendedTransaction {
+                    message.world.seed = seed.worldSeeds.firstOrNull()
+                }
             }
 
             doAfterTransaction {
