@@ -90,6 +90,8 @@ class InfectionGameHandler(
             "zone_hints",
             "trial_hints",
             "open_mode",
+            "no_ks_doors",
+            "better_stomp",
         ),
         inlineHeaders = listOf(
             Header(
@@ -107,13 +109,14 @@ class InfectionGameHandler(
                     3|0|2|0
                     3|0|2|51
                     3|0|2|98
+                    3|0|2|14
                     
                     1|1074|2|57    // Grapple
                     1|1098|2|8     // Launch
                     1|1106|2|77    // Regenerate
                     1|1115|2|102   // Dash
                     
-                    2|22|3|39      // Water Dash
+                    2|22|2|104     // Water Dash
                     
                     3|1|8|1|11074|int|600
                     3|1|8|1|11098|int|5000
@@ -142,6 +145,7 @@ class InfectionGameHandler(
             "trial_hints",
             "open_mode",
             "no_ks_doors",
+            "better_stomp",
         ),
         inlineHeaders = listOf(
             Header(
@@ -160,13 +164,14 @@ class InfectionGameHandler(
                     3|0|2|0
                     3|0|2|51
                     3|0|2|98
+                    3|0|2|14
                     
                     1|1074|2|57    // Grapple
                     1|1098|2|8     // Launch
                     1|1106|2|77    // Regenerate
                     1|1115|2|102   // Dash
                     
-                    2|22|3|39      //  Water Dash
+                    2|22|2|104     // Water Dash
                     
                     3|1|8|1|11074|int|600
                     3|1|8|1|11098|int|5000
