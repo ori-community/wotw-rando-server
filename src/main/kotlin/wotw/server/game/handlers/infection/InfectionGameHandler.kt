@@ -85,7 +85,6 @@ class InfectionGameHandler(
         spawn = "FullyRandom",
         difficulty = "Gorlek",
         headers = setOf(
-            "vanilla_opher_upgrades",
             "black_market",
             "key_hints",
             "zone_hints",
@@ -137,7 +136,6 @@ class InfectionGameHandler(
         difficulty = "Gorlek",
         headers = setOf(
             "teleporters",
-            "vanilla_opher_upgrades",
             "black_market",
             "key_hints",
             "zone_hints",
@@ -323,6 +321,12 @@ class InfectionGameHandler(
                             unreliable = true,
                         )
                     }
+
+                    server.connections.toPlayers(
+                        playerInfos.filter { (_, info) -> info.type == PlayerType.Hider }.keys - playerId,
+                        UpdatePlayerMapPositionMessage(playerId, message.x, message.y),
+                        unreliable = true,
+                    )
                 }
             }
         }
