@@ -83,7 +83,7 @@ class InfectionGameHandler(
             "world_presets/rspawn"
         ),
         spawn = "FullyRandom",
-        difficulty = "gorlek",
+        difficulty = "Gorlek",
         headers = setOf(
             "vanilla_opher_upgrades",
             "black_market",
@@ -114,7 +114,7 @@ class InfectionGameHandler(
                     1|1106|2|77    // Regenerate
                     1|1115|2|102   // Dash
                     
-                    2|22|3|39      //  Water Dash
+                    2|22|3|39      // Water Dash
                     
                     3|1|8|1|11074|int|600
                     3|1|8|1|11098|int|5000
@@ -134,7 +134,7 @@ class InfectionGameHandler(
             "world_presets/full_bonus",
         ),
         spawn = "FullyRandom",
-        difficulty = "gorlek",
+        difficulty = "Gorlek",
         headers = setOf(
             "teleporters",
             "tp_zone_hints",
