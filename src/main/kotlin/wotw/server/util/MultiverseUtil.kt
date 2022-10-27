@@ -50,7 +50,7 @@ class MultiverseUtil(val server: WotwBackendServer) {
                 world.members.map { it.id.value }.toSet(),
             ))
 
-            val worldMemberIds = world.members.map { it.id.value }
+            val universeMemberIds = world.universe.members.map { it.id.value }
 
             logger().info("Moving ${player.name} to world ${world.id.value}")
 
@@ -62,8 +62,8 @@ class MultiverseUtil(val server: WotwBackendServer) {
 
             doAfterTransaction {
                 server.populationCache.invalidate(player.id.value)
-                worldMemberIds.forEach { worldMemberId ->
-                    server.populationCache.invalidate(worldMemberId)
+                universeMemberIds.forEach { universeMemberId ->
+                    server.populationCache.invalidate(universeMemberId)
                 }
 
                 server.connections.broadcastMultiverseInfoMessage(world.universe.multiverse.id.value)
