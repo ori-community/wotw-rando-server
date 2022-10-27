@@ -56,13 +56,13 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 onClose {
-                    logger.info("Remote tracker WebSocket $endpointId disconnected (close, ${closeReason.await()})")
+                    logger.debug("Remote tracker WebSocket $endpointId disconnected (close, ${closeReason.await()})")
                     if (endpointId != null) {
                         server.connections.unregisterRemoteTrackerBroadcaster(endpointId!!)
                     }
                 }
                 onError {
-                    logger.info("Remote tracker WebSocket $endpointId disconnected (error, ${closeReason.await()})")
+                    logger.debug("Remote tracker WebSocket $endpointId disconnected (error, ${closeReason.await()})")
                     if (endpointId != null) {
                         server.connections.unregisterRemoteTrackerBroadcaster(endpointId!!)
                     }
@@ -84,11 +84,11 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 onClose {
-                    logger.info("Remote tracker listener disconnected from endpoint $endpointId (close, ${closeReason.await()})")
+                    logger.debug("Remote tracker listener disconnected from endpoint $endpointId (close, ${closeReason.await()})")
                     server.connections.unregisterRemoteTrackerListener(endpointId, this.socketConnection)
                 }
                 onError {
-                    logger.info("Remote tracker listener disconnected from endpoint $endpointId (close, ${closeReason.await()})")
+                    logger.debug("Remote tracker listener disconnected from endpoint $endpointId (close, ${closeReason.await()})")
                     server.connections.unregisterRemoteTrackerListener(endpointId, this.socketConnection)
                 }
             }
