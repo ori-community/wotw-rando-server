@@ -33,6 +33,8 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             authenticatedUser().apply {
                                 name = it
                                 isCustomName = true
+
+                                this.currentWorld?.universe?.multiverse?.updateAutomaticWorldNames();
                             }
                         )
                     }
