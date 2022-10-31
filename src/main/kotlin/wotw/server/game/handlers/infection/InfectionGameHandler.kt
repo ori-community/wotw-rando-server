@@ -466,6 +466,11 @@ class InfectionGameHandler(
                                 queue = "infection",
                             )
                         )
+
+                        newSuspendedTransaction {
+                            Multiverse.findById(multiverseId)?.locked = false
+                            server.connections.broadcastMultiverseInfoMessage(multiverseId)
+                        }
                     }
                 }
             }
@@ -527,13 +532,20 @@ class InfectionGameHandler(
                 "start" -> {
                     state.started = true
                     newSuspendedTransaction {
-                        Multiverse.findById(multiverseId)?.gameHandlerActive = true
+                        Multiverse.findById(multiverseId)?.let { multiverse ->
+                            multiverse.gameHandlerActive = true
+                            multiverse.locked = true
+                        }
+
+                        server.connections.broadcastMultiverseInfoMessage(multiverseId)
                     }
                 }
+
                 "updatePlayerInfoCache" -> {
                     updatePlayerInfoCache()
                     broadcastPlayerVisibility()
                 }
+
                 "reset" -> {
                     state = InfectionGameHandlerState()
                     updatePlayerInfoCache()
