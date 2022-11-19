@@ -36,7 +36,7 @@ data class BingoBoardMessage(
 @Serializable
 data class BingothonBingoBoard(
     val size: Int,
-    val universeIds: List<Long>,
+    val universes: List<BingothonBingoUniverseInfo>,
     val squares: List<BingothonBingoSquare>,
 )
 
@@ -45,6 +45,13 @@ data class BingothonBingoSquare(
     val position: Position,
     val text: String,
     val completedBy: List<Long>,
+)
+
+@Serializable
+data class BingothonBingoUniverseInfo(
+    val universeId: Long,
+    val squares: Int = 0,
+    val lines: Int = 0,
 )
 
 

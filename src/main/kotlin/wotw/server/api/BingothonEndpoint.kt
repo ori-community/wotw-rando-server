@@ -58,7 +58,11 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 BingothonBingoBoard(
                     board.size,
-                    bingoInfo.map { it.universeId },
+                    bingoInfo.map { BingothonBingoUniverseInfo(
+                        it.universeId,
+                        it.squares,
+                        it.lines,
+                    ) },
                     bingothonSquares,
                 )
             })
