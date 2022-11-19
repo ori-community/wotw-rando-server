@@ -92,6 +92,8 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     BingothonToken.new(tokenId) {
                         this.owner = user
                     }
+
+                    tokenId
                 })
             }
         }
