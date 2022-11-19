@@ -89,7 +89,7 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         tokenId = randomString(16)
                     } while (BingothonTokens.select { BingothonTokens.id eq tokenId }.count() > 0)
 
-                    BingothonToken.new() {
+                    BingothonToken.new(tokenId) {
                         this.owner = user
                     }
                 })
