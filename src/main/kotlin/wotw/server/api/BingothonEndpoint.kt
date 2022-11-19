@@ -81,7 +81,7 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     if (existingToken != null) {
                         existingToken.created = LocalDateTime.now()
-                        return@newSuspendedTransaction existingToken
+                        return@newSuspendedTransaction existingToken.id.value
                     }
 
                     var tokenId = ""
