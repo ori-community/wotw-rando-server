@@ -6,13 +6,9 @@ import io.ktor.server.plugins.*
 import io.ktor.server.websocket.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.BingoData
-import wotw.io.messages.protobuf.BingothonBoard
-import wotw.io.messages.protobuf.BingothonGoal
-import wotw.io.messages.protobuf.Position
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
 import wotw.server.io.handleClientSocket
@@ -22,43 +18,6 @@ import java.util.concurrent.CancellationException
 
 class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
-        get("bingo/latest/{playerId?}") {
-            val boardData = newSuspendedTransaction {
-                val player =
-                    call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: authenticatedUser()
-                val multiverse = player.currentMultiverse ?: throw NotFoundException()
-                multiverse.board ?: throw NotFoundException()
-                val info = multiverse.bingoUniverseInfo()
-
-                BingoData(multiverse.createSyncableBoard(player.currentWorld?.universe), info)
-            }
-            call.respond(boardData)
-        }
-
-        get("bingothon/latest/{playerId?}") {
-            val boardData = newSuspendedTransaction {
-                val player =
-                    call.parameters["playerId"]?.ifEmpty { null }?.let { User.findById(it) } ?: authenticatedUser()
-                val multiverse = player.currentMultiverse ?: throw NotFoundException()
-                multiverse.board ?: throw NotFoundException()
-                val info = multiverse.bingoUniverseInfo()
-
-                val data = BingoData(multiverse.createSyncableBoard(player.currentWorld?.universe, false, true), info)
-                val posToId: (Position) -> Int = { it.x - 1 + (it.y - 1) * 5 }
-
-                BingothonBoard(
-                    data.board.squares.sortedBy { posToId(it.position) }.map {
-                        BingothonGoal(
-                            it.square.completedBy.isNotEmpty(),
-                            it.square.text + "\n" + it.square.goals.joinToString("\n") { it.text + if (it.completed) " ✓" else "" })
-                    },
-                    multiverse.board?.config?.discovery?.map { it.first - 1 + (it.second - 1) * 5 }?.toSet()
-                        ?: emptySet()
-                )
-            }
-            call.respond(boardData)
-        }
-
         userboardWebsocket()
 
         authenticate(JWT_AUTH) {

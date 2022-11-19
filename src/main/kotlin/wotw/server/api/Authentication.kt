@@ -157,6 +157,7 @@ fun createJWTToken(
 }
 
 object Scope {
+    const val BINGOTHON_TOKEN_CREATE = "bingothon.tokens.create"
     const val MULTIVERSE_CONNECT = "multiverses.connect"
     const val MULTIVERSE_CREATE = "multiverses.create"
     const val MULTIVERSE_SPECTATE = "multiverses.spectate"

@@ -5,29 +5,29 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.client.*
-import io.ktor.server.plugins.*
 import io.ktor.http.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.*
+import io.ktor.server.plugins.autohead.*
+import io.ktor.server.plugins.callloging.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.httpsredirect.*
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.autohead.AutoHeadResponse
-import io.ktor.server.plugins.callloging.CallLogging
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.httpsredirect.HttpsRedirect
-import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.websocket.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.core.*
-import io.ktor.server.websocket.*
 import io.sentry.Sentry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -50,6 +50,7 @@ import wotw.server.services.InfoMessagesService
 import wotw.server.sync.StateSynchronization
 import wotw.server.util.*
 import java.time.Duration
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 class WotwBackendServer {
@@ -141,6 +142,7 @@ class WotwBackendServer {
     val userEndpoint = UserEndpoint(this)
     val remoteTrackerEndpoint = RemoteTrackerEndpoint(this)
     val developerEndpoint = DeveloperEndpoint(this)
+    val bingothonEndpoint = BingothonEndpoint(this)
     val infoMessagesService = InfoMessagesService(this)
     val multiverseUtil = MultiverseUtil(this)
 
@@ -163,6 +165,16 @@ class WotwBackendServer {
             }
         }.forEach { cacheEntry ->
             gameHandlerRegistry.purgeFromCache(cacheEntry.handler.multiverseId)
+        }
+    }
+
+    val bingothonEndpointCleanupScheduler = Scheduler {
+        newSuspendedTransaction {
+            BingothonToken.all().forEach { token ->
+                if (token.created.isBefore(LocalDateTime.now().minusDays(7))) {
+                    token.delete()
+                }
+            }
         }
     }
 
@@ -198,7 +210,10 @@ class WotwBackendServer {
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)
+
         cacheScheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
+        bingothonEndpointCleanupScheduler.scheduleExecution(Every(1, TimeUnit.HOURS))
+
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         val env = applicationEngineEnvironment {
             config = cmd.config
@@ -295,8 +310,10 @@ class WotwBackendServer {
                         remoteTrackerEndpoint.init(this)
                         seedGenEndpoint.init(this)
                         developerEndpoint.init(this)
-                        get("/") {
-                            call.respondText("WOTW-Backend running")
+                        bingothonEndpoint.init(this)
+
+                        get("/ping") {
+                            call.respondText("pong")
                         }
                     }
                 }

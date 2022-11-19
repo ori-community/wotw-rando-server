@@ -4,8 +4,8 @@ import kotlinx.serialization.*
 import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.math.max
 
-//All fields have default values ^= protobuf optional
-//We just send partial updates and merge state client-side
+// All fields have default values ^= protobuf optional
+// We just send partial updates and merge state client-side
 
 @Serializable
 data class BingoData(
@@ -18,6 +18,7 @@ data class PositionedBingoSquare(
     @ProtoNumber(1) val position: Position,
     @ProtoNumber(2) val square: BingoSquare,
 )
+
 @Serializable
 data class BingoBoardMessage(
     @ProtoNumber(1) val squares: List<PositionedBingoSquare> = emptyList(),
@@ -28,13 +29,23 @@ data class BingoBoardMessage(
     operator fun get(position: Position) = squares.first { it.position == position }.square
     fun merge(other: BingoBoardMessage) =
         BingoBoardMessage(squares + other.squares, max(size, other.size), lockout || other.lockout)
+
     operator fun plus(other: BingoBoardMessage) = merge(other)
 }
 
 @Serializable
-data class BingothonBoard(val cards: List<BingothonGoal>, val disc_squares: Set<Int>)
+data class BingothonBingoBoard(
+    val size: Int,
+    val universeIds: List<Long>,
+    val squares: List<BingothonBingoSquare>,
+)
+
 @Serializable
-data class BingothonGoal(val completed: Boolean, val name: String)
+data class BingothonBingoSquare(
+    val position: Position,
+    val text: String,
+    val completedBy: List<Long>,
+)
 
 
 @Serializable
@@ -43,7 +54,7 @@ data class Position(
     @ProtoNumber(2) val y: Int
 )
 
-infix fun Int.to (y: Int) = Position(this, y)
+infix fun Int.to(y: Int) = Position(this, y)
 
 @Serializable
 data class BingoSquare(

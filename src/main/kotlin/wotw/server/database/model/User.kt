@@ -5,6 +5,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import wotw.server.database.StringEntity
 import wotw.server.database.StringEntityClass
 import wotw.server.database.StringIdTable
+import wotw.server.database.model.World.Companion.optionalReferrersOn
 
 object Users : StringIdTable("users") {
     val name = text("nickname")
