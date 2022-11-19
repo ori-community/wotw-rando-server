@@ -131,6 +131,7 @@ class WotwBackendServer {
                 Spectators,
                 Seeds,
                 WorldSeeds,
+                BingothonTokens,
             )
         }
     }
