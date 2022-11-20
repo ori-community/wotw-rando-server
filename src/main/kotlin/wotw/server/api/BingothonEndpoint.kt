@@ -49,7 +49,7 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     if (detailsText.isNotBlank()) {
                         text += "\n$detailsText"
-                        html += "<br>small>${detailsText.replace("\n", "<br>")}</small>"
+                        html += "<br><small>${detailsText.replace("\n", "<br>")}</small>"
                     }
 
                     BingothonBingoSquare(
