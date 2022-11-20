@@ -75,14 +75,10 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(newSuspendedTransaction {
                     val user = authenticatedUser()
 
-                    val existingToken = BingothonToken.find {
+                    // Delete any existing token
+                    BingothonToken.find {
                         BingothonTokens.owner eq user.id.value
-                    }.firstOrNull()
-
-                    if (existingToken != null) {
-                        existingToken.created = LocalDateTime.now()
-                        return@newSuspendedTransaction existingToken.id.value
-                    }
+                    }.firstOrNull()?.delete()
 
                     var tokenId = ""
                     do {
