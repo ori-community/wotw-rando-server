@@ -44,6 +44,7 @@ data class BingothonBingoBoard(
 data class BingothonBingoSquare(
     val position: Position,
     val text: String,
+    val html: String,
     val completedBy: List<Long>,
 )
 

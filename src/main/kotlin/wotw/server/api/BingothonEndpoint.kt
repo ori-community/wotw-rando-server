@@ -43,15 +43,19 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 val bingothonSquares = bingoData.board.squares.map {
                     var text = it.square.text
+                    var html = it.square.text
+
                     val detailsText = it.square.goals.joinToString("\n") { goal -> goal.text + if (goal.completed) " ✓" else "" }
 
                     if (detailsText.isNotBlank()) {
-                        text += "\n<small>$detailsText</small>"
+                        text += "\n$detailsText"
+                        html += "<br>small>${detailsText.replace("\n", "<br>")}</small>"
                     }
 
                     BingothonBingoSquare(
                         it.position,
                         text,
+                        html,
                         it.square.completedBy
                     )
                 }
