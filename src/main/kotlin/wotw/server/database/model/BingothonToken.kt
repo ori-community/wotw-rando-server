@@ -8,7 +8,7 @@ import wotw.server.database.StringEntity
 import wotw.server.database.StringEntityClass
 import wotw.server.database.StringIdTable
 
-object BingothonTokens : StringIdTable("bingothon_endpoints") {
+object BingothonTokens : StringIdTable("bingothon_tokens") {
     val owner = reference("owner_id", Users, ReferenceOption.CASCADE, ReferenceOption.CASCADE).uniqueIndex()
     val created = datetime("created_at").defaultExpression(CurrentDateTime)
 }
