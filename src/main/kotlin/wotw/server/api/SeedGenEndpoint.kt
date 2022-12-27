@@ -4,6 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.http.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -65,6 +66,28 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 )
             }
             call.respond(seedInfo)
+        }
+
+        get("seeds/{id}/spoiler") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
+
+            val acceptItems = call.request.acceptItems()
+
+            for (acceptItem in acceptItems) {
+                if (acceptItem.value == "text/plain") {
+                    call.respond(newSuspendedTransaction {
+                        val seed = Seed.findById(id) ?: throw NotFoundException()
+                        seed.spoilerText
+                    })
+                    return@get
+                } else if (acceptItem.value == "application/json") {
+                    call.respond(newSuspendedTransaction {
+                        val seed = Seed.findById(id) ?: throw NotFoundException()
+                        seed.spoiler
+                    })
+                    return@get
+                }
+            }
         }
 
         get("world-seeds/{id}/file") {
