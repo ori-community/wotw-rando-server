@@ -39,7 +39,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
                     }
 
-                    server.connections.notifyNicknameChanged(userInfo.id)
+                    server.connections.notifyUserInfoChanged(userInfo.id)
 
                     call.respond(userInfo)
                 }

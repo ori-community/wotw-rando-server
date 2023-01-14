@@ -21,7 +21,7 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val playerId = call.parameters["player_id"] ?: throw BadRequestException("player_id required")
 
                     val populationCacheContent = newSuspendedTransaction {
-                        server.populationCache.get(playerId)
+                        server.playerEnvironmentCache.get(playerId)
                     }
 
                     call.respond(populationCacheContent)

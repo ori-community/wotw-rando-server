@@ -66,6 +66,7 @@ data class Packet(
             22 to typeOf<UpdatePlayerMapPositionMessage>(),
             23 to typeOf<ResourceRequestMessage>(),
             24 to typeOf<PlayerTeleportMessage>(),
+            25 to typeOf<ReportLoadingTimeMessage>(),
 
             100 to typeOf<TrackerUpdate>(),
             101 to typeOf<ResetTracker>(),

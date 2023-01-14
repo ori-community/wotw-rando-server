@@ -395,3 +395,8 @@ data class ResourceRequestMessage(
     @ProtoNumber(3) val amount: Int,
     @ProtoNumber(4) @Required val target: SpendResourceTarget? = null,
 )
+
+@Serializable
+data class ReportLoadingTimeMessage(
+    @ProtoNumber(1) val loadingTime: Float,
+)

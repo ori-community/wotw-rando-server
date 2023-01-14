@@ -1,5 +1,6 @@
 package wotw.server.database.model
 
+import dev.kord.common.entity.optional.optional
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID

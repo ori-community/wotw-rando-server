@@ -40,7 +40,8 @@ import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import wotw.io.messages.protobuf.UdpPacket
 import wotw.server.api.*
-import wotw.server.database.PlayerUniversePopulationCache
+import wotw.server.database.MultiverseMemberCache
+import wotw.server.database.PlayerEnvironmentCache
 import wotw.server.database.model.*
 import wotw.server.exception.*
 import wotw.server.game.GameHandlerRegistry
@@ -151,7 +152,9 @@ class WotwBackendServer {
     val sync = StateSynchronization(this)
     val seedGeneratorService = SeedGeneratorService(this)
 
-    val populationCache = PlayerUniversePopulationCache()
+    val playerEnvironmentCache = PlayerEnvironmentCache()
+    val multiverseMemberCache = MultiverseMemberCache()
+
     val cacheScheduler = Scheduler {
         sync.purgeCache(60)
 

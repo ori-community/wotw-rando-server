@@ -87,6 +87,23 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         } ?: ByteArray(0)
     }
 
+    protected suspend fun notifyClientInfoChanged() {
+        newSuspendedTransaction {
+            Multiverse.findById(multiverseId)?.let { multiverse ->
+                val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+
+                server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
+                    server.connections.toPlayers(
+                        multiverseMembers,
+                        message,
+                    )
+                }
+
+                server.connections.toObservers(multiverseId, message = message)
+            }
+        }
+    }
+
     companion object {
         private val handlerTypeMap = biMapOf(
             GameHandlerType.NORMAL to NormalGameHandler::class,

@@ -1,7 +1,5 @@
 package wotw.server.api
 
-import io.ktor.server.websocket.*
-import io.ktor.util.collections.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.RequestFullUpdate
@@ -13,14 +11,16 @@ import wotw.server.sync.ShareScope
 import wotw.server.util.logger
 import wotw.server.util.randomString
 import wotw.util.MultiMap
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 class ConnectionRegistry(val server: WotwBackendServer) {
     val logger = logger()
 
-    data class PlayerConnection(val clientConnection: ClientConnection, val multiverseId: Long?)
+    data class PlayerConnection(
+        val clientConnection: ClientConnection,
+        val multiverseId: Long?,
+    )
 
     data class MultiverseObserverConnection(
         val socketConnection: ClientConnection,
@@ -326,7 +326,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         }
     }
 
-    suspend fun notifyNicknameChanged(playerId: String) {
+    suspend fun notifyUserInfoChanged(playerId: String) {
         newSuspendedTransaction {
             val user = User.findById(playerId)
             user?.currentMultiverse?.id?.value?.let {

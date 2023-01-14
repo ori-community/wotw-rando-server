@@ -18,10 +18,7 @@ import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.MultiverseCreationConfig
 import wotw.io.messages.json
-import wotw.io.messages.protobuf.PlayerPositionMessage
-import wotw.io.messages.protobuf.PlayerUseCatchingAbilityMessage
-import wotw.io.messages.protobuf.UberStateBatchUpdateMessage
-import wotw.io.messages.protobuf.UberStateUpdateMessage
+import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoardGenerator
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
@@ -427,6 +424,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 onMessage(UberStateBatchUpdateMessage::class) { connectionHandler?.onMessage(this) }
                 onMessage(PlayerPositionMessage::class) { connectionHandler?.onMessage(this) }
                 onMessage(PlayerUseCatchingAbilityMessage::class) { connectionHandler?.onMessage(this) }
+                onMessage(ReportLoadingTimeMessage::class) { connectionHandler?.onMessage(this) }
 
                 onClose {
                     logger.info("WebSocket for player $playerId disconnected (close, ${closeReason.await()})")

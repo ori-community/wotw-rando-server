@@ -4,13 +4,14 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoard
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.jsonb
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.sync.ShareScope
-import wotw.server.sync.StateCache
+import wotw.server.sync.UniverseStateCache
 import wotw.server.util.assertTransaction
 import java.util.*
 import kotlin.math.ceil
@@ -42,19 +43,25 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var locked by Multiverses.locked
 
     val universeStates
-        get() = states.filter { it.world == null }.mapNotNull { it.universe?.let { universe -> universe to it } }
+        get() = states
+            .filter { it.world == null }
+            .mapNotNull { it.universe?.let { universe -> universe to it } }
             .toMap()
     val worldStates
-        get() = states.mapNotNull { it.world?.let { world -> world to it } }.toMap()
+        get() = states
+            .mapNotNull { it.world?.let { world -> world to it } }
+            .toMap()
     val players
-        get() = worlds.flatMap { it.members }.toSet()
+        get() = worlds
+            .flatMap { it.members }
+            .toSet()
     val members
         get() = players + spectators
 
     suspend fun updateCompletions(universe: Universe) {
         val board = board ?: return
         val state =
-            StateCache.get(ShareScope.UNIVERSE to universe.id.value)//universeStates[universe]?.uberStateData ?: UberStateMap.empty
+            UniverseStateCache.get(universe.id.value)//universeStates[universe]?.uberStateData ?: UberStateMap.empty
         val completions = events.filter { it.universe == universe }.map { it.x to it.y }
 
         for (x in 1..board.size) {
@@ -84,10 +91,10 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
 
         val universeInThisMultiverse = if (universe?.multiverse == this)
             universe
-            else null
+        else null
 
         val state =
-            if (universeInThisMultiverse != null) StateCache.get(ShareScope.UNIVERSE to universeInThisMultiverse.id.value) else UberStateMap.empty // universeStates[universe]?.uberStateData ?: UberStateMap.empty
+            if (universeInThisMultiverse != null) UniverseStateCache.get(universeInThisMultiverse.id.value) else UberStateMap.empty // universeStates[universe]?.uberStateData ?: UberStateMap.empty
 
         var goals = board.goals.map { (position, goal) ->
             Position(position.first, position.second) to BingoSquare(
@@ -248,9 +255,11 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                     world.name = "Empty world $nextEmptyWorldNumber"
                     nextEmptyWorldNumber++
                 }
+
                 1 -> {
                     world.name = memberNames[0];
                 }
+
                 2 -> {
                     if (memberNames.contains("Appletree") && memberNames.contains("zre")) {
                         world.name = "Applezree"
@@ -258,6 +267,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                         world.name = "${memberNames[0]} and ${memberNames[1]}"
                     }
                 }
+
                 else -> {
                     world.name = "${memberNames[0]} & Co."
                 }

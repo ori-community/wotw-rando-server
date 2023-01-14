@@ -9,25 +9,51 @@ import wotw.server.bingo.UberStateMap
 import wotw.server.database.EntityCache
 import wotw.server.database.model.GameState
 import wotw.server.database.model.Multiverse
+import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-object StateCache : EntityCache<Pair<ShareScope, Long>, UberStateMap>(
-    { StateCache.obtainState(it)?.uberStateData },
-    { k, v -> StateCache.obtainState(k)?.uberStateData = v }
-) {
-    private fun obtainState(key: Pair<ShareScope, Long>): GameState? {
-        assertTransaction()
 
-        return when (key.first) {
-            ShareScope.WORLD -> GameState.findWorldState(key.second)
-            ShareScope.UNIVERSE -> GameState.findUniverseState(key.second)
-            ShareScope.MULTIVERSE -> GameState.findMultiverseState(key.second)
-            else -> null
-        }
+object PlayerStateCache : EntityCache<String, UberStateMap>(
+    { PlayerStateCache.obtainState(it)?.uberStateData },
+    { k, v -> PlayerStateCache.obtainState(k)?.uberStateData = v }
+) {
+    private fun obtainState(key: String): GameState? {
+        assertTransaction()
+        return GameState.findPlayerState(key)
+    }
+}
+
+object WorldStateCache : EntityCache<Long, UberStateMap>(
+    { WorldStateCache.obtainState(it)?.uberStateData },
+    { k, v -> WorldStateCache.obtainState(k)?.uberStateData = v }
+) {
+    private fun obtainState(key: Long): GameState? {
+        assertTransaction()
+        return GameState.findWorldState(key)
+    }
+}
+
+object UniverseStateCache : EntityCache<Long, UberStateMap>(
+    { UniverseStateCache.obtainState(it)?.uberStateData },
+    { k, v -> UniverseStateCache.obtainState(k)?.uberStateData = v }
+) {
+    private fun obtainState(key: Long): GameState? {
+        assertTransaction()
+        return GameState.findUniverseState(key)
+    }
+}
+
+object MultiverseStateCache : EntityCache<Long, UberStateMap>(
+    { MultiverseStateCache.obtainState(it)?.uberStateData },
+    { k, v -> MultiverseStateCache.obtainState(k)?.uberStateData = v }
+) {
+    private fun obtainState(key: Long): GameState? {
+        assertTransaction()
+        return GameState.findMultiverseState(key)
     }
 }
 
@@ -36,15 +62,16 @@ class StateSynchronization(private val server: WotwBackendServer) {
 
     //Requires active transaction
     suspend fun aggregateState(
-        world: World,
+        player: User,
         uberId: UberId,
         value: Double
-    ): Collection<Pair<UberId, AggregationResult>> = aggregateStates(world, mapOf(uberId to value))
+    ): Map<UberId, AggregationResult> = aggregateStates(player, mapOf(uberId to value))
 
     suspend fun aggregateStates(
-        world: World,
+        player: User,
         states: Map<UberId, Double>
-    ): Collection<Pair<UberId, AggregationResult>> {
+    ): Map<UberId, AggregationResult> {
+        val world = player.currentWorld ?: return emptyMap()
         val universe = world.universe
         val multiverse = universe.multiverse
 
@@ -54,60 +81,45 @@ class StateSynchronization(private val server: WotwBackendServer) {
             aggregationStrategiesCache[world.id.value] = strategies
         }
 
-        val result = mutableListOf<Pair<UberId, AggregationResult>>()
-
-        result += states.flatMap { (uberId, value) ->
+        return states.flatMap { (uberId, value) ->
             strategies.getStrategies(uberId).map { strategy ->
-                val id = when (strategy.scope) {
-                    ShareScope.WORLD -> world
-                    ShareScope.UNIVERSE -> universe
-                    ShareScope.MULTIVERSE -> multiverse
-                    else -> null
-                }?.id?.value ?: return@map uberId to AggregationResult(value, strategy)
+                val cache = when (strategy.scope) {
+                    ShareScope.WORLD -> WorldStateCache.getOrNull(world.id.value)
+                    ShareScope.UNIVERSE -> UniverseStateCache.getOrNull(universe.id.value)
+                    ShareScope.MULTIVERSE -> MultiverseStateCache.getOrNull(multiverse.id.value)
+                    ShareScope.PLAYER -> PlayerStateCache.getOrNull(player.id.value)
+                } ?: return@map uberId to AggregationResult(value, strategy)
 
-                val cache = StateCache.getOrNull(strategy.scope to id)
-                val data = cache ?: return@map uberId to AggregationResult(
-                    value,
-                    strategy
-                )
-
-                val oldValue = data[uberId]
+                val oldValue = cache[uberId]
                 if (!strategy.trigger(oldValue, value))
                     return@map uberId to AggregationResult(value, strategy, oldValue, false)
 
                 val newValue = oldValue?.let { strategy.aggregation(it, value) } ?: value
-                data[uberId] = newValue
+                cache[uberId] = newValue
 
                 uberId to AggregationResult(value, strategy, oldValue, true, newValue)
             }
-        }
-
-        return result
+        }.toMap()
     }
 
-    suspend fun syncStates(playerId: String, uberId: UberId, updates: Collection<AggregationResult>) =
-        syncStates(playerId, updates.map { uberId to it })
+    suspend fun syncStates(playerId: String, uberId: UberId, update: AggregationResult) =
+        syncStates(playerId, mapOf(Pair(uberId, update)))
 
-    suspend fun syncStates(
-        playerId: String,
-        updates: Map<UberId, Collection<AggregationResult>>
-    ) =
-        syncStates(playerId, updates.entries.flatMap { (key, value) -> value.map { key to it } })
-
-    suspend fun syncStates(playerId: String, updates: Collection<Pair<UberId, AggregationResult>>) {
-        val triggered = updates.filter { it.second.triggered }
-        val playerUpdates = triggered.filter {
-            val strategy = it.second.strategy
+    suspend fun syncStates(playerId: String, updates: Map<UberId, AggregationResult>) {
+        val triggered = updates.filterValues { it.triggered }
+        val playerUpdates = triggered.filterValues {
+            val strategy = it.strategy
             strategy?.group == UberStateSyncStrategy.NotificationGroup.ALL
-                    || it.second.sentValue != it.second.newValue && strategy?.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT
+                    || it.sentValue != it.newValue && strategy?.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT
         }
-        val shareScopeUpdates = triggered.filter {
-            val strategy = it.second.strategy
+
+        val shareScopeUpdates = triggered.filterValues {
+            val strategy = it.strategy
             strategy?.group == UberStateSyncStrategy.NotificationGroup.ALL ||
-                    it.second.oldValue != it.second.newValue &&
+                    it.oldValue != it.newValue &&
                     (strategy?.group == UberStateSyncStrategy.NotificationGroup.OTHERS ||
                             strategy?.group == UberStateSyncStrategy.NotificationGroup.DIFFERENT)
-        }.groupBy { it.second.strategy?.scope }
+        }.entries.groupBy { it.value.strategy?.scope }
 
         shareScopeUpdates.entries.forEach { (scope, states) ->
             if (scope !== null)
@@ -186,7 +198,10 @@ class StateSynchronization(private val server: WotwBackendServer) {
     }
 
     suspend fun purgeCache(seconds: Int) {
-        StateCache.purge(currentTimeMillis() - 1000 * seconds)
+        PlayerStateCache.purge(currentTimeMillis() - 1000 * seconds)
+        WorldStateCache.purge(currentTimeMillis() - 1000 * seconds)
+        UniverseStateCache.purge(currentTimeMillis() - 1000 * seconds)
+        MultiverseStateCache.purge(currentTimeMillis() - 1000 * seconds)
     }
 
     data class AggregationResult(

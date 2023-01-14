@@ -3,13 +3,10 @@ package wotw.server.database
 import io.ktor.server.plugins.*
 import kotlinx.html.currentTimeMillis
 import kotlinx.serialization.Serializable
-import org.jetbrains.exposed.dao.EntityHook
-import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.server.database.model.Universe
+import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
-import wotw.server.database.model.World
 import java.util.concurrent.ConcurrentHashMap
 
 open class EntityCache<KEY : Any, VALUE : Any>(
@@ -87,18 +84,24 @@ open class EntityCache<KEY : Any, VALUE : Any>(
 }
 
 @Serializable
-data class PlayerUniversePopulationCacheEntry(
+data class PlayerEnvironmentCacheEntry(
     val playerId: String,
     val worldId: Long?,
     val universeMemberIds: Set<String>,
     val worldMemberIds: Set<String>,
 )
 
-class PlayerUniversePopulationCache : EntityCache<String, PlayerUniversePopulationCacheEntry>({ playerId ->
+@Serializable
+data class MultiverseMemberCacheEntry(
+    val multiverseId: Long,
+    val memberIds: Set<String>,
+)
+
+class PlayerEnvironmentCache : EntityCache<String, PlayerEnvironmentCacheEntry>({ playerId ->
     val retrieveFn = suspend {
         val player = User.findById(playerId)
 
-        PlayerUniversePopulationCacheEntry(
+        PlayerEnvironmentCacheEntry(
             playerId,
             player?.currentWorld?.id?.value,
             player?.currentWorld?.universe?.members?.map { it.id.value }?.toSet() ?: emptySet(),
@@ -113,5 +116,23 @@ class PlayerUniversePopulationCache : EntityCache<String, PlayerUniversePopulati
     } else {
         retrieveFn()
     }
-}, { _, _ -> }) {
-}
+}, { _, _ -> })
+
+class MultiverseMemberCache : EntityCache<Long, MultiverseMemberCacheEntry>({ multiverseId ->
+    val retrieveFn = suspend {
+        val multiverse = Multiverse.findById(multiverseId)
+
+        MultiverseMemberCacheEntry(
+            multiverseId,
+            multiverse?.members?.map { it.id.value }?.toSet() ?: emptySet(),
+        )
+    }
+
+    if (TransactionManager.currentOrNull() == null) {
+        newSuspendedTransaction {
+            retrieveFn()
+        }
+    } else {
+        retrieveFn()
+    }
+}, { _, _ -> })

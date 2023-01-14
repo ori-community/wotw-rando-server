@@ -16,12 +16,13 @@ object GameStates : LongIdTable() {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val universeId = optReference("universe_id", Universes, ReferenceOption.CASCADE)
     val worldId = optReference("world_id", Worlds, ReferenceOption.CASCADE)
+    val playerId = optReference("player_id", Users, ReferenceOption.CASCADE)
 
     @OptIn(InternalSerializationApi::class)
     val uberStateData = jsonb("uber_state_data", UberStateMap::class.serializer())
 
     init {
-        uniqueIndex(multiverseId, universeId, worldId)
+        uniqueIndex(multiverseId, universeId, worldId, playerId)
     }
 }
 
@@ -29,7 +30,9 @@ class GameState(id: EntityID<Long>) : LongEntity(id) {
     var multiverse by Multiverse referencedOn GameStates.multiverseId
     var universe by Universe optionalReferencedOn GameStates.universeId
     var world by World optionalReferencedOn GameStates.worldId
+    var player by User optionalReferencedOn GameStates.playerId
     var uberStateData by GameStates.uberStateData
+
     val type: Type
         get() = when {
             world != null -> Type.WORLD
@@ -48,6 +51,10 @@ class GameState(id: EntityID<Long>) : LongEntity(id) {
 
         fun findWorldState(worldId: Long) = find {
             (GameStates.worldId eq worldId)
+        }.firstOrNull()
+
+        fun findPlayerState(playerId: String) = find {
+            (GameStates.playerId eq playerId)
         }.firstOrNull()
     }
 

@@ -666,9 +666,16 @@ val unsortedCoop = listOf(
     UberId(18793, 13352),      // mouldwoodDepthsGroup.darknessLiftedUberState
 )
 
+val gameFinished = UberId(34543, 11226)
+
 val normalWorldSyncAggregationStrategy by lazy {
     AggregationStrategyRegistry().apply {
         register(
+            sync(gameFinished)
+                .with(UberStateSyncStrategy.ALWAYS_OVERWRITE)
+                .notify(UberStateSyncStrategy.NotificationGroup.NONE)
+                .across(ShareScope.PLAYER),
+
             sync(tpIds.values),
             sync(safeMaxLevers),
             sync(seedQuestStates),

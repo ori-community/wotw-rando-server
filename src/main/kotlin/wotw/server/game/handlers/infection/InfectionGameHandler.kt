@@ -16,8 +16,7 @@ import wotw.server.game.*
 import wotw.server.game.handlers.GameHandler
 import wotw.server.game.handlers.PlayerId
 import wotw.server.main.WotwBackendServer
-import wotw.server.sync.ShareScope
-import wotw.server.sync.StateCache
+import wotw.server.sync.WorldStateCache
 import wotw.server.sync.normalWorldSyncAggregationStrategy
 import wotw.server.sync.pickupIds
 import wotw.server.util.Every
@@ -231,8 +230,8 @@ class InfectionGameHandler(
             newSuspendedTransaction {
                 seekerWorlds.keys.forEach { seekerWorldId ->
                     World.findById(seekerWorldId)?.let { seekerWorld ->
-                        val result = server.sync.aggregateStates(seekerWorld, mapOf(BLAZE_UBER_ID to 1.0))
                         seekerWorld.members.forEach { member ->
+                            val result = server.sync.aggregateStates(member, mapOf(BLAZE_UBER_ID to 1.0))
                             server.sync.syncStates(member.id.value, result)
                         }
                     }
@@ -317,7 +316,7 @@ class InfectionGameHandler(
         messageEventBus.register(this, PlayerPositionMessage::class) { message, playerId ->
             playerInfos[playerId]?.let { senderInfo ->
                 senderInfo.position = Vector2(message.x, message.y)
-                val cache = server.populationCache.get(playerId)
+                val cache = server.playerEnvironmentCache.get(playerId)
 
                 if (senderInfo.type == PlayerType.Infected) {
                     server.connections.toPlayers(
@@ -366,7 +365,7 @@ class InfectionGameHandler(
         }
 
         messageEventBus.register(this, PlayerUseCatchingAbilityMessage::class) { message, playerId ->
-            val cache = server.populationCache.get(playerId)
+            val cache = server.playerEnvironmentCache.get(playerId)
 
             state.seekerWorlds[cache.worldId]?.let { seekerWorldInfo ->
                 server.connections.toPlayers(
@@ -477,9 +476,9 @@ class InfectionGameHandler(
         }
 
         messageEventBus.register(this, UberStateUpdateMessage::class) { message, playerId ->
-            server.populationCache.getOrNull(playerId)?.let { playerCache ->
+            server.playerEnvironmentCache.getOrNull(playerId)?.let { playerCache ->
                 playerCache.worldId?.let { worldId ->
-                    updateUberState(message, worldId, playerId)
+                    updateUberState(message, playerId)
 
                     if (
                         pickupIds.containsValue(message.uberId) && // It's a pickup
@@ -491,7 +490,7 @@ class InfectionGameHandler(
                                 multiverse.worlds
                                     .filter { !state.seekerWorlds.containsKey(it.id.value) }
                                     .filter { world ->
-                                        val state = StateCache.get(ShareScope.WORLD to world.id.value)
+                                        val state = WorldStateCache.get(world.id.value)
                                         state[message.uberId] == 1.0
                                     }
                                     .map { it.name }
@@ -522,9 +521,7 @@ class InfectionGameHandler(
         }
 
         messageEventBus.register(this, UberStateBatchUpdateMessage::class) { message, playerId ->
-            server.populationCache.getOrNull(playerId)?.worldId?.let { worldId ->
-                batchUpdateUberStates(message, worldId, playerId)
-            }
+            batchUpdateUberStates(message, playerId)
         }
 
         multiverseEventBus.register(this, DeveloperEvent::class) { message ->
@@ -681,17 +678,18 @@ class InfectionGameHandler(
         broadcastPlayerVisibility()
     }
 
-    private suspend fun updateUberState(message: UberStateUpdateMessage, worldId: Long, playerId: String) =
-        batchUpdateUberStates(UberStateBatchUpdateMessage(message), worldId, playerId)
+    private suspend fun updateUberState(message: UberStateUpdateMessage, playerId: String) =
+        batchUpdateUberStates(UberStateBatchUpdateMessage(message), playerId)
 
-    private suspend fun batchUpdateUberStates(message: UberStateBatchUpdateMessage, worldId: Long, playerId: String) {
-        val updates = message.updates.map {
+    private suspend fun batchUpdateUberStates(message: UberStateBatchUpdateMessage, playerId: String) {
+        val uberStates = message.updates.associate {
             it.uberId to it.value
-        }.toMap()
+        }
 
         val results = newSuspendedTransaction {
-            val world = World.findById(worldId) ?: error("Error: Requested uber state update on unknown world")
-            server.sync.aggregateStates(world, updates)
+            val player = User.findById(playerId) ?: error("Error: Requested uber state update on unknown user")
+            val results = server.sync.aggregateStates(player, uberStates)
+            results
         }
 
         server.sync.syncStates(playerId, results)
