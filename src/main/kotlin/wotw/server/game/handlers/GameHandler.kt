@@ -87,7 +87,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         } ?: ByteArray(0)
     }
 
-    protected suspend fun notifyClientInfoChanged() {
+    protected suspend fun notifyMultiverseOrClientInfoChanged() {
         newSuspendedTransaction {
             Multiverse.findById(multiverseId)?.let { multiverse ->
                 val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)

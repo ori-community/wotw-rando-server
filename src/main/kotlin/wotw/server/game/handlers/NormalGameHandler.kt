@@ -37,7 +37,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
     private val scheduler = Scheduler {
         if (lazilyNotifyClientInfoChanged) {
-            notifyClientInfoChanged()
+            notifyMultiverseOrClientInfoChanged()
             lazilyNotifyClientInfoChanged = false
         }
 
@@ -124,6 +124,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                             multiverse.locked = true
                         }
                     }
+
+                    notifyMultiverseOrClientInfoChanged()
                 }
             }
         }
