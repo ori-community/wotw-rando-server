@@ -11,18 +11,18 @@ buildscript {
     }
 }
 
-val kotlin_version = "1.7.10"
+val kotlin_version = "1.7.21"
 val ktor_version = "2.1.2"
 val logback_version = "1.2.11"
 val exposed_version = "0.39.2"
-val serialization_version = "1.3.3"
+val serialization_version = "1.4.1"
 val krontab_version = "0.7.2"
 // val protobuf_version = "3.19.4"
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "1.6.10"
+    kotlin("jvm") version "1.7.21"
     // id("com.google.protobuf") version "0.8.18"
-    kotlin("plugin.serialization") version "1.6.10"
+    kotlin("plugin.serialization") version "1.7.21"
 }
 
 repositories {

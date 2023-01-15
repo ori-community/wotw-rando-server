@@ -26,7 +26,9 @@ import java.util.concurrent.TimeUnit
 data class NormalGameHandlerState(
     @ProtoNumber(1) @Required var startingAt: Long? = null,
     @ProtoNumber(2) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
-    @ProtoNumber(3) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
+    @ProtoNumber(3) var playerFinishedTimes: MutableMap<String, Float> = mutableMapOf(),
+    @ProtoNumber(4) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
+    @ProtoNumber(5) var universeFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
 )
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
@@ -164,28 +166,28 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             world.universe.multiverse.updateCompletions(world.universe)
 
             state.startingAt?.let { startingAt ->
-                if (
-                    !state.worldFinishedTimes.containsKey(world.id.value) &&
-                    results.containsKey(gameFinished)
-                ) {
-                    // If all members finished...
-                    if (
-                        world.members.all { p ->
-                            (PlayerStateCache.getOrNull(p.id.value)?.get(gameFinished) ?: 0.0) > 0.5
-                        }
-                    ) {
-                        val realTimeMillis = Instant.ofEpochMilli(startingAt).until(Instant.now(), ChronoUnit.MILLIS)
-
-                        var largestTime = 0.0f
-                        for (worldMember in world.members) {
-                            val playerTime = realTimeMillis - (state.playerLoadingTimes[worldMember.id.value] ?: 0f) * 1000f
-                            if (playerTime > largestTime) {
-                                largestTime = playerTime
-                            }
-                        }
-
-                        state.worldFinishedTimes[world.id.value] = largestTime
+                if (results.containsKey(gameFinished)) {
+                    if (!state.playerFinishedTimes.containsKey(playerId) && results[gameFinished]!!.sentValue > 0.5) {
+                        val realTimeMillis =
+                            Instant.ofEpochMilli(startingAt).until(Instant.now(), ChronoUnit.MILLIS)
+                        state.playerFinishedTimes[playerId] = (realTimeMillis.toFloat() / 1000f) - (state.playerLoadingTimes[playerId] ?: 0f)
                         lazilyNotifyClientInfoChanged = true
+                    }
+
+                    if (!state.worldFinishedTimes.containsKey(world.id.value)) {
+                        // All players finished
+                        if (world.members.all { player -> state.playerFinishedTimes.containsKey(player.id.value) }) {
+                            state.worldFinishedTimes[world.id.value] = world.members.maxOf { player -> state.playerFinishedTimes[player.id.value] ?: 0f }
+                            lazilyNotifyClientInfoChanged = true
+                        }
+                    }
+
+                    if (!state.universeFinishedTimes.containsKey(world.universe.id.value)) {
+                        // All worlds finished
+                        if (world.universe.worlds.all { world -> state.worldFinishedTimes.containsKey(world.id.value) }) {
+                            state.universeFinishedTimes[world.universe.id.value] = world.universe.worlds.maxOf { world -> state.worldFinishedTimes[world.id.value] ?: 0f }
+                            lazilyNotifyClientInfoChanged = true
+                        }
                     }
                 }
             }

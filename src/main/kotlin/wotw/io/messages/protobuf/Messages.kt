@@ -1,5 +1,6 @@
 package wotw.io.messages.protobuf
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
@@ -40,7 +41,7 @@ data class MultiverseInfoMessage(
     @ProtoNumber(4) val spectators: List<UserInfo>,
     @ProtoNumber(5) val seedId: Long?,
     @ProtoNumber(6) val gameHandlerType: Int,
-    @ProtoNumber(7) val gameHandlerClientInfo: ByteArray,
+    @ProtoNumber(7) @Contextual val gameHandlerClientInfo: ByteArray,
     // @ProtoNumber(8) @Required val playerVisibilities: SetVisibilityMessage? = null,
     @ProtoNumber(9) val locked: Boolean,
 ) {
