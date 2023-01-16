@@ -117,7 +117,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
-                "start" -> {
+                "startTimer" -> {
                     state.startingAt = Instant.now().plusSeconds(20).toEpochMilli()
 
                     newSuspendedTransaction {
