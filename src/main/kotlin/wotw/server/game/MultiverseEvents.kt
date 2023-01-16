@@ -23,7 +23,12 @@ data class PlayerLeftEvent(
     val universeId: Long,
 )
 
-data class DeveloperEvent(
+data class MultiverseEvent(
+    val event: String,
+    val payload: Any? = null,
+)
+
+data class DebugEvent(
     val event: String,
     val payload: Any? = null,
 )

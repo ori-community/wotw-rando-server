@@ -11,7 +11,7 @@ import wotw.server.database.model.GameState
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
 import wotw.server.database.model.World
-import wotw.server.game.DeveloperEvent
+import wotw.server.game.MultiverseEvent
 import wotw.server.game.inventory.WorldInventory
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.*
@@ -115,7 +115,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             lazilyNotifyClientInfoChanged = true
         }
 
-        multiverseEventBus.register(this, DeveloperEvent::class) { message ->
+        multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
                 "start" -> {
                     state.startingAt = Instant.now().plusSeconds(20).toEpochMilli()
