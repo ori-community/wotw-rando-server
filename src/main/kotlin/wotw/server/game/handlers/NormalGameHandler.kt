@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 @Serializable
 data class NormalGameHandlerState(
     @ProtoNumber(1) @Required var startingAt: Long? = null,
-    @ProtoNumber(2) var finishedTime: Float? = null,
+    @ProtoNumber(2) var finishedTime: Float?,
     @ProtoNumber(3) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
     @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float> = mutableMapOf(),
     @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
@@ -33,7 +33,7 @@ data class NormalGameHandlerState(
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     GameHandler<NormalGameHandlerState>(multiverseId, server) {
-    private var state = NormalGameHandlerState()
+    private var state = NormalGameHandlerState(finishedTime = null)
 
     private var lazilyNotifyClientInfoChanged = false
 
