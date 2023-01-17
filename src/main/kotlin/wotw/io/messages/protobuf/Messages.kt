@@ -35,20 +35,23 @@ data class UniverseInfo(
 
 @Serializable
 data class RaceTeamMemberInfo(
-    @ProtoNumber(1) val user: UserInfo,
-    @ProtoNumber(2) @Required val finishedTime: Float? = null,
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val user: UserInfo,
+    @ProtoNumber(3) @Required val finishedTime: Float? = null,
 )
 
 @Serializable
 data class RaceTeamInfo(
-    @ProtoNumber(1) val members: List<RaceTeamMemberInfo>,
-    @ProtoNumber(2) @Required val finishedTime: Float? = null,
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val members: List<RaceTeamMemberInfo>,
+    @ProtoNumber(3) @Required val finishedTime: Float? = null,
 )
 
 @Serializable
 data class RaceInfo(
-    @ProtoNumber(1) val teams: List<RaceTeamInfo>,
-    @ProtoNumber(2) @Required val finishedTime: Float? = null,
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val teams: List<RaceTeamInfo>,
+    @ProtoNumber(3) @Required val finishedTime: Float? = null,
 )
 
 @Serializable
@@ -419,5 +422,5 @@ data class ResourceRequestMessage(
 
 @Serializable
 data class ReportLoadingTimeMessage(
-    @ProtoNumber(1) val loadingTime: Float,
+    @ProtoNumber(1) val loadingTime: Float = 0f,
 )

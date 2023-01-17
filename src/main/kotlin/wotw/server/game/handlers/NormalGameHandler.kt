@@ -45,10 +45,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 val secondsUntilStart = Instant.now().until(startingAtInstant, ChronoUnit.SECONDS)
 
                 val message = PrintTextMessage(
-                    if (secondsUntilStart <= 0) "Go!" else "Race starting in $secondsUntilStart",
-                    Vector2(0f, -1f),
+                    if (secondsUntilStart <= 0) "<s_4>Go!</>" else "<s_2>Race starting in $secondsUntilStart</>",
+                    Vector2(0f, -1.3f),
                     0,
-                    3f,
+                    if (secondsUntilStart <= 0) 1f else 3f,
                     screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
                     horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
                     alignment = PrintTextMessage.ALIGNMENT_CENTER,
@@ -188,6 +188,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             }
 
             race.flush()
+
+            multiverse.race = race
         }
 
         notifyMultiverseOrClientInfoChanged()

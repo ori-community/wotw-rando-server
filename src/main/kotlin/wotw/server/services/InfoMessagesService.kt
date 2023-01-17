@@ -17,16 +17,19 @@ class InfoMessagesService(private val server: WotwBackendServer) {
     )
 
     fun generateRaceTeamMemberInfo(raceTeamMember: RaceTeamMember) = RaceTeamMemberInfo(
+        raceTeamMember.id.value,
         generateUserInfo(raceTeamMember.user),
         raceTeamMember.finishedTime,
     )
 
     fun generateRaceTeamInfo(raceTeam: RaceTeam) = RaceTeamInfo(
+        raceTeam.id.value,
         raceTeam.members.map { member -> generateRaceTeamMemberInfo(member) },
         raceTeam.finishedTime,
     )
 
     fun generateRaceInfo(race: Race) = RaceInfo(
+        race.id.value,
         race.teams.map { team -> generateRaceTeamInfo(team) },
         race.finishedTime,
     )
