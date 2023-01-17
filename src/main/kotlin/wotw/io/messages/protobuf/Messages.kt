@@ -34,6 +34,24 @@ data class UniverseInfo(
 )
 
 @Serializable
+data class RaceTeamMemberInfo(
+    @ProtoNumber(1) val user: UserInfo,
+    @ProtoNumber(2) @Required val finishedTime: Float? = null,
+)
+
+@Serializable
+data class RaceTeamInfo(
+    @ProtoNumber(1) val members: List<RaceTeamMemberInfo>,
+    @ProtoNumber(2) @Required val finishedTime: Float? = null,
+)
+
+@Serializable
+data class RaceInfo(
+    @ProtoNumber(1) val teams: List<RaceTeamInfo>,
+    @ProtoNumber(2) @Required val finishedTime: Float? = null,
+)
+
+@Serializable
 data class MultiverseInfoMessage(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val universes: List<UniverseInfo>,
@@ -44,6 +62,8 @@ data class MultiverseInfoMessage(
     @ProtoNumber(7) @Contextual val gameHandlerClientInfo: ByteArray,
     // @ProtoNumber(8) @Required val playerVisibilities: SetVisibilityMessage? = null,
     @ProtoNumber(9) val locked: Boolean,
+    @ProtoNumber(10) val isLockable: Boolean,
+    @ProtoNumber(11) @Required val race: RaceInfo? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

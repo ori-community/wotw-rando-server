@@ -313,6 +313,10 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         throw ForbiddenException("You cannot lock/unlock this multiverse since you are not an active player in it")
                     }
 
+                    if (!multiverse.isLockable) {
+                        throw ForbiddenException("You cannot lock/unlock this multiverse because it was locked by the server")
+                    }
+
                     multiverse.locked = !multiverse.locked
 
                     server.connections.toPlayers(

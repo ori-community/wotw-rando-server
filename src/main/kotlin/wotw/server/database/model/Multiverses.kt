@@ -4,13 +4,11 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoard
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.jsonb
 import wotw.server.game.handlers.GameHandlerType
-import wotw.server.sync.ShareScope
 import wotw.server.sync.UniverseStateCache
 import wotw.server.util.assertTransaction
 import java.util.*
@@ -18,18 +16,21 @@ import kotlin.math.ceil
 import kotlin.to
 
 object Multiverses : LongIdTable("multiverse") {
-    val seed = reference("seed_id", Seeds).nullable()
+    val seedId = reference("seed_id", Seeds).nullable()
+    val raceId = reference("race_id", Races).nullable()
     val board = jsonb("board", BingoBoard.serializer()).nullable()
 
     val gameHandlerActive = bool("game_handler_active").default(false)
     val gameHandlerType = integer("game_handler_type").default(GameHandlerType.NORMAL)
     val gameHandlerStateJson = jsonb("game_handler_state", { s -> s }, { s -> s }).nullable()
     val locked = bool("locked").default(false)
+    val isLockable = bool("is_lockable").default(true)
 }
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var board by Multiverses.board
-    var seed by Seed optionalReferencedOn Multiverses.seed
+    var seed by Seed optionalReferencedOn Multiverses.seedId
+    var race by Race optionalReferencedOn Multiverses.raceId
     val universes by Universe referrersOn Universes.multiverseId
     val worlds: Collection<World>
         get() = universes.flatMap { it.worlds }
@@ -41,6 +42,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     var gameHandlerActive by Multiverses.gameHandlerActive
     var gameHandlerStateJson by Multiverses.gameHandlerStateJson
     var locked by Multiverses.locked
+    var isLockable by Multiverses.isLockable
 
     val universeStates
         get() = states

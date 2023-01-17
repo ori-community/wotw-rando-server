@@ -7,16 +7,15 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.*
-import wotw.server.database.model.GameState
-import wotw.server.database.model.Multiverse
-import wotw.server.database.model.User
-import wotw.server.database.model.World
+import wotw.server.database.model.*
 import wotw.server.game.MultiverseEvent
+import wotw.server.game.PlayerLeftEvent
 import wotw.server.game.inventory.WorldInventory
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.*
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
+import wotw.server.util.assertTransaction
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -25,10 +24,11 @@ import java.util.concurrent.TimeUnit
 @Serializable
 data class NormalGameHandlerState(
     @ProtoNumber(1) @Required var startingAt: Long? = null,
-    @ProtoNumber(2) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
-    @ProtoNumber(3) var playerFinishedTimes: MutableMap<String, Float> = mutableMapOf(),
-    @ProtoNumber(4) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
-    @ProtoNumber(5) var universeFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
+    @ProtoNumber(2) @Required var finishedTime: Float? = null,
+    @ProtoNumber(3) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
+    @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float> = mutableMapOf(),
+    @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
+    @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
 )
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
@@ -38,19 +38,14 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     private var lazilyNotifyClientInfoChanged = false
 
     private val scheduler = Scheduler {
-        if (lazilyNotifyClientInfoChanged) {
-            notifyMultiverseOrClientInfoChanged()
-            lazilyNotifyClientInfoChanged = false
-        }
-
         state.startingAt?.let { startingAt ->
             // In-game countdown
             val startingAtInstant = Instant.ofEpochMilli(startingAt)
             if (startingAtInstant.isAfter(Instant.now())) {
-                val seconds = Instant.now().until(startingAtInstant, ChronoUnit.SECONDS)
+                val secondsUntilStart = Instant.now().until(startingAtInstant, ChronoUnit.SECONDS)
 
                 val message = PrintTextMessage(
-                    if (seconds <= 0) "Go!" else "Race starting in $seconds",
+                    if (secondsUntilStart <= 0) "Go!" else "Race starting in $secondsUntilStart",
                     Vector2(0f, -1f),
                     0,
                     3f,
@@ -66,6 +61,16 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     server.connections.toPlayers(multiverseMembers, message)
                 }
             }
+
+            if (state.finishedTime == null && startingAtInstant.until(Instant.now(), ChronoUnit.HOURS) > 24) {
+                state.finishedTime = 0f
+                lazilyNotifyClientInfoChanged = true
+            }
+        }
+
+        if (lazilyNotifyClientInfoChanged) {
+            notifyMultiverseOrClientInfoChanged()
+            lazilyNotifyClientInfoChanged = false
         }
     }
 
@@ -118,17 +123,14 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
                 "startTimer" -> {
-                    state.startingAt = Instant.now().plusSeconds(20).toEpochMilli()
-
-                    newSuspendedTransaction {
-                        Multiverse.findById(multiverseId)?.let { multiverse ->
-                            multiverse.gameHandlerActive = true
-                            multiverse.locked = true
-                        }
-                    }
-
-                    notifyMultiverseOrClientInfoChanged()
+                    startRace()
                 }
+            }
+        }
+
+        multiverseEventBus.register(this, PlayerLeftEvent::class) {
+            newSuspendedTransaction {
+                checkAllUniversesFinished()
             }
         }
 
@@ -143,6 +145,52 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         serializedState?.let {
             state = json.decodeFromString(NormalGameHandlerState.serializer(), it)
         }
+    }
+
+    suspend fun startRace() {
+        state.startingAt = (Instant.now().epochSecond + 20) * 1000
+
+        newSuspendedTransaction {
+            val multiverse = getMultiverse()
+            multiverse.gameHandlerActive = true
+            multiverse.locked = true
+            multiverse.isLockable = false
+        }
+
+        notifyMultiverseOrClientInfoChanged()
+    }
+
+    suspend fun endRace(finishedTime: Float) {
+        state.finishedTime = finishedTime
+
+        newSuspendedTransaction {
+            val multiverse = getMultiverse()
+            multiverse.gameHandlerActive = false
+
+            // Record race result
+            val race = Race.new {
+                this.finishedTime = finishedTime
+            }
+
+            multiverse.universes.forEach() { universe ->
+                val team = RaceTeam.new {
+                    this.race = race
+                    this.finishedTime = state.universeFinishedTimes[universe.id.value]
+                }
+
+                universe.members.forEach() { player ->
+                    RaceTeamMember.new {
+                        this.raceTeam = team
+                        this.user = player
+                        this.finishedTime = state.playerFinishedTimes[player.id.value]
+                    }
+                }
+            }
+
+            race.flush()
+        }
+
+        notifyMultiverseOrClientInfoChanged()
     }
 
     override fun getClientInfo(): NormalGameHandlerState? {
@@ -189,6 +237,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                             lazilyNotifyClientInfoChanged = true
                         }
                     }
+
+                    checkAllUniversesFinished()
                 }
             }
 
@@ -204,6 +254,16 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         server.sync.syncMultiverseProgress(multiverseId)
         server.sync.syncStates(playerId, results)
+    }
+
+    private suspend fun checkAllUniversesFinished() {
+        assertTransaction()
+
+        val multiverse = getMultiverse()
+        if (multiverse.universes.all { universe -> state.universeFinishedTimes.containsKey(universe.id.value) }) {
+            // All universes finished
+            endRace(multiverse.universes.maxOf { universe -> state.universeFinishedTimes[universe.id.value] ?: 0f })
+        }
     }
 
     override suspend fun generateStateAggregationRegistry(world: World): AggregationStrategyRegistry {

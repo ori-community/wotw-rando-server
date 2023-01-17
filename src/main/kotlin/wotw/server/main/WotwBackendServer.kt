@@ -133,6 +133,9 @@ class WotwBackendServer {
                 Seeds,
                 WorldSeeds,
                 BingothonTokens,
+                Races,
+                RaceTeams,
+                RaceTeamMembers,
             )
         }
     }

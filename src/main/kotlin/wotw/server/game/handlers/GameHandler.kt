@@ -31,6 +31,10 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     protected val messageEventBus = EventBusWithMetadata<PlayerId>()
     protected val multiverseEventBus = EventBus()
 
+    fun getMultiverse(): Multiverse {
+        return Multiverse.findById(multiverseId) ?: throw RuntimeException("Could not find multiverse $multiverseId for game handler")
+    }
+
     suspend fun onMessage(message: Any, sender: PlayerId) {
         messageEventBus.send(message, sender)
     }
@@ -66,9 +70,8 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
 
     suspend fun persistState() {
         newSuspendedTransaction {
-            Multiverse.findById(multiverseId)?.let { multiverse ->
-                multiverse.gameHandlerStateJson = serializeState()
-            }
+            val multiverse = getMultiverse()
+            multiverse.gameHandlerStateJson = serializeState()
         }
     }
 
@@ -89,18 +92,17 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
 
     protected suspend fun notifyMultiverseOrClientInfoChanged() {
         newSuspendedTransaction {
-            Multiverse.findById(multiverseId)?.let { multiverse ->
-                val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+            val multiverse = getMultiverse()
+            val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
 
-                server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
-                    server.connections.toPlayers(
-                        multiverseMembers,
-                        message,
-                    )
-                }
-
-                server.connections.toObservers(multiverseId, message = message)
+            server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
+                server.connections.toPlayers(
+                    multiverseMembers,
+                    message,
+                )
             }
+
+            server.connections.toObservers(multiverseId, message = message)
         }
     }
 
