@@ -129,7 +129,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
 
         multiverseEventBus.register(this, PlayerLeftEvent::class) {
-            if (state.finishedTime != null) {
+            if (state.finishedTime == null) {
                 newSuspendedTransaction {
                     checkAllUniversesFinished()
                 }
@@ -259,7 +259,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                         }
                     }
 
-                    if (state.finishedTime != null) {
+                    if (state.finishedTime == null) {
                         checkAllUniversesFinished()
                     }
                 }
