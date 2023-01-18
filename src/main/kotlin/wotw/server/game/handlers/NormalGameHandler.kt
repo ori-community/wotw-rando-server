@@ -161,6 +161,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     }
 
     suspend fun endRace(finishedTime: Float) {
+        if (state.finishedTime != null) {
+            return
+        }
+
         state.finishedTime = finishedTime
 
         newSuspendedTransaction {
