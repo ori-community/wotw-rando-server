@@ -183,9 +183,13 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 val team = RaceTeam.new {
                     this.race = race
                     this.finishedTime = state.universeFinishedTimes[universe.id.value]
-                    this.points = universeRanks[universe.id.value]?.let { rank ->
-                        universeRanks.size - rank
-                    } ?: 0
+
+                    // Only distribute points if there are 2+ entrants
+                    if (state.universeFinishedTimes.size >= 2) {
+                        this.points = universeRanks[universe.id.value]?.let { rank ->
+                            universeRanks.size - rank
+                        } ?: 0
+                    }
                 }
 
                 universe.members.forEach() { player ->
