@@ -129,8 +129,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
 
         multiverseEventBus.register(this, PlayerLeftEvent::class) {
-            newSuspendedTransaction {
-                checkAllUniversesFinished()
+            if (state.finishedTime != null) {
+                newSuspendedTransaction {
+                    checkAllUniversesFinished()
+                }
             }
         }
 
@@ -161,10 +163,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     }
 
     suspend fun endRace(finishedTime: Float) {
-        if (state.finishedTime != null) {
-            return
-        }
-
         state.finishedTime = finishedTime
 
         newSuspendedTransaction {
@@ -261,7 +259,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                         }
                     }
 
-                    checkAllUniversesFinished()
+                    if (state.finishedTime != null) {
+                        checkAllUniversesFinished()
+                    }
                 }
             }
 
