@@ -24,16 +24,16 @@ import java.util.concurrent.TimeUnit
 @Serializable
 data class NormalGameHandlerState(
     @ProtoNumber(1) @Required var startingAt: Long? = null,
-    @ProtoNumber(2) var finishedTime: Float?,
+    @ProtoNumber(2) @Required var finishedTime: Float? = null,
     @ProtoNumber(3) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
-    @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float> = mutableMapOf(),
-    @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
-    @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
+    @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float?> = mutableMapOf(),
+    @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
+    @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
 )
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     GameHandler<NormalGameHandlerState>(multiverseId, server) {
-    private var state = NormalGameHandlerState(finishedTime = null)
+    private var state = NormalGameHandlerState()
 
     private var lazilyNotifyClientInfoChanged = false
 
@@ -172,10 +172,20 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 this.finishedTime = finishedTime
             }
 
+            val universeRanks = state.universeFinishedTimes
+                .toList()
+                .filter { (_, finishedTime) -> finishedTime != null }
+                .sortedBy { (_, finishedTime) -> finishedTime }
+                .mapIndexed { index, (universeId, _) -> Pair(universeId, index) }
+                .toMap()
+
             multiverse.universes.forEach() { universe ->
                 val team = RaceTeam.new {
                     this.race = race
                     this.finishedTime = state.universeFinishedTimes[universe.id.value]
+                    this.points = universeRanks[universe.id.value]?.let { rank ->
+                        universeRanks.size - rank
+                    } ?: 0
                 }
 
                 universe.members.forEach() { player ->

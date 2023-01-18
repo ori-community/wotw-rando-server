@@ -25,6 +25,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
     fun generateRaceTeamInfo(raceTeam: RaceTeam) = RaceTeamInfo(
         raceTeam.id.value,
         raceTeam.members.map { member -> generateRaceTeamMemberInfo(member) },
+        raceTeam.points,
         raceTeam.finishedTime,
     )
 
@@ -73,5 +74,6 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         server.connections.playerMultiverseConnections[user.id.value]?.multiverseId,
         user.currentMultiverse?.id?.value,
         user.isDeveloper,
+        user.points,
     )
 }

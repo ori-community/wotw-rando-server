@@ -14,6 +14,7 @@ data class UserInfo(
     @ProtoNumber(4) val connectedMultiverseId: Long?,
     @ProtoNumber(5) val currentMultiverseId: Long?,
     @ProtoNumber(6) val isDeveloper: Boolean,
+    @ProtoNumber(7) val points: Int,
 )
 
 @Serializable
@@ -44,7 +45,8 @@ data class RaceTeamMemberInfo(
 data class RaceTeamInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val members: List<RaceTeamMemberInfo>,
-    @ProtoNumber(3) @Required val finishedTime: Float? = null,
+    @ProtoNumber(3) val points: Int,
+    @ProtoNumber(4) @Required val finishedTime: Float? = null,
 )
 
 @Serializable

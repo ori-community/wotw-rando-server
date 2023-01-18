@@ -91,13 +91,15 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
 
                                 val userInfo = newSuspendedTransaction {
                                     val user = User.findById(it.userId)!!
+
                                     UserInfo(
                                         user.id.value,
                                         user.name,
                                         user.avatarId,
                                         null,
                                         user.currentMultiverse?.id?.value,
-                                        user.isDeveloper
+                                        user.isDeveloper,
+                                        user.points,
                                     )
                                 }
 
