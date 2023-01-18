@@ -198,6 +198,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                         this.user = player
                         this.finishedTime = state.playerFinishedTimes[player.id.value]
                     }
+
+                    player.points += team.points
                 }
             }
 
