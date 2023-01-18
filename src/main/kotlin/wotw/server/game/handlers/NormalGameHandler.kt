@@ -204,6 +204,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             race.flush()
 
             multiverse.race = race
+            multiverse.refresh(true)
         }
 
         notifyMultiverseOrClientInfoChanged()
