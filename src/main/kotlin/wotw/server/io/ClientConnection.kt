@@ -130,7 +130,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                 ClientConnectionUDPRegistry.unregister(it)
             }
 
-            if (e !is CancellationException) {
+            if (e !is ClosedReceiveChannelException) {
                 e.printStackTrace()
             }
 
