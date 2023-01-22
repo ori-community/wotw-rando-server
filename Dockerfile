@@ -20,7 +20,6 @@ VOLUME /app/seeds
 
 ENV SEEDGEN_PATH=/app/seedgen/seedgen
 ENV WOTW_DB_HOST=db
-ENV SEED_DIR=/app/seedgen/seeds
 ENV WOTW_DB=postgres
 ENV WOTW_DB_PORT=5432
 ENV WOTW_DB_USER=postgres
