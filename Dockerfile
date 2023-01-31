@@ -1,5 +1,5 @@
 ARG SEEDGEN_TAG=latest
-ARG SEEDGEN_IMAGE=ghcr.io/ori-rando/wotw-seedgen:$SEEDGEN_TAG
+ARG SEEDGEN_IMAGE=ghcr.io/ori-community/wotw-seedgen:$SEEDGEN_TAG
 
 FROM gradle:7-jdk17 as build-jar
 
