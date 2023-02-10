@@ -24,7 +24,8 @@ import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
 import wotw.server.exception.ForbiddenException
-import wotw.server.game.DeveloperEvent
+import wotw.server.game.DebugEvent
+import wotw.server.game.MultiverseEvent
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.game.handlers.hideandseek.HideAndSeekGameHandlerState
@@ -312,6 +313,10 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         throw ForbiddenException("You cannot lock/unlock this multiverse since you are not an active player in it")
                     }
 
+                    if (!multiverse.isLockable) {
+                        throw ForbiddenException("You cannot lock/unlock this multiverse because it was locked by the server")
+                    }
+
                     multiverse.locked = !multiverse.locked
 
                     server.connections.toPlayers(
@@ -329,8 +334,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             post("multiverses/{multiverse_id}/event/{event}") {
-                requireDeveloper()
-
                 val multiverseId =
                     call.parameters["multiverse_id"]?.toLongOrNull()
                         ?: throw BadRequestException("Unparsable MultiverseID")
@@ -345,7 +348,28 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
 
                         server.gameHandlerRegistry.getHandler(multiverse).onMultiverseEvent(
-                            DeveloperEvent(event),
+                            MultiverseEvent(event),
+                        )
+                    }
+
+                    call.respond(HttpStatusCode.Created)
+                } ?: throw BadRequestException("No event given")
+            }
+
+            post("multiverses/{multiverse_id}/debug-event/{event}") {
+                requireDeveloper()
+
+                val multiverseId =
+                    call.parameters["multiverse_id"]?.toLongOrNull()
+                        ?: throw BadRequestException("Unparsable MultiverseID")
+
+                call.parameters["event"]?.let { event ->
+                    newSuspendedTransaction {
+                        val multiverse =
+                            Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
+
+                        server.gameHandlerRegistry.getHandler(multiverse).onMultiverseEvent(
+                            DebugEvent(event),
                         )
                     }
 

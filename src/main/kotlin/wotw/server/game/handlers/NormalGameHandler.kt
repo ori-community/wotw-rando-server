@@ -7,16 +7,15 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.*
-import wotw.server.database.model.GameState
-import wotw.server.database.model.Multiverse
-import wotw.server.database.model.User
-import wotw.server.database.model.World
-import wotw.server.game.DeveloperEvent
+import wotw.server.database.model.*
+import wotw.server.game.MultiverseEvent
+import wotw.server.game.PlayerLeftEvent
 import wotw.server.game.inventory.WorldInventory
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.*
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
+import wotw.server.util.assertTransaction
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -25,8 +24,11 @@ import java.util.concurrent.TimeUnit
 @Serializable
 data class NormalGameHandlerState(
     @ProtoNumber(1) @Required var startingAt: Long? = null,
-    @ProtoNumber(2) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
-    @ProtoNumber(3) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
+    @ProtoNumber(2) @Required var finishedTime: Float? = null,
+    @ProtoNumber(3) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
+    @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float?> = mutableMapOf(),
+    @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
+    @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
 )
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
@@ -36,22 +38,17 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     private var lazilyNotifyClientInfoChanged = false
 
     private val scheduler = Scheduler {
-        if (lazilyNotifyClientInfoChanged) {
-            notifyClientInfoChanged()
-            lazilyNotifyClientInfoChanged = false
-        }
-
         state.startingAt?.let { startingAt ->
             // In-game countdown
             val startingAtInstant = Instant.ofEpochMilli(startingAt)
             if (startingAtInstant.isAfter(Instant.now())) {
-                val seconds = Instant.now().until(startingAtInstant, ChronoUnit.SECONDS)
+                val secondsUntilStart = Instant.now().until(startingAtInstant, ChronoUnit.SECONDS)
 
                 val message = PrintTextMessage(
-                    if (seconds <= 0) "Go!" else "Race starting in $seconds",
-                    Vector2(0f, -1f),
+                    if (secondsUntilStart <= 0) "<s_4>Go!</>" else "<s_2>Race starting in $secondsUntilStart</>",
+                    Vector2(0f, -1.3f),
                     0,
-                    3f,
+                    if (secondsUntilStart <= 0) 1f else 3f,
                     screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
                     horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
                     alignment = PrintTextMessage.ALIGNMENT_CENTER,
@@ -64,6 +61,16 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     server.connections.toPlayers(multiverseMembers, message)
                 }
             }
+
+            if (state.finishedTime == null && startingAtInstant.until(Instant.now(), ChronoUnit.HOURS) > 24) {
+                state.finishedTime = 0f
+                lazilyNotifyClientInfoChanged = true
+            }
+        }
+
+        if (lazilyNotifyClientInfoChanged) {
+            notifyMultiverseOrClientInfoChanged()
+            lazilyNotifyClientInfoChanged = false
         }
     }
 
@@ -113,17 +120,18 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             lazilyNotifyClientInfoChanged = true
         }
 
-        multiverseEventBus.register(this, DeveloperEvent::class) { message ->
+        multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
-                "start" -> {
-                    state.startingAt = Instant.now().plusSeconds(20).toEpochMilli()
+                "startTimer" -> {
+                    startRace()
+                }
+            }
+        }
 
-                    newSuspendedTransaction {
-                        Multiverse.findById(multiverseId)?.let { multiverse ->
-                            multiverse.gameHandlerActive = true
-                            multiverse.locked = true
-                        }
-                    }
+        multiverseEventBus.register(this, PlayerLeftEvent::class) {
+            if (state.finishedTime == null) {
+                newSuspendedTransaction {
+                    checkAllUniversesFinished()
                 }
             }
         }
@@ -139,6 +147,71 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         serializedState?.let {
             state = json.decodeFromString(NormalGameHandlerState.serializer(), it)
         }
+    }
+
+    suspend fun startRace() {
+        state.startingAt = (Instant.now().epochSecond + 20) * 1000
+
+        newSuspendedTransaction {
+            val multiverse = getMultiverse()
+            multiverse.gameHandlerActive = true
+            multiverse.locked = true
+            multiverse.isLockable = false
+        }
+
+        notifyMultiverseOrClientInfoChanged()
+    }
+
+    suspend fun endRace(finishedTime: Float) {
+        state.finishedTime = finishedTime
+
+        newSuspendedTransaction {
+            val multiverse = getMultiverse()
+            multiverse.gameHandlerActive = false
+
+            // Record race result
+            val race = Race.new {
+                this.finishedTime = finishedTime
+            }
+
+            val universeRanks = state.universeFinishedTimes
+                .toList()
+                .filter { (_, finishedTime) -> finishedTime != null }
+                .sortedBy { (_, finishedTime) -> finishedTime }
+                .mapIndexed { index, (universeId, _) -> Pair(universeId, index) }
+                .toMap()
+
+            multiverse.universes.forEach() { universe ->
+                val team = RaceTeam.new {
+                    this.race = race
+                    this.finishedTime = state.universeFinishedTimes[universe.id.value]
+
+                    // Only distribute points if there are 2+ entrants
+                    if (state.universeFinishedTimes.size >= 2) {
+                        this.points = universeRanks[universe.id.value]?.let { rank ->
+                            universeRanks.size - rank
+                        } ?: 0
+                    }
+                }
+
+                universe.members.forEach() { player ->
+                    RaceTeamMember.new {
+                        this.raceTeam = team
+                        this.user = player
+                        this.finishedTime = state.playerFinishedTimes[player.id.value]
+                    }
+
+                    player.points += team.points
+                }
+            }
+
+            race.flush()
+
+            multiverse.race = race
+            multiverse.refresh(true)
+        }
+
+        notifyMultiverseOrClientInfoChanged()
     }
 
     override fun getClientInfo(): NormalGameHandlerState? {
@@ -162,28 +235,32 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             world.universe.multiverse.updateCompletions(world.universe)
 
             state.startingAt?.let { startingAt ->
-                if (
-                    !state.worldFinishedTimes.containsKey(world.id.value) &&
-                    results.containsKey(gameFinished)
-                ) {
-                    // If all members finished...
-                    if (
-                        world.members.all { p ->
-                            (PlayerStateCache.getOrNull(p.id.value)?.get(gameFinished) ?: 0.0) > 0.5
-                        }
-                    ) {
-                        val realTimeMillis = Instant.ofEpochMilli(startingAt).until(Instant.now(), ChronoUnit.MILLIS)
-
-                        var largestTime = 0.0f
-                        for (worldMember in world.members) {
-                            val playerTime = realTimeMillis - (state.playerLoadingTimes[worldMember.id.value] ?: 0f) * 1000f
-                            if (playerTime > largestTime) {
-                                largestTime = playerTime
-                            }
-                        }
-
-                        state.worldFinishedTimes[world.id.value] = largestTime
+                if (results.containsKey(gameFinished)) {
+                    if (!state.playerFinishedTimes.containsKey(playerId) && results[gameFinished]!!.sentValue > 0.5) {
+                        val realTimeMillis =
+                            Instant.ofEpochMilli(startingAt).until(Instant.now(), ChronoUnit.MILLIS)
+                        state.playerFinishedTimes[playerId] = (realTimeMillis.toFloat() / 1000f) - (state.playerLoadingTimes[playerId] ?: 0f)
                         lazilyNotifyClientInfoChanged = true
+                    }
+
+                    if (!state.worldFinishedTimes.containsKey(world.id.value)) {
+                        // All players finished
+                        if (world.members.all { player -> state.playerFinishedTimes.containsKey(player.id.value) }) {
+                            state.worldFinishedTimes[world.id.value] = world.members.maxOf { player -> state.playerFinishedTimes[player.id.value] ?: 0f }
+                            lazilyNotifyClientInfoChanged = true
+                        }
+                    }
+
+                    if (!state.universeFinishedTimes.containsKey(world.universe.id.value)) {
+                        // All worlds finished
+                        if (world.universe.worlds.all { world -> state.worldFinishedTimes.containsKey(world.id.value) }) {
+                            state.universeFinishedTimes[world.universe.id.value] = world.universe.worlds.maxOf { world -> state.worldFinishedTimes[world.id.value] ?: 0f }
+                            lazilyNotifyClientInfoChanged = true
+                        }
+                    }
+
+                    if (state.finishedTime == null) {
+                        checkAllUniversesFinished()
                     }
                 }
             }
@@ -200,6 +277,16 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         server.sync.syncMultiverseProgress(multiverseId)
         server.sync.syncStates(playerId, results)
+    }
+
+    private suspend fun checkAllUniversesFinished() {
+        assertTransaction()
+
+        val multiverse = getMultiverse()
+        if (multiverse.universes.all { universe -> state.universeFinishedTimes.containsKey(universe.id.value) }) {
+            // All universes finished
+            endRace(multiverse.universes.maxOf { universe -> state.universeFinishedTimes[universe.id.value] ?: 0f })
+        }
     }
 
     override suspend fun generateStateAggregationRegistry(world: World): AggregationStrategyRegistry {

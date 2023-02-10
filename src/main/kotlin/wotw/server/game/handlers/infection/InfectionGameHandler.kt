@@ -524,7 +524,7 @@ class InfectionGameHandler(
             batchUpdateUberStates(message, playerId)
         }
 
-        multiverseEventBus.register(this, DeveloperEvent::class) { message ->
+        multiverseEventBus.register(this, DebugEvent::class) { message ->
             when (message.event) {
                 "start" -> {
                     state.started = true

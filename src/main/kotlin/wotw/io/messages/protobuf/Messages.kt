@@ -1,5 +1,6 @@
 package wotw.io.messages.protobuf
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
@@ -13,6 +14,7 @@ data class UserInfo(
     @ProtoNumber(4) val connectedMultiverseId: Long?,
     @ProtoNumber(5) val currentMultiverseId: Long?,
     @ProtoNumber(6) val isDeveloper: Boolean,
+    @ProtoNumber(7) val points: Int,
 )
 
 @Serializable
@@ -33,6 +35,28 @@ data class UniverseInfo(
 )
 
 @Serializable
+data class RaceTeamMemberInfo(
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val user: UserInfo,
+    @ProtoNumber(3) @Required val finishedTime: Float? = null,
+)
+
+@Serializable
+data class RaceTeamInfo(
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val members: List<RaceTeamMemberInfo>,
+    @ProtoNumber(3) val points: Int,
+    @ProtoNumber(4) @Required val finishedTime: Float? = null,
+)
+
+@Serializable
+data class RaceInfo(
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val teams: List<RaceTeamInfo>,
+    @ProtoNumber(3) @Required val finishedTime: Float? = null,
+)
+
+@Serializable
 data class MultiverseInfoMessage(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val universes: List<UniverseInfo>,
@@ -40,9 +64,11 @@ data class MultiverseInfoMessage(
     @ProtoNumber(4) val spectators: List<UserInfo>,
     @ProtoNumber(5) val seedId: Long?,
     @ProtoNumber(6) val gameHandlerType: Int,
-    @ProtoNumber(7) val gameHandlerClientInfo: ByteArray,
+    @ProtoNumber(7) @Contextual val gameHandlerClientInfo: ByteArray,
     // @ProtoNumber(8) @Required val playerVisibilities: SetVisibilityMessage? = null,
     @ProtoNumber(9) val locked: Boolean,
+    @ProtoNumber(10) val isLockable: Boolean,
+    @ProtoNumber(11) @Required val race: RaceInfo? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -398,5 +424,5 @@ data class ResourceRequestMessage(
 
 @Serializable
 data class ReportLoadingTimeMessage(
-    @ProtoNumber(1) val loadingTime: Float,
+    @ProtoNumber(1) val loadingTime: Float = 0f,
 )

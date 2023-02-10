@@ -6,7 +6,7 @@ import io.ktor.server.plugins.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import io.ktor.websocket.*
+import io.ktor.server.websocket.*
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
@@ -45,7 +45,8 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     var text = it.square.text
                     var html = it.square.text
 
-                    val detailsText = it.square.goals.joinToString("\n") { goal -> goal.text + if (goal.completed) " ✓" else "" }
+                    val detailsText =
+                        it.square.goals.joinToString("\n") { goal -> goal.text + if (goal.completed) " ✓" else "" }
 
                     if (detailsText.isNotBlank()) {
                         text += "\n$detailsText"
@@ -62,11 +63,13 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 BingothonBingoBoard(
                     board.size,
-                    bingoInfo.map { BingothonBingoUniverseInfo(
-                        it.universeId,
-                        it.squares,
-                        it.lines,
-                    ) },
+                    bingoInfo.map {
+                        BingothonBingoUniverseInfo(
+                            it.universeId,
+                            it.squares,
+                            it.lines,
+                        )
+                    },
                     bingothonSquares,
                 )
             })

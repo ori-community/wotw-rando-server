@@ -91,13 +91,15 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
 
                                 val userInfo = newSuspendedTransaction {
                                     val user = User.findById(it.userId)!!
+
                                     UserInfo(
                                         user.id.value,
                                         user.name,
                                         user.avatarId,
                                         null,
                                         user.currentMultiverse?.id?.value,
-                                        user.isDeveloper
+                                        user.isDeveloper,
+                                        user.points,
                                     )
                                 }
 
@@ -128,7 +130,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                 ClientConnectionUDPRegistry.unregister(it)
             }
 
-            if (e !is CancellationException) {
+            if (e !is ClosedReceiveChannelException) {
                 e.printStackTrace()
             }
 

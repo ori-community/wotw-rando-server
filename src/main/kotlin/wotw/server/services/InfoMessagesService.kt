@@ -1,13 +1,7 @@
 package wotw.server.services
 
-import wotw.io.messages.protobuf.MultiverseInfoMessage
-import wotw.io.messages.protobuf.UniverseInfo
-import wotw.io.messages.protobuf.UserInfo
-import wotw.io.messages.protobuf.WorldInfo
-import wotw.server.database.model.Multiverse
-import wotw.server.database.model.Universe
-import wotw.server.database.model.User
-import wotw.server.database.model.World
+import wotw.io.messages.protobuf.*
+import wotw.server.database.model.*
 import wotw.server.main.WotwBackendServer
 
 class InfoMessagesService(private val server: WotwBackendServer) {
@@ -22,6 +16,25 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         "#6d4c41",
     )
 
+    fun generateRaceTeamMemberInfo(raceTeamMember: RaceTeamMember) = RaceTeamMemberInfo(
+        raceTeamMember.id.value,
+        generateUserInfo(raceTeamMember.user),
+        raceTeamMember.finishedTime,
+    )
+
+    fun generateRaceTeamInfo(raceTeam: RaceTeam) = RaceTeamInfo(
+        raceTeam.id.value,
+        raceTeam.members.map { member -> generateRaceTeamMemberInfo(member) },
+        raceTeam.points,
+        raceTeam.finishedTime,
+    )
+
+    fun generateRaceInfo(race: Race) = RaceInfo(
+        race.id.value,
+        race.teams.map { team -> generateRaceTeamInfo(team) },
+        race.finishedTime,
+    )
+
     suspend fun generateMultiverseInfoMessage(multiverse: Multiverse) = MultiverseInfoMessage(
         multiverse.id.value,
         multiverse.universes.sortedBy { it.id }
@@ -32,6 +45,8 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         multiverse.gameHandlerType,
         server.gameHandlerRegistry.getHandler(multiverse).getSerializedClientInfo(),
         multiverse.locked,
+        multiverse.isLockable,
+        multiverse.race?.let { generateRaceInfo(it) },
     )
 
     fun generateUniverseInfo(universe: Universe, color: String? = null) = UniverseInfo(
@@ -59,5 +74,6 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         server.connections.playerMultiverseConnections[user.id.value]?.multiverseId,
         user.currentMultiverse?.id?.value,
         user.isDeveloper,
+        user.points,
     )
 }

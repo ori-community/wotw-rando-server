@@ -13,6 +13,7 @@ object Users : StringIdTable("users") {
     val avatarId = text("avatar_id").nullable()
     val isDeveloper = bool("is_developer").default(false)
     val currentWorldId = optReference("world_id", Worlds, ReferenceOption.SET_NULL, ReferenceOption.CASCADE)
+    val points = integer("points").default(0)
 
     override val primaryKey = PrimaryKey(id)
 }
@@ -25,6 +26,7 @@ class User(id: EntityID<String>) : StringEntity(id) {
     var avatarId by Users.avatarId
     var isDeveloper by Users.isDeveloper
     var currentWorld by World optionalReferencedOn Users.currentWorldId
+    var points by Users.points
 
     val currentMultiverse: Multiverse?
         get() = currentWorld?.universe?.multiverse

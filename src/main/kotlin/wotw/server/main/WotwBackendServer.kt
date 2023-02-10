@@ -133,6 +133,9 @@ class WotwBackendServer {
                 Seeds,
                 WorldSeeds,
                 BingothonTokens,
+                Races,
+                RaceTeams,
+                RaceTeamMembers,
             )
         }
     }
@@ -145,6 +148,7 @@ class WotwBackendServer {
     val remoteTrackerEndpoint = RemoteTrackerEndpoint(this)
     val developerEndpoint = DeveloperEndpoint(this)
     val bingothonEndpoint = BingothonEndpoint(this)
+    val serverEndpoint = ServerEndpoint(this)
     val infoMessagesService = InfoMessagesService(this)
     val multiverseUtil = MultiverseUtil(this)
 
@@ -315,6 +319,7 @@ class WotwBackendServer {
                         seedGenEndpoint.init(this)
                         developerEndpoint.init(this)
                         bingothonEndpoint.init(this)
+                        serverEndpoint.init(this)
 
                         get("/ping") {
                             call.respondText("pong")
