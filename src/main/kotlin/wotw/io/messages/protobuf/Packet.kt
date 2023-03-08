@@ -73,6 +73,7 @@ data class Packet(
             102 to typeOf<TrackerFlagsUpdate>(),
             103 to typeOf<RequestFullUpdate>(),
             104 to typeOf<SetTrackerEndpointId>(),
+            105 to typeOf<TrackerTimerStateUpdate>(),
         )
 
         fun deserialize(bytes: ByteArray): Any? {

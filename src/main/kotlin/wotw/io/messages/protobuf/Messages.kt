@@ -374,6 +374,12 @@ data class SetTrackerEndpointId(
 )
 
 @Serializable
+data class TrackerTimerStateUpdate(
+    @ProtoNumber(1) val totalTime: Float,
+    @ProtoNumber(2) val loadingTime: Float,
+)
+
+@Serializable
 data class RequestSeedMessage(
     @ProtoNumber(1) val init: Boolean, // This is something for the client, ask wolf. We just pipe it through
 )

@@ -3,10 +3,7 @@ package wotw.server.api
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import wotw.io.messages.protobuf.ResetTracker
-import wotw.io.messages.protobuf.SetTrackerEndpointId
-import wotw.io.messages.protobuf.TrackerFlagsUpdate
-import wotw.io.messages.protobuf.TrackerUpdate
+import wotw.io.messages.protobuf.*
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -50,6 +47,12 @@ class RemoteTrackerEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 onMessage(TrackerFlagsUpdate::class) {
+                    if (endpointId != null) {
+                        server.connections.broadcastRemoteTrackerMessage(endpointId!!, this)
+                    }
+                }
+
+                onMessage(TrackerTimerStateUpdate::class) {
                     if (endpointId != null) {
                         server.connections.broadcastRemoteTrackerMessage(endpointId!!, this)
                     }
