@@ -60,14 +60,14 @@ data class RaceInfo(
 data class MultiverseInfoMessage(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val universes: List<UniverseInfo>,
-    @ProtoNumber(3) val hasBingoBoard: Boolean,
+    @ProtoNumber(3) val hasBingoBoard: Boolean = false,
     @ProtoNumber(4) val spectators: List<UserInfo>,
     @ProtoNumber(5) val seedId: Long?,
     @ProtoNumber(6) val gameHandlerType: Int,
     @ProtoNumber(7) @Contextual val gameHandlerClientInfo: ByteArray,
     // @ProtoNumber(8) @Required val playerVisibilities: SetVisibilityMessage? = null,
-    @ProtoNumber(9) val locked: Boolean,
-    @ProtoNumber(10) val isLockable: Boolean,
+    @ProtoNumber(9) val locked: Boolean = false,
+    @ProtoNumber(10) val isLockable: Boolean = true,
     @ProtoNumber(11) @Required val race: RaceInfo? = null,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -128,8 +128,8 @@ data class InitGameSyncMessage(
 
 @Serializable
 data class Vector2(
-    @ProtoNumber(1) val x: Float,
-    @ProtoNumber(2) val y: Float,
+    @ProtoNumber(1) val x: Float = 0.0f,
+    @ProtoNumber(2) val y: Float = 0.0f,
 ) {
     fun distanceSquaredTo(other: Vector2): Float {
         return (x - other.x).pow(2) + (y - other.y).pow(2)
@@ -227,8 +227,8 @@ data class AuthenticateMessage(
 @Serializable
 data class UpdatePlayerPositionMessage(
     @ProtoNumber(1) val playerId: String,
-    @ProtoNumber(2) val x: Float,
-    @ProtoNumber(3) val y: Float,
+    @ProtoNumber(2) val x: Float = 0.0f,
+    @ProtoNumber(3) val y: Float = 0.0f,
     @ProtoNumber(4) val ghostFrameData: ByteArray,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -257,8 +257,8 @@ data class UpdatePlayerPositionMessage(
 @Serializable
 data class UpdatePlayerWorldPositionMessage(
     @ProtoNumber(1) val playerId: String,
-    @ProtoNumber(2) val x: Float,
-    @ProtoNumber(3) val y: Float,
+    @ProtoNumber(2) val x: Float = 0.0f,
+    @ProtoNumber(3) val y: Float = 0.0f,
     @ProtoNumber(4) val ghostFrameData: ByteArray,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -287,8 +287,8 @@ data class UpdatePlayerWorldPositionMessage(
 @Serializable
 data class UpdatePlayerMapPositionMessage(
     @ProtoNumber(1) val playerId: String,
-    @ProtoNumber(2) val x: Float,
-    @ProtoNumber(3) val y: Float,
+    @ProtoNumber(2) val x: Float = 0.0f,
+    @ProtoNumber(3) val y: Float = 0.0f,
 )
 
 @Serializable
@@ -299,8 +299,8 @@ data class SetVisibilityMessage(
 
 @Serializable
 data class PlayerPositionMessage(
-    @ProtoNumber(1) val x: Float,
-    @ProtoNumber(2) val y: Float,
+    @ProtoNumber(1) val x: Float = 0.0f,
+    @ProtoNumber(2) val y: Float = 0.0f,
     @ProtoNumber(3) val ghostFrameData: ByteArray,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -327,7 +327,7 @@ data class PlayerPositionMessage(
 @Serializable
 data class AuthenticatedMessage(
     @ProtoNumber(1) val user: UserInfo,
-    @ProtoNumber(2) val udpId: Int,
+    @ProtoNumber(2) val udpId: Int = 0,
     @ProtoNumber(3) val udpKey: ByteArray,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -375,8 +375,8 @@ data class SetTrackerEndpointId(
 
 @Serializable
 data class TrackerTimerStateUpdate(
-    @ProtoNumber(1) val totalTime: Float,
-    @ProtoNumber(2) val loadingTime: Float,
+    @ProtoNumber(1) val totalTime: Float = 0.0f,
+    @ProtoNumber(2) val loadingTime: Float = 0.0f,
     @ProtoNumber(3) val timerShouldRun: Boolean = true,
 )
 
