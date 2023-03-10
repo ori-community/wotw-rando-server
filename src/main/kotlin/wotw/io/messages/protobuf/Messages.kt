@@ -377,7 +377,7 @@ data class SetTrackerEndpointId(
 data class TrackerTimerStateUpdate(
     @ProtoNumber(1) val totalTime: Float,
     @ProtoNumber(2) val loadingTime: Float,
-    @ProtoNumber(3) val timerShouldRun: Boolean,
+    @ProtoNumber(3) val timerShouldRun: Boolean = true,
 )
 
 @Serializable
