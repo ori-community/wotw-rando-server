@@ -1310,12 +1310,16 @@ class BingoBoardGenerator {
 
         val boardSize = min(props?.bingoConfig?.size ?: 5, 7) // Maximum can be increased once we have more goals
 
-        val discoverySquares = (1..boardSize).flatMap { x -> (1..boardSize).map { x to it } }
-            .shuffled(random).take(props?.bingoConfig?.discovery ?: 0).toSet()
+        val discoverySquares = (1..boardSize)
+            .flatMap { x -> (1..boardSize).map { x to it } }
+            .shuffled(random)
+            .take(props?.bingoConfig?.discovery ?: 0)
+            .toSet()
 
-        val card = BingoBoard(
+        val board = BingoBoard(
             config = BingoConfig(
                 discovery = discoverySquares,
+                revealFirstNCompletedGoals = props?.bingoConfig?.revealFirstNCompletedGoals ?: 0,
                 lockout = props?.bingoConfig?.lockout ?: false,
                 manualSquareCompletion = props?.bingoConfig?.manualGoalCompletion ?: false,
                 boardSize = boardSize,
@@ -1334,10 +1338,10 @@ class BingoBoardGenerator {
                         counts[goal] = 1 + (counts[goal] ?: 0)
                     }
                 }
-                card.goals[x to y] = generatedGoal
+                board.goals[x to y] = generatedGoal
             }
 
-        return card
+        return board
     }
 }
 

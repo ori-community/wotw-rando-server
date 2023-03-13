@@ -4,6 +4,7 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.SortOrder
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoard
 import wotw.server.bingo.UberStateMap
@@ -35,7 +36,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val worlds: Collection<World>
         get() = universes.flatMap { it.worlds }
     private val states by GameState referrersOn GameStates.multiverseId
-    private val events by BingoEvent referrersOn BingoEvents.multiverseId
+    private val bingoEvents by BingoEvent referrersOn BingoEvents.multiverseId
     var spectators by User via Spectators
 
     var gameHandlerType by Multiverses.gameHandlerType
@@ -64,7 +65,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val board = board ?: return
         val state =
             UniverseStateCache.get(universe.id.value)//universeStates[universe]?.uberStateData ?: UberStateMap.empty
-        val completions = events.filter { it.universe == universe }.map { it.x to it.y }
+        val completions = bingoEvents.filter { it.universe == universe }.map { it.x to it.y }
 
         for (x in 1..board.size) {
             for (y in 1..board.size) {
@@ -104,24 +105,30 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 goal.printSubText(state)
                     .map { (text, completed) -> BingoGoal(text, completed) }
             )
-        }
+        }.toMap()
+
         goals = when {
             forceAllVisible -> goals
             spectator -> goals
             else -> {
-                goals.filter { board.goalVisible(it.first.x to it.first.y, state) }
+                val events = this.bingoEvents
+                    .filter { event -> event.universe.id.value == (universe?.id?.value ?: -1) }
+                    .sortedBy { event -> event.time }
+                    .toList()
+
+                val visibleGoals = board.getVisibleDiscoveryGoals(state, events)
+                goals.filter { (position) -> visibleGoals.contains(position.x to position.y) }
             }
         }
 
-
         val completions = scoreRelevantCompletionMap()
-        goals.forEach {
+        goals.toList().forEach {
             it.second.completedBy =
                 completions[it.first.x to it.first.y]?.map { it.id.value } ?: emptyList()
         }
 
         return BingoBoardMessage(
-            goals.map { PositionedBingoSquare(it.first, it.second) },
+            goals.map { PositionedBingoSquare(it.key, it.value) },
             board.size,
             board.config.lockout,
         )
@@ -138,7 +145,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
 
     private fun goalCompletionMap(): Map<Pair<Int, Int>, Set<Universe>> {
         val board = board ?: return emptyMap()
-        val events = events
+        val events = bingoEvents
         return (1..board.size).flatMap { x ->
             (1..board.size).map { y ->
                 x to y
@@ -155,7 +162,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 x to y
             }
         }.map { (x, y) ->
-            (x to y) to events.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.universe
+            (x to y) to bingoEvents.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.universe
         }.toMap()
         return owners
     }

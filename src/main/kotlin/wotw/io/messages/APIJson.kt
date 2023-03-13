@@ -105,6 +105,7 @@ data class SeedgenCliOutput(
 @Serializable
 data class BingoCreationConfig(
     val discovery: Int? = null,
+    val revealFirstNCompletedGoals: Int = 0,
     val lockout: Boolean? = false,
     val manualGoalCompletion: Boolean? = false,
     val size: Int = 5,
