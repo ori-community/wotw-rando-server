@@ -92,32 +92,33 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     ): BingoBoardMessage {
         val board = board ?: return BingoBoardMessage()
 
-        val universeInThisMultiverse = if (universe?.multiverse == this)
-            universe
-        else null
-
-        val state =
-            if (universeInThisMultiverse != null) UniverseStateCache.get(universeInThisMultiverse.id.value) else UberStateMap.empty // universeStates[universe]?.uberStateData ?: UberStateMap.empty
+        val universeState = universe?.let { u -> UniverseStateCache.get(u.id.value) } ?: UberStateMap.empty
 
         var goals = board.goals.map { (position, goal) ->
             Position(position.first, position.second) to BingoSquare(
                 goal.title,
-                goal.printSubText(state)
+                goal.printSubText(universeState)
                     .map { (text, completed) -> BingoGoal(text, completed) }
             )
         }.toMap()
+
+        this.universes.forEach {u ->
+            val state = UniverseStateCache.get(u.id.value)
+            val events = this.bingoEvents
+                .filter { event -> event.universe.id.value == (u.id.value) }
+                .sortedBy { event -> event.time }
+                .toList()
+            val visibleGoals = board.getVisibleDiscoveryGoals(state, events)
+            visibleGoals.forEach { (x,y) ->
+                goals[Position(x,y)]?.visibleFor?.add(u.id.value)
+            }
+        }
 
         goals = when {
             forceAllVisible -> goals
             spectator -> goals
             else -> {
-                val events = this.bingoEvents
-                    .filter { event -> event.universe.id.value == (universe?.id?.value ?: -1) }
-                    .sortedBy { event -> event.time }
-                    .toList()
-
-                val visibleGoals = board.getVisibleDiscoveryGoals(state, events)
-                goals.filter { (position) -> visibleGoals.contains(position.x to position.y) }
+                goals.filter { (position, goal) -> goal.visibleFor.contains(universe?.id?.value) }
             }
         }
 
@@ -126,6 +127,11 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             it.second.completedBy =
                 completions[it.first.x to it.first.y]?.map { it.id.value } ?: emptyList()
         }
+
+        this.bingoEvents.forEach { event ->
+            goals[Position(event.x, event.y)]?.visibleFor?.add(event.universe.id.value)
+        }
+
 
         return BingoBoardMessage(
             goals.map { PositionedBingoSquare(it.key, it.value) },

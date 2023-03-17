@@ -69,6 +69,7 @@ data class BingoSquare(
     @ProtoNumber(1) val text: String = "",
     @ProtoNumber(3) val goals: List<BingoGoal> = emptyList(),
     @ProtoNumber(2) var completedBy: List<Long> = emptyList(),
+    @ProtoNumber(4) var visibleFor: MutableList<Long> = mutableListOf(),
 )
 
 @Serializable
