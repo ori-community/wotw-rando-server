@@ -138,7 +138,6 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                     .filter { claim -> claim.universe.id.value != universe.id.value }
                     .sortedBy { claim -> claim.time }
                     .toList()
-                    .take(board.config.revealFirstNCompletedGoals)
 
                 opponentCardClaims.forEach { claim ->
                     lockoutOpponentVisibleGoals.add(claim.x to claim.y)
