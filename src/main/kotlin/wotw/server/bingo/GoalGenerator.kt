@@ -1315,6 +1315,7 @@ class BingoBoardGenerator {
             .shuffled(random)
             .take(props?.bingoConfig?.discovery ?: 0)
             .toSet()
+            .ifEmpty { null }
 
         val board = BingoBoard(
             config = BingoConfig(
