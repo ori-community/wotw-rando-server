@@ -6,7 +6,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
-object BingoEvents : LongIdTable("events") {
+object BingoCardClaims : LongIdTable("bingo_card_claims") {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val universeId = reference("world_id", Universes, ReferenceOption.CASCADE)
     val time = long("timestamp")
@@ -15,13 +15,13 @@ object BingoEvents : LongIdTable("events") {
     val manual = bool("manual")
 }
 
-class BingoEvent(id: EntityID<Long>) : LongEntity(id) {
-    var multiverse by Multiverse referencedOn BingoEvents.multiverseId
-    var universe by Universe referencedOn BingoEvents.universeId
-    var x by BingoEvents.x
-    var y by BingoEvents.y
-    var time by BingoEvents.time
-    var manual by BingoEvents.manual
+class BingoCardClaim(id: EntityID<Long>) : LongEntity(id) {
+    var multiverse by Multiverse referencedOn BingoCardClaims.multiverseId
+    var universe by Universe referencedOn BingoCardClaims.universeId
+    var x by BingoCardClaims.x
+    var y by BingoCardClaims.y
+    var time by BingoCardClaims.time
+    var manual by BingoCardClaims.manual
 
-    companion object : LongEntityClass<BingoEvent>(BingoEvents)
+    companion object : LongEntityClass<BingoCardClaim>(BingoCardClaims)
 }

@@ -5,19 +5,14 @@ import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.server.websocket.*
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
 import wotw.server.database.model.BingothonToken
 import wotw.server.database.model.BingothonTokens
-import wotw.server.database.model.Multiverse
-import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.randomString
-import java.time.LocalDateTime
 
 class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
     val logger = logger()
@@ -39,7 +34,7 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 val bingoInfo = multiverse.bingoUniverseInfo()
-                val bingoData = BingoData(multiverse.createSyncableBoard(world.universe, playerIsSpectator), bingoInfo)
+                val bingoData = BingoData(multiverse.createBingoBoardMessage(world.universe, playerIsSpectator), bingoInfo)
 
                 val bingothonSquares = bingoData.board.squares.map {
                     var text = it.square.text
@@ -57,7 +52,7 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         it.position,
                         text,
                         html,
-                        it.square.completedBy
+                        it.square.completedBy,
                     )
                 }
 

@@ -3,7 +3,7 @@ package wotw.server.bingo
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 import wotw.io.messages.protobuf.UberId
-import wotw.server.database.model.BingoEvent
+import wotw.server.database.model.BingoCardClaim
 import kotlin.math.max
 import kotlin.math.min
 
@@ -146,52 +146,6 @@ operator fun Point.plus(p: Point) = this.first + p.first to this.second + p.seco
 @Serializable
 data class BingoBoard(val goals: MutableMap<Point, BingoGoal> = hashMapOf(), val config: BingoConfig) {
     val size = config.boardSize
-    fun goalCompleted(p: Point, state: UberStateMap?) = goals[p]?.isCompleted(state ?: UberStateMap.empty) ?: false
-
-    fun getVisibleDiscoveryGoals(state: UberStateMap, events: List<BingoEvent>): Set<Point> {
-        val initiallyVisibleGoalsPositions = config.discovery?.toMutableSet() ?: return goals.keys
-
-        // Reveal first {config.revealFirstNCompletedGoals} completed goals
-        events
-            .take(config.revealFirstNCompletedGoals)
-            .forEach { event ->
-                initiallyVisibleGoalsPositions += Point(event.x, event.y)
-            }
-
-        val visibleGoalsPositions = mutableSetOf<Point>()
-
-        fun collectGoalsRecursively(start: Point) {
-            if (visibleGoalsPositions.contains(start)) {
-                return
-            }
-
-            visibleGoalsPositions += start
-
-            if (goalCompleted(start, state)) {
-                if (start.first > 1) {
-                    collectGoalsRecursively(start + (-1 to 0))
-                }
-
-                if (start.first < size) {
-                    collectGoalsRecursively(start + (1 to 0))
-                }
-
-                if (start.second > 1) {
-                    collectGoalsRecursively(start + (0 to -1))
-                }
-
-                if (start.second < size) {
-                    collectGoalsRecursively(start + (0 to 1))
-                }
-            }
-        }
-
-        for (position in initiallyVisibleGoalsPositions) {
-            collectGoalsRecursively(position)
-        }
-
-        return visibleGoalsPositions
-    }
 }
 
 @Serializable

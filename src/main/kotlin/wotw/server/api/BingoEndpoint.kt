@@ -41,7 +41,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
                         multiverse.board ?: throw NotFoundException()
                         val info = multiverse.bingoUniverseInfo()
-                        BingoData(multiverse.createSyncableBoard(currentPlayerWorld?.universe, playerIsSpectator), info)
+                        BingoData(multiverse.createBingoBoardMessage(currentPlayerWorld?.universe, playerIsSpectator), info)
                     }
                     call.respond(boardData)
                 }

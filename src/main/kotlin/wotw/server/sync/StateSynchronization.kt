@@ -10,10 +10,8 @@ import wotw.server.database.EntityCache
 import wotw.server.database.model.GameState
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
-import wotw.server.database.model.World
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -172,7 +170,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
                         )
                     ),
                     SyncBoardMessage(
-                        multiverse.createSyncableBoard(world.universe),
+                        multiverse.createBingoBoardMessage(world.universe),
                         true
                     )
                 )
@@ -180,7 +178,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
             Triple(
                 syncBingoUniversesMessage,
                 SyncBoardMessage(
-                    multiverse.createSyncableBoard(null, true),
+                    multiverse.createBingoBoardMessage(null, true),
                     true
                 ),
                 worldUpdates

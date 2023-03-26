@@ -4,10 +4,11 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.SortOrder
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoard
+import wotw.server.bingo.Point
 import wotw.server.bingo.UberStateMap
+import wotw.server.bingo.plus
 import wotw.server.database.jsonb
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.sync.UniverseStateCache
@@ -36,7 +37,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val worlds: Collection<World>
         get() = universes.flatMap { it.worlds }
     private val states by GameState referrersOn GameStates.multiverseId
-    private val bingoEvents by BingoEvent referrersOn BingoEvents.multiverseId
+    private val bingoCardClaims by BingoCardClaim referrersOn BingoCardClaims.multiverseId
     var spectators by User via Spectators
 
     var gameHandlerType by Multiverses.gameHandlerType
@@ -65,14 +66,14 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val board = board ?: return
         val state =
             UniverseStateCache.get(universe.id.value)//universeStates[universe]?.uberStateData ?: UberStateMap.empty
-        val completions = bingoEvents.filter { it.universe == universe }.map { it.x to it.y }
+        val completions = bingoCardClaims.filter { it.universe == universe }.map { it.x to it.y }
 
         for (x in 1..board.size) {
             for (y in 1..board.size) {
                 val point = x to y
                 if (point in completions) continue
-                if (board.goalCompleted(point, state)) {
-                    BingoEvent.new {
+                if (board.goals[point]?.isCompleted(state) == true) {
+                    BingoCardClaim.new {
                         this.universe = universe
                         this.multiverse = this@Multiverse
                         this.manual = false
@@ -85,32 +86,94 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }
     }
 
-    suspend fun createSyncableBoard(
-        universe: Universe?,
+    suspend fun createBingoBoardMessage(
+        targetUniverse: Universe?,
         spectator: Boolean = false,
         forceAllVisible: Boolean = false
     ): BingoBoardMessage {
         val board = board ?: return BingoBoardMessage()
 
-        val universeState = universe?.let { u -> UniverseStateCache.get(u.id.value) } ?: UberStateMap.empty
+        val targetUniverseState = targetUniverse?.let { u -> UniverseStateCache.get(u.id.value) } ?: UberStateMap.empty
 
         var goals = board.goals.map { (position, goal) ->
-            Position(position.first, position.second) to BingoSquare(
+            (position.first to position.second) to BingoSquare(
                 goal.title,
-                goal.printSubText(universeState)
+                goal.printSubText(targetUniverseState)
                     .map { (text, completed) -> BingoGoal(text, completed) }
             )
         }.toMap()
 
-        this.universes.forEach {u ->
-            val state = UniverseStateCache.get(u.id.value)
-            val events = this.bingoEvents
-                .filter { event -> event.universe.id.value == (u.id.value) }
-                .sortedBy { event -> event.time }
+        // Populate completedBy in completion order
+        bingoCardClaims
+            .sortedBy { claim -> claim.time }
+            .forEach { claim ->
+                goals[claim.x to claim.y]?.completedBy?.add(claim.universe.id.value)
+            }
+
+        // Populate visibleFor
+        this.universes.forEach { universe ->
+            val ownCardClaims = this.bingoCardClaims
+                .filter { claim -> claim.universe.id.value == universe.id.value }
+                .sortedBy { claim -> claim.time }
                 .toList()
-            val visibleGoals = board.getVisibleDiscoveryGoals(state, events)
-            visibleGoals.forEach { (x,y) ->
-                goals[Position(x,y)]?.visibleFor?.add(u.id.value)
+
+            val initiallyVisibleGoalsPositions = board.config.discovery?.toMutableSet()
+
+            if (initiallyVisibleGoalsPositions == null) {
+                goals.values.forEach { goal -> goal.visibleFor.add(universe.id.value) }
+                return@forEach
+            }
+
+            // Reveal first {config.revealFirstNCompletedGoals} claimed goals
+            ownCardClaims
+                .take(board.config.revealFirstNCompletedGoals)
+                .forEach { claim ->
+                    initiallyVisibleGoalsPositions += Point(claim.x, claim.y)
+                }
+
+            // In lockout, also reveal opponent cards and their neighbors
+            if (board.config.lockout) {
+                val opponentCardClaims = this.bingoCardClaims
+                    .filter { claim -> claim.universe.id.value != universe.id.value }
+                    .sortedBy { claim -> claim.time }
+                    .toList()
+                    .take(board.config.revealFirstNCompletedGoals)
+
+                opponentCardClaims.forEach { claim ->
+                    initiallyVisibleGoalsPositions.add(claim.x to claim.y)
+                }
+            }
+
+            fun collectGoalsRecursively(start: Point) {
+                goals[start.first to start.second]?.let { goal ->
+                    if (goal.visibleFor.contains(universe.id.value)) {
+                        return
+                    }
+
+                    goal.visibleFor.add(universe.id.value)
+
+                    if (goal.completedBy.contains(universe.id.value)) {
+                        if (start.first > 1) {
+                            collectGoalsRecursively(start + (-1 to 0))
+                        }
+
+                        if (start.first < board.config.boardSize) {
+                            collectGoalsRecursively(start + (1 to 0))
+                        }
+
+                        if (start.second > 1) {
+                            collectGoalsRecursively(start + (0 to -1))
+                        }
+
+                        if (start.second < board.config.boardSize) {
+                            collectGoalsRecursively(start + (0 to 1))
+                        }
+                    }
+                }
+            }
+
+            for (position in initiallyVisibleGoalsPositions) {
+                collectGoalsRecursively(position)
             }
         }
 
@@ -118,40 +181,24 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             forceAllVisible -> goals
             spectator -> goals
             else -> {
-                goals.filter { (position, goal) -> goal.visibleFor.contains(universe?.id?.value) }
+                goals.filter { (_, goal) -> goal.visibleFor.contains(targetUniverse?.id?.value) }
             }
         }
 
-        val completions = scoreRelevantCompletionMap()
-        goals.toList().forEach {
-            it.second.completedBy =
-                completions[it.first.x to it.first.y]?.map { it.id.value } ?: emptyList()
+        this.bingoCardClaims.forEach { event ->
+            goals[event.x to event.y]?.visibleFor?.add(event.universe.id.value)
         }
-
-        this.bingoEvents.forEach { event ->
-            goals[Position(event.x, event.y)]?.visibleFor?.add(event.universe.id.value)
-        }
-
 
         return BingoBoardMessage(
-            goals.map { PositionedBingoSquare(it.key, it.value) },
+            goals.map { PositionedBingoSquare(Position(it.key.first, it.key.second), it.value) },
             board.size,
             board.config.lockout,
         )
     }
 
-    fun fillCompletionData(syncedBoard: BingoBoardMessage): BingoBoardMessage {
-        val completions = scoreRelevantCompletionMap()
-        syncedBoard.squares.forEach { (position, square) ->
-            square.completedBy =
-                completions[position.x to position.y]?.map { it.id.value } ?: emptyList()
-        }
-        return syncedBoard
-    }
-
     private fun goalCompletionMap(): Map<Pair<Int, Int>, Set<Universe>> {
         val board = board ?: return emptyMap()
-        val events = bingoEvents
+        val events = bingoCardClaims
         return (1..board.size).flatMap { x ->
             (1..board.size).map { y ->
                 x to y
@@ -168,7 +215,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 x to y
             }
         }.map { (x, y) ->
-            (x to y) to bingoEvents.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.universe
+            (x to y) to bingoCardClaims.filter { it.x == x && it.y == y }.minByOrNull { it.time }?.universe
         }.toMap()
         return owners
     }
@@ -210,6 +257,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         val squares = completions.count { it in completions }
         val scoreLine =
             if (lockout) "$squares / ${ceil((board.goals.size).toFloat() / 2f).toLong()}" else "$lines line${(if (lines == 1) "" else "s")} | $squares / ${board.goals.size}"
+
         return BingoUniverseInfo(
             universe.id.value,
             scoreLine,

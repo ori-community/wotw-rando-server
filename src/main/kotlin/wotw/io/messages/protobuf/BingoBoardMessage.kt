@@ -2,6 +2,9 @@ package wotw.io.messages.protobuf
 
 import kotlinx.serialization.*
 import kotlinx.serialization.protobuf.ProtoNumber
+import java.util.HashSet
+import java.util.SortedSet
+import java.util.TreeSet
 import kotlin.math.max
 
 // All fields have default values ^= protobuf optional
@@ -45,7 +48,7 @@ data class BingothonBingoSquare(
     val position: Position,
     val text: String,
     val html: String,
-    val completedBy: List<Long>,
+    val completedBy: LinkedHashSet<Long>,
 )
 
 @Serializable
@@ -68,8 +71,11 @@ infix fun Int.to(y: Int) = Position(this, y)
 data class BingoSquare(
     @ProtoNumber(1) val text: String = "",
     @ProtoNumber(3) val goals: List<BingoGoal> = emptyList(),
-    @ProtoNumber(2) var completedBy: List<Long> = emptyList(),
-    @ProtoNumber(4) var visibleFor: MutableList<Long> = mutableListOf(),
+
+    /** This is always in order of completion, so in Lockout games, the first entry is the owner */
+    @ProtoNumber(2) var completedBy: LinkedHashSet<Long> = LinkedHashSet(),
+
+    @ProtoNumber(4) var visibleFor: LinkedHashSet<Long> = LinkedHashSet(),
 )
 
 @Serializable
