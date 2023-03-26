@@ -132,6 +132,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 }
 
             // In lockout, also reveal opponent cards and their neighbors
+            val lockoutOpponentVisibleGoals = mutableListOf<Point>()
             if (board.config.lockout) {
                 val opponentCardClaims = this.bingoCardClaims
                     .filter { claim -> claim.universe.id.value != universe.id.value }
@@ -140,11 +141,11 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                     .take(board.config.revealFirstNCompletedGoals)
 
                 opponentCardClaims.forEach { claim ->
-                    initiallyVisibleGoalsPositions.add(claim.x to claim.y)
+                    lockoutOpponentVisibleGoals.add(claim.x to claim.y)
                 }
             }
 
-            fun collectGoalsRecursively(start: Point) {
+            fun collectGoalsRecursively(start: Point, forceRevealNeighbors: Boolean = false) {
                 goals[start.first to start.second]?.let { goal ->
                     if (goal.visibleFor.contains(universe.id.value)) {
                         return
@@ -152,7 +153,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
 
                     goal.visibleFor.add(universe.id.value)
 
-                    if (goal.completedBy.contains(universe.id.value)) {
+                    if (forceRevealNeighbors || goal.completedBy.contains(universe.id.value)) {
                         if (start.first > 1) {
                             collectGoalsRecursively(start + (-1 to 0))
                         }
@@ -174,6 +175,10 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
 
             for (position in initiallyVisibleGoalsPositions) {
                 collectGoalsRecursively(position)
+            }
+
+            for (position in lockoutOpponentVisibleGoals) {
+                collectGoalsRecursively(position, true)
             }
         }
 
