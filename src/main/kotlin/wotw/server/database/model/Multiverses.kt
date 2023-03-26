@@ -145,12 +145,15 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 }
             }
 
+            val visitedGoalsForRevealing = mutableSetOf<Point>()
+
             fun collectGoalsRecursively(start: Point, forceRevealNeighbors: Boolean = false) {
-                goals[start.first to start.second]?.let { goal ->
-                    if (goal.visibleFor.contains(universe.id.value)) {
+                goals[start]?.let { goal ->
+                    if (visitedGoalsForRevealing.contains(start)) {
                         return
                     }
 
+                    visitedGoalsForRevealing.add(start)
                     goal.visibleFor.add(universe.id.value)
 
                     if (forceRevealNeighbors || goal.completedBy.contains(universe.id.value)) {
