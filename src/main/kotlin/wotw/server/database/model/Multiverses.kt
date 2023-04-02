@@ -179,6 +179,16 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             for (position in lockoutOpponentVisibleGoals) {
                 collectGoalsRecursively(position, true)
             }
+
+            // In lockout, always show own goals but don't reveal neighbors for
+            // all of them. Goals with revealed neighbors are handled above.
+            if (board.config.lockout) {
+                ownCardClaims.forEach { claim ->
+                    goals[claim.x to claim.y]?.let { goal ->
+                        goal.visibleFor.add(universe.id.value)
+                    }
+                }
+            }
         }
 
         goals = when {
