@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.*
+import wotw.server.bingo.Point
 import wotw.server.database.model.*
 import wotw.server.game.MultiverseEvent
 import wotw.server.game.PlayerLeftEvent
@@ -232,21 +233,49 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 player.currentWorld ?: error("Error: Requested uber state update for user that is not in a world")
 
             val results = server.sync.aggregateStates(player, uberStates)
-            world.universe.multiverse.updateCompletions(world.universe)
+
+            getMultiverse().board?.let { board ->
+                val newBingoCardClaims = world.universe.multiverse.updateCompletions(world.universe)
+
+                if (board.config.lockout) {
+                    newBingoCardClaims
+                        .filter { claim -> getMultiverse().getLockoutGoalOwnerMap()[claim.x to claim.y]?.id?.value == world.universe.id.value }
+                        .forEach { claim ->
+                            board.goals[Point(claim.x, claim.y)]?.let { goal ->
+                                server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
+                                    val playerEnvironmentCache = server.playerEnvironmentCache.get(playerId)
+                                    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+                                    server.connections.toPlayers(
+                                        multiverseMembers - playerEnvironmentCache.universeMemberIds,
+                                        PrintTextMessage(
+                                            "<s_0.8>${world.universe.name} completed ${alphabet[claim.x - 1]}${claim.y}:</>\n${goal.title}",
+                                            Vector2(0f, -1.3f),
+                                            null,
+                                            3f,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                }
+            }
 
             state.startingAt?.let { startingAt ->
                 if (results.containsKey(gameFinished)) {
                     if (!state.playerFinishedTimes.containsKey(playerId) && results[gameFinished]!!.sentValue > 0.5) {
                         val realTimeMillis =
                             Instant.ofEpochMilli(startingAt).until(Instant.now(), ChronoUnit.MILLIS)
-                        state.playerFinishedTimes[playerId] = (realTimeMillis.toFloat() / 1000f) - (state.playerLoadingTimes[playerId] ?: 0f)
+                        state.playerFinishedTimes[playerId] =
+                            (realTimeMillis.toFloat() / 1000f) - (state.playerLoadingTimes[playerId] ?: 0f)
                         lazilyNotifyClientInfoChanged = true
                     }
 
                     if (!state.worldFinishedTimes.containsKey(world.id.value)) {
                         // All players finished
                         if (world.members.all { player -> state.playerFinishedTimes.containsKey(player.id.value) }) {
-                            state.worldFinishedTimes[world.id.value] = world.members.maxOf { player -> state.playerFinishedTimes[player.id.value] ?: 0f }
+                            state.worldFinishedTimes[world.id.value] =
+                                world.members.maxOf { player -> state.playerFinishedTimes[player.id.value] ?: 0f }
                             lazilyNotifyClientInfoChanged = true
                         }
                     }
@@ -254,7 +283,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     if (!state.universeFinishedTimes.containsKey(world.universe.id.value)) {
                         // All worlds finished
                         if (world.universe.worlds.all { world -> state.worldFinishedTimes.containsKey(world.id.value) }) {
-                            state.universeFinishedTimes[world.universe.id.value] = world.universe.worlds.maxOf { world -> state.worldFinishedTimes[world.id.value] ?: 0f }
+                            state.universeFinishedTimes[world.universe.id.value] =
+                                world.universe.worlds.maxOf { world -> state.worldFinishedTimes[world.id.value] ?: 0f }
                             lazilyNotifyClientInfoChanged = true
                         }
                     }

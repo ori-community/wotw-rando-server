@@ -65,8 +65,6 @@ data class Position(
     @ProtoNumber(2) val y: Int
 )
 
-infix fun Int.to(y: Int) = Position(this, y)
-
 @Serializable
 data class BingoSquare(
     @ProtoNumber(1) val text: String = "",

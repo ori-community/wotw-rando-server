@@ -62,8 +62,10 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val members
         get() = players + spectators
 
-    suspend fun updateCompletions(universe: Universe) {
-        val board = board ?: return
+    suspend fun updateCompletions(universe: Universe): List<BingoCardClaim> {
+        val newClaims = mutableListOf<BingoCardClaim>()
+
+        val board = board ?: return emptyList()
         val state =
             UniverseStateCache.get(universe.id.value)//universeStates[universe]?.uberStateData ?: UberStateMap.empty
         val completions = bingoCardClaims.filter { it.universe == universe }.map { it.x to it.y }
@@ -73,17 +75,19 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 val point = x to y
                 if (point in completions) continue
                 if (board.goals[point]?.isCompleted(state) == true) {
-                    BingoCardClaim.new {
+                    newClaims.add(BingoCardClaim.new {
                         this.universe = universe
                         this.multiverse = this@Multiverse
                         this.manual = false
                         this.time = Date().time
                         this.x = x
                         this.y = y
-                    }
+                    })
                 }
             }
         }
+
+        return newClaims
     }
 
     suspend fun createBingoBoardMessage(
@@ -222,7 +226,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }.toMap()
     }
 
-    fun lockoutGoalOwnerMap(): Map<Pair<Int, Int>, Universe?> {
+    fun getLockoutGoalOwnerMap(): Map<Pair<Int, Int>, Universe?> {
         val board = board ?: return emptyMap()
         val owners = (1..board.size).flatMap { x ->
             (1..board.size).map { y ->
@@ -235,7 +239,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     }
 
     fun scoreRelevantCompletionMap() =
-        (if (board?.config?.lockout == true) lockoutGoalOwnerMap().mapValues {
+        (if (board?.config?.lockout == true) getLockoutGoalOwnerMap().mapValues {
             val universe = it.value ?: return@mapValues emptySet()
             setOf(universe)
         } else goalCompletionMap())
