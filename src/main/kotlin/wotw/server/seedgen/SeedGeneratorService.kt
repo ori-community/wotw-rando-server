@@ -3,7 +3,6 @@ package wotw.server.seedgen
 import kotlinx.coroutines.future.await
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import wotw.io.messages.UniverseSettings
 import wotw.io.messages.SeedgenCliOutput
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.json
@@ -57,20 +56,19 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
                 writer.write(json.encodeToString(config))
             }
 
-            val stderrOutput = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
+            val stdoutString = process.inputStream.readAllBytes().toString(Charsets.UTF_8)
+            val stderrString = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
             val exitCode = process.waitFor()
 
-            stderrOutput.lines().forEach {
+            stderrString.lines().forEach {
                 logger().info(it)
             }
 
             if (exitCode != 0)
-                Result.failure(Exception(stderrOutput))
+                Result.failure(Exception(stderrString))
             else {
-                val outputString = process.inputStream.readAllBytes().toString(Charsets.UTF_8)
-                val output = json.decodeFromString<SeedgenCliOutput>(outputString)
-
-                Result.success(SeedGeneratorGenerationResult(stderrOutput, output))
+                val output = json.decodeFromString<SeedgenCliOutput>(stdoutString)
+                Result.success(SeedGeneratorGenerationResult(stderrString, output))
             }
         }
 
