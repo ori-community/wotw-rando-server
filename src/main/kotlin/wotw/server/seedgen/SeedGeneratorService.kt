@@ -57,9 +57,6 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
                 writer.write(json.encodeToString(config))
             }
 
-            val outputString = process.inputStream.readAllBytes().toString(Charsets.UTF_8)
-            val output = json.decodeFromString<SeedgenCliOutput>(outputString)
-
             val stderrOutput = process.errorStream.readAllBytes().toString(Charsets.UTF_8)
             val exitCode = process.waitFor()
 
@@ -70,6 +67,9 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
             if (exitCode != 0)
                 Result.failure(Exception(stderrOutput))
             else {
+                val outputString = process.inputStream.readAllBytes().toString(Charsets.UTF_8)
+                val output = json.decodeFromString<SeedgenCliOutput>(outputString)
+
                 Result.success(SeedGeneratorGenerationResult(stderrOutput, output))
             }
         }
