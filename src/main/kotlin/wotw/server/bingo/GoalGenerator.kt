@@ -1310,12 +1310,13 @@ class BingoBoardGenerator {
 
         val boardSize = min(props?.bingoConfig?.size ?: 5, 7) // Maximum can be increased once we have more goals
 
-        val discoverySquares = (1..boardSize)
-            .flatMap { x -> (1..boardSize).map { x to it } }
-            .shuffled(random)
-            .take(props?.bingoConfig?.discovery ?: 0)
-            .toSet()
-            .ifEmpty { null }
+        val discoverySquares = props?.bingoConfig?.discovery?.let { discoveryCount ->
+            (1..boardSize)
+                .flatMap { x -> (1..boardSize).map { x to it } }
+                .shuffled(random)
+                .take(discoveryCount)
+                .toSet()
+        }
 
         val board = BingoBoard(
             config = BingoConfig(
