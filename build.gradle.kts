@@ -11,18 +11,18 @@ buildscript {
     }
 }
 
-val kotlin_version = "1.7.21"
-val ktor_version = "2.2.2"
+val kotlin_version = "1.8.22"
+val ktor_version = "2.3.2"
 val logback_version = "1.2.11"
-val exposed_version = "0.39.2"
-val serialization_version = "1.4.1"
-val krontab_version = "0.7.2"
+val exposed_version = "0.41.1"
+val serialization_version = "1.5.1"
+val krontab_version = "2.1.2"
 // val protobuf_version = "3.19.4"
 
 plugins {
-    kotlin("jvm") version "1.7.21"
+    kotlin("jvm") version "1.8.22"
     // id("com.google.protobuf") version "0.8.18"
-    kotlin("plugin.serialization") version "1.7.21"
+    kotlin("plugin.serialization") version "1.8.22"
 }
 
 repositories {
@@ -39,11 +39,7 @@ dependencies {
     implementation("io.github.classgraph:classgraph:4.8.147")
     implementation("io.sentry:sentry:6.0.0")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2"){
-        version {
-            strictly("1.6.0-native-mt")
-        }
-    }
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1-native-mt")
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
 
@@ -55,7 +51,7 @@ dependencies {
 
     implementation("com.zaxxer:HikariCP:5.0.1")
 
-    implementation("org.postgresql:postgresql:42.3.7")
+    implementation("org.postgresql:postgresql:42.3.8")
 
     implementation("dev.kord:kord-core:0.8.0-M14")
 
@@ -112,10 +108,6 @@ tasks.create<JavaExec>("run") {
     classpath(configurations["runtimeClasspath"], jvmJar)
 }
 val compileKotlin: KotlinCompile by tasks
-
-compileKotlin.kotlinOptions {
-    languageVersion = "1.6"
-}
 
 // protobuf {
 //     protoc {
