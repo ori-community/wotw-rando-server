@@ -100,6 +100,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                                         user.currentMultiverse?.id?.value,
                                         user.isDeveloper,
                                         user.points,
+                                        false,
                                     )
                                 }
 

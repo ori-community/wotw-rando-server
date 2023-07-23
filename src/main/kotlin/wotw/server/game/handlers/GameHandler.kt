@@ -3,6 +3,7 @@ package wotw.server.game.handlers
 import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protoBuf
+import wotw.io.messages.protobuf.SetBlockStartingNewGameMessage
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.World
@@ -53,6 +54,13 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
 
     abstract suspend fun generateStateAggregationRegistry(world: World): AggregationStrategyRegistry
 
+    /**
+     * Whether clients should block starting a new game
+     */
+    open suspend fun shouldBlockStartingNewGame(): Boolean {
+        return false
+    }
+
     open fun start() {}
     open fun stop() {}
 
@@ -94,6 +102,21 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         newSuspendedTransaction {
             val multiverse = getMultiverse()
             val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+
+            server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
+                server.connections.toPlayers(
+                    multiverseMembers,
+                    message,
+                )
+            }
+
+            server.connections.toObservers(multiverseId, message = message)
+        }
+    }
+
+    protected suspend fun notifyShouldBlockStartingGameChanged() {
+        newSuspendedTransaction {
+            val message = SetBlockStartingNewGameMessage(shouldBlockStartingNewGame())
 
             server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
                 server.connections.toPlayers(

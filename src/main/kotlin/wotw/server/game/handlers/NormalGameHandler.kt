@@ -10,6 +10,7 @@ import wotw.server.api.*
 import wotw.server.bingo.Point
 import wotw.server.database.model.*
 import wotw.server.game.MultiverseEvent
+import wotw.server.game.PlayerJoinedEvent
 import wotw.server.game.PlayerLeftEvent
 import wotw.server.game.inventory.WorldInventory
 import wotw.server.main.WotwBackendServer
@@ -24,12 +25,13 @@ import java.util.concurrent.TimeUnit
 
 @Serializable
 data class NormalGameHandlerState(
-    @ProtoNumber(1) @Required var startingAt: Long? = null,
+    @ProtoNumber(1) @Required var raceStartingAt: Long? = null,
     @ProtoNumber(2) @Required var finishedTime: Float? = null,
     @ProtoNumber(3) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
     @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float?> = mutableMapOf(),
     @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
     @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
+    @ProtoNumber(7) var raceModeEnabled: Boolean = false,
 )
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
@@ -39,7 +41,11 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     private var lazilyNotifyClientInfoChanged = false
 
     private val scheduler = Scheduler {
-        state.startingAt?.let { startingAt ->
+        if (!state.raceModeEnabled) {
+            return@Scheduler
+        }
+
+        state.raceStartingAt?.let { startingAt ->
             // In-game countdown
             val startingAtInstant = Instant.ofEpochMilli(startingAt)
             if (startingAtInstant.isAfter(Instant.now())) {
@@ -60,6 +66,22 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
                 server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
                     server.connections.toPlayers(multiverseMembers, message)
+                }
+
+                // Lock multiverse once the race started
+                if (secondsUntilStart <= 0) {
+                    newSuspendedTransaction {
+                        val multiverse = getMultiverse()
+                        multiverse.locked = true
+                        multiverse.isLockable = false
+                    }
+
+                    getMultiverse().players.forEach { user ->
+                        server.connections.playerMultiverseConnections[user.id.value]?.raceReady = false
+                    }
+
+                    notifyMultiverseOrClientInfoChanged()
+                    notifyShouldBlockStartingGameChanged()
                 }
             }
 
@@ -121,11 +143,27 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             lazilyNotifyClientInfoChanged = true
         }
 
+        messageEventBus.register(this, ReportPlayerRaceReadyMessage::class) { message, playerId ->
+            server.connections.playerMultiverseConnections[playerId]?.raceReady = message.raceReady
+            notifyMultiverseOrClientInfoChanged()
+            checkRaceStartCondition()
+        }
+
         multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
-                "startTimer" -> {
-                    startRace()
+                "enableRaceMode" -> {
+                    state.raceModeEnabled = true
+                    notifyMultiverseOrClientInfoChanged()
+                    checkRaceStartCondition()
+                    notifyShouldBlockStartingGameChanged()
                 }
+            }
+        }
+
+        multiverseEventBus.register(this, PlayerJoinedEvent::class) {
+            // If we are in the countdown phase, reset the countdown...
+            if (state.raceModeEnabled && state.raceStartingAt?.let { s -> Instant.now().toEpochMilli() < s } == true) {
+                state.raceStartingAt = null
             }
         }
 
@@ -133,6 +171,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             if (state.finishedTime == null) {
                 newSuspendedTransaction {
                     checkAllUniversesFinished()
+                    checkRaceStartCondition()
                 }
             }
         }
@@ -150,14 +189,32 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
     }
 
+    /**
+     * Check whether race mode is enabled and all players are ready.
+     * If yes, start the race.
+     */
+    suspend fun checkRaceStartCondition() {
+        // Check if race mode is enabled and the race hasn't started yet
+        if (!state.raceModeEnabled && state.raceStartingAt == null) {
+            return
+        }
+
+        val allPlayersReady = newSuspendedTransaction {
+            getMultiverse().players.all { user ->
+                server.connections.playerMultiverseConnections[user.id.value]?.raceReady ?: false
+            }
+        }
+
+        if (allPlayersReady) {
+            startRace()
+        }
+    }
+
     suspend fun startRace() {
-        state.startingAt = (Instant.now().epochSecond + 20) * 1000
+        state.raceStartingAt = (Instant.now().epochSecond + 5) * 1000
 
         newSuspendedTransaction {
-            val multiverse = getMultiverse()
-            multiverse.gameHandlerActive = true
-            multiverse.locked = true
-            multiverse.isLockable = false
+            getMultiverse().gameHandlerActive = true
         }
 
         notifyMultiverseOrClientInfoChanged()
@@ -177,7 +234,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
             val universeRanks = state.universeFinishedTimes
                 .toList()
-                .filter { (_, finishedTime) -> finishedTime != null }
+                .filter { (universeId, finishedTime) -> finishedTime != null && Universe.findById(universeId) != null }
                 .sortedBy { (_, finishedTime) -> finishedTime }
                 .mapIndexed { index, (universeId, _) -> Pair(universeId, index) }
                 .toMap()
@@ -217,6 +274,18 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
     override fun getClientInfo(): NormalGameHandlerState? {
         return state
+    }
+
+    override suspend fun shouldBlockStartingNewGame(): Boolean {
+        if (!state.raceModeEnabled) {
+            return false
+        }
+
+        if (state.raceStartingAt == null) {
+            return true
+        }
+
+        return state.raceStartingAt?.let { startingAt -> Instant.ofEpochMilli(startingAt).isBefore(Instant.now()) } ?: true
     }
 
     private suspend fun updateUberState(message: UberStateUpdateMessage, playerId: String) =
@@ -261,7 +330,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 }
             }
 
-            state.startingAt?.let { startingAt ->
+            state.raceStartingAt?.let { startingAt ->
                 if (results.containsKey(gameFinished)) {
                     if (!state.playerFinishedTimes.containsKey(playerId) && results[gameFinished]!!.sentValue > 0.5) {
                         val realTimeMillis =

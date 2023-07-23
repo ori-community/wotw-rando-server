@@ -20,6 +20,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     data class PlayerConnection(
         val clientConnection: ClientConnection,
         val multiverseId: Long?,
+        var raceReady: Boolean,
     )
 
     data class MultiverseObserverConnection(
@@ -84,7 +85,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         run {
             unregisterMultiverseConnection(playerId)
 
-            playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId)
+            playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId, false)
             if (multiverseId != null) {
                 newSuspendedTransaction {
                     broadcastMultiverseInfoMessage(multiverseId)

@@ -15,6 +15,7 @@ data class UserInfo(
     @ProtoNumber(5) val currentMultiverseId: Long?,
     @ProtoNumber(6) val isDeveloper: Boolean,
     @ProtoNumber(7) val points: Int,
+    @ProtoNumber(8) val raceReady: Boolean,
 )
 
 @Serializable
@@ -123,7 +124,8 @@ data class UberStateUpdateMessage(
 
 @Serializable
 data class InitGameSyncMessage(
-    @ProtoNumber(1) val uberStates: List<UberId> = emptyList()
+    @ProtoNumber(1) val uberStates: List<UberId> = emptyList(),
+    @ProtoNumber(2) val blockStartingNewGame: Boolean = false,
 )
 
 @Serializable
@@ -432,4 +434,14 @@ data class ResourceRequestMessage(
 @Serializable
 data class ReportLoadingTimeMessage(
     @ProtoNumber(1) val loadingTime: Float = 0f,
+)
+
+@Serializable
+data class SetBlockStartingNewGameMessage(
+    @ProtoNumber(1) val blockStartingNewGame: Boolean = false,
+)
+
+@Serializable
+data class ReportPlayerRaceReadyMessage(
+    @ProtoNumber(1) val raceReady: Boolean = false,
 )

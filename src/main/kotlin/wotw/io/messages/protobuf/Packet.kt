@@ -67,6 +67,8 @@ data class Packet(
             23 to typeOf<ResourceRequestMessage>(),
             24 to typeOf<PlayerTeleportMessage>(),
             25 to typeOf<ReportLoadingTimeMessage>(),
+            26 to typeOf<SetBlockStartingNewGameMessage>(),
+            27 to typeOf<ReportPlayerRaceReadyMessage>(),
 
             100 to typeOf<TrackerUpdate>(),
             101 to typeOf<ResetTracker>(),

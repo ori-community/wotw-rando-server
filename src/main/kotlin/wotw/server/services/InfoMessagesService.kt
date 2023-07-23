@@ -75,5 +75,6 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         user.currentMultiverse?.id?.value,
         user.isDeveloper,
         user.points,
+        server.connections.playerMultiverseConnections[user.id.value]?.raceReady ?: false,
     )
 }
