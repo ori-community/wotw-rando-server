@@ -40,6 +40,7 @@ dependencies {
     implementation("io.sentry:sentry:6.0.0")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1-native-mt")
+    // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
 

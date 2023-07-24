@@ -1,5 +1,6 @@
 package wotw.server.util
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -9,7 +10,7 @@ class Scheduler(private val task: suspend () -> Unit) {
 
     fun scheduleExecution(every: Every, fixedRate: Boolean = false) {
         val taskWrapper = Runnable {
-            runBlocking {
+            runBlocking(Dispatchers.Default) {
                 task.invoke()
             }
         }

@@ -76,10 +76,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     val multiverse = getMultiverse()
                     multiverse.locked = true
                     multiverse.isLockable = false
-                }
 
-                getMultiverse().players.forEach { user ->
-                    server.connections.playerMultiverseConnections[user.id.value]?.raceReady = false
+                    getMultiverse().players.forEach { user ->
+                        server.connections.playerMultiverseConnections[user.id.value]?.raceReady = false
+                    }
                 }
 
                 notifyMultiverseOrClientInfoChanged()
@@ -286,7 +286,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             return true
         }
 
-        return state.raceStarted
+        return !state.raceStarted
     }
 
     private suspend fun updateUberState(message: UberStateUpdateMessage, playerId: String) =
