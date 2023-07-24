@@ -2,6 +2,7 @@ package wotw.server.game.handlers
 
 import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.json
@@ -25,13 +26,14 @@ import java.util.concurrent.TimeUnit
 
 @Serializable
 data class NormalGameHandlerState(
-    @ProtoNumber(1) @Required var raceStartingAt: Long? = null,
+    @ProtoNumber(1) @Required @JsonNames("raceStartingAt", "startingAt") var raceStartingAt: Long? = null,
     @ProtoNumber(2) @Required var finishedTime: Float? = null,
     @ProtoNumber(3) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
     @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float?> = mutableMapOf(),
     @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
     @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
     @ProtoNumber(7) var raceModeEnabled: Boolean = false,
+    @ProtoNumber(8) var raceStarted: Boolean = false,
 )
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
@@ -67,22 +69,21 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
                     server.connections.toPlayers(multiverseMembers, message)
                 }
+            } else if (startingAtInstant.isBefore(Instant.now()) && !state.raceStarted) {
+                state.raceStarted = true
 
-                // Lock multiverse once the race started
-                if (secondsUntilStart <= 0) {
-                    newSuspendedTransaction {
-                        val multiverse = getMultiverse()
-                        multiverse.locked = true
-                        multiverse.isLockable = false
-                    }
-
-                    getMultiverse().players.forEach { user ->
-                        server.connections.playerMultiverseConnections[user.id.value]?.raceReady = false
-                    }
-
-                    notifyMultiverseOrClientInfoChanged()
-                    notifyShouldBlockStartingGameChanged()
+                newSuspendedTransaction {
+                    val multiverse = getMultiverse()
+                    multiverse.locked = true
+                    multiverse.isLockable = false
                 }
+
+                getMultiverse().players.forEach { user ->
+                    server.connections.playerMultiverseConnections[user.id.value]?.raceReady = false
+                }
+
+                notifyMultiverseOrClientInfoChanged()
+                notifyShouldBlockStartingGameChanged()
             }
 
             if (state.finishedTime == null && startingAtInstant.until(Instant.now(), ChronoUnit.HOURS) > 24) {
@@ -285,7 +286,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             return true
         }
 
-        return state.raceStartingAt?.let { startingAt -> Instant.ofEpochMilli(startingAt).isBefore(Instant.now()) } ?: true
+        return state.raceStarted
     }
 
     private suspend fun updateUberState(message: UberStateUpdateMessage, playerId: String) =

@@ -2,9 +2,12 @@ package wotw.server.game
 
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.InitGameSyncMessage
+import wotw.io.messages.protobuf.PrintTextMessage
+import wotw.io.messages.protobuf.Vector2
 import wotw.server.database.model.User
 import wotw.server.io.ClientConnection
 import wotw.server.main.WotwBackendServer
+import wotw.server.util.logger
 import wotw.server.util.makeServerTextMessage
 
 data class GameConnectionHandlerSyncResult(
@@ -46,7 +49,7 @@ class GameConnectionHandler(
             var handler = server.gameHandlerRegistry.getHandler(multiverse.id.value)
             val states = handler.generateStateAggregationRegistry(world).getSyncedStates()
 
-            this@GameConnectionHandler.connection.sendMessage(InitGameSyncMessage(states.toList()), handler.shouldBlockStartingNewGame())
+            this@GameConnectionHandler.connection.sendMessage(InitGameSyncMessage(states.toList(), handler.shouldBlockStartingNewGame()))
 
             val worldMemberNames = world.members.map { it.name }
             var greeting = "${player.name} - Connected to multiverse ${multiverse.id.value}"
