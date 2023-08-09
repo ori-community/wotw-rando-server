@@ -161,7 +161,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 "forfeit" -> {
                     if (state.raceModeEnabled) {
                         newSuspendedTransaction {
-                            if (getMultiverse().players.contains(message.sender) && !state.playerFinishedTimes.containsKey(message.sender.id.value)) {
+                            if (getMultiverse().players.any { p -> p.id.value == message.sender.id.value } && !state.playerFinishedTimes.containsKey(message.sender.id.value)) {
                                 state.playerFinishedTimes[message.sender.id.value] = 0f
 
                                 message.sender.currentWorld?.let { world ->
