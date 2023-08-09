@@ -248,7 +248,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
             val universeRanks = state.universeFinishedTimes
                 .toList()
-                .filter { (universeId, finishedTime) -> finishedTime != null && Universe.findById(universeId) != null }
+                .filter { (universeId, finishedTime) -> finishedTime != 0f && Universe.findById(universeId) != null }
                 .sortedBy { (_, finishedTime) -> finishedTime }
                 .mapIndexed { index, (universeId, _) -> Pair(universeId, index) }
                 .toMap()
