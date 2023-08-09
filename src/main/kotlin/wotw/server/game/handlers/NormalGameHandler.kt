@@ -158,6 +158,19 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     checkRaceStartCondition()
                     notifyShouldBlockStartingGameChanged()
                 }
+                "forfeit" -> {
+                    if (state.raceModeEnabled) {
+                        newSuspendedTransaction {
+                            if (getMultiverse().players.contains(message.sender) && !state.playerFinishedTimes.containsKey(message.sender.id.value)) {
+                                state.playerFinishedTimes[message.sender.id.value] = null
+
+                                message.sender.currentWorld?.let { world ->
+                                    checkWorldAndUniverseFinished(world)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -292,6 +305,42 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     private suspend fun updateUberState(message: UberStateUpdateMessage, playerId: String) =
         batchUpdateUberStates(UberStateBatchUpdateMessage(message), playerId)
 
+    private suspend fun checkWorldAndUniverseFinished(world: World) {
+        assertTransaction()
+
+        if (!state.worldFinishedTimes.containsKey(world.id.value)) {
+            // All players finished
+            if (world.members.all { player -> state.playerFinishedTimes.containsKey(player.id.value) }) {
+                if (world.members.any { player -> state.playerFinishedTimes[player.id.value] == null }) { // If any player DNF'd...
+                    state.worldFinishedTimes[world.id.value] = null // ...DNF the world
+                } else {
+                    state.worldFinishedTimes[world.id.value] =
+                        world.members.maxOf { player -> state.playerFinishedTimes[player.id.value] ?: 0f }
+                }
+
+                lazilyNotifyClientInfoChanged = true
+            }
+        }
+
+        if (!state.universeFinishedTimes.containsKey(world.universe.id.value)) {
+            // All worlds finished
+            if (world.universe.worlds.all { w -> state.worldFinishedTimes.containsKey(w.id.value) }) {
+                if (world.universe.worlds.any { w -> state.worldFinishedTimes[w.id.value] == null }) { // If any world DNF'd...
+                    state.universeFinishedTimes[world.universe.id.value] = null // DNF the universe
+                } else {
+                    state.universeFinishedTimes[world.universe.id.value] =
+                        world.universe.worlds.maxOf { w -> state.worldFinishedTimes[w.id.value] ?: 0f }
+                }
+
+                lazilyNotifyClientInfoChanged = true
+            }
+        }
+
+        if (state.finishedTime == null) {
+            checkAllUniversesFinished()
+        }
+    }
+
     private suspend fun batchUpdateUberStates(message: UberStateBatchUpdateMessage, playerId: String) {
         val uberStates = message.updates.associate {
             it.uberId to it.value
@@ -341,27 +390,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                         lazilyNotifyClientInfoChanged = true
                     }
 
-                    if (!state.worldFinishedTimes.containsKey(world.id.value)) {
-                        // All players finished
-                        if (world.members.all { player -> state.playerFinishedTimes.containsKey(player.id.value) }) {
-                            state.worldFinishedTimes[world.id.value] =
-                                world.members.maxOf { player -> state.playerFinishedTimes[player.id.value] ?: 0f }
-                            lazilyNotifyClientInfoChanged = true
-                        }
-                    }
-
-                    if (!state.universeFinishedTimes.containsKey(world.universe.id.value)) {
-                        // All worlds finished
-                        if (world.universe.worlds.all { world -> state.worldFinishedTimes.containsKey(world.id.value) }) {
-                            state.universeFinishedTimes[world.universe.id.value] =
-                                world.universe.worlds.maxOf { world -> state.worldFinishedTimes[world.id.value] ?: 0f }
-                            lazilyNotifyClientInfoChanged = true
-                        }
-                    }
-
-                    if (state.finishedTime == null) {
-                        checkAllUniversesFinished()
-                    }
+                    checkWorldAndUniverseFinished(world)
                 }
             }
 

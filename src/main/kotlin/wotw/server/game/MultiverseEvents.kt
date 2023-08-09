@@ -25,6 +25,7 @@ data class PlayerLeftEvent(
 
 data class MultiverseEvent(
     val event: String,
+    val sender: User,
     val payload: Any? = null,
 )
 

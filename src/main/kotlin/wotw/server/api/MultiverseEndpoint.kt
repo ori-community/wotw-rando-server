@@ -348,7 +348,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
 
                         server.gameHandlerRegistry.getHandler(multiverse).onMultiverseEvent(
-                            MultiverseEvent(event),
+                            MultiverseEvent(event, authenticatedUser()),
                         )
                     }
 
