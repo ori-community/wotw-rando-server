@@ -29,9 +29,9 @@ data class NormalGameHandlerState(
     @ProtoNumber(1) @Required @JsonNames("raceStartingAt", "startingAt") var raceStartingAt: Long? = null,
     @ProtoNumber(2) @Required var finishedTime: Float? = null,
     @ProtoNumber(3) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
-    @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float?> = mutableMapOf(),
-    @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
-    @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float?> = mutableMapOf(),
+    @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float> = mutableMapOf(),
+    @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
+    @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
     @ProtoNumber(7) var raceModeEnabled: Boolean = false,
     @ProtoNumber(8) var raceStarted: Boolean = false,
 )
@@ -162,7 +162,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     if (state.raceModeEnabled) {
                         newSuspendedTransaction {
                             if (getMultiverse().players.contains(message.sender) && !state.playerFinishedTimes.containsKey(message.sender.id.value)) {
-                                state.playerFinishedTimes[message.sender.id.value] = null
+                                state.playerFinishedTimes[message.sender.id.value] = 0f
 
                                 message.sender.currentWorld?.let { world ->
                                     checkWorldAndUniverseFinished(world)
@@ -311,8 +311,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         if (!state.worldFinishedTimes.containsKey(world.id.value)) {
             // All players finished
             if (world.members.all { player -> state.playerFinishedTimes.containsKey(player.id.value) }) {
-                if (world.members.any { player -> state.playerFinishedTimes[player.id.value] == null }) { // If any player DNF'd...
-                    state.worldFinishedTimes[world.id.value] = null // ...DNF the world
+                if (world.members.any { player -> state.playerFinishedTimes[player.id.value] == 0f }) { // If any player DNF'd...
+                    state.worldFinishedTimes[world.id.value] = 0f // ...DNF the world
                 } else {
                     state.worldFinishedTimes[world.id.value] =
                         world.members.maxOf { player -> state.playerFinishedTimes[player.id.value] ?: 0f }
@@ -325,8 +325,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         if (!state.universeFinishedTimes.containsKey(world.universe.id.value)) {
             // All worlds finished
             if (world.universe.worlds.all { w -> state.worldFinishedTimes.containsKey(w.id.value) }) {
-                if (world.universe.worlds.any { w -> state.worldFinishedTimes[w.id.value] == null }) { // If any world DNF'd...
-                    state.universeFinishedTimes[world.universe.id.value] = null // DNF the universe
+                if (world.universe.worlds.any { w -> state.worldFinishedTimes[w.id.value] == 0f }) { // If any world DNF'd...
+                    state.universeFinishedTimes[world.universe.id.value] = 0f // DNF the universe
                 } else {
                     state.universeFinishedTimes[world.universe.id.value] =
                         world.universe.worlds.maxOf { w -> state.worldFinishedTimes[w.id.value] ?: 0f }
