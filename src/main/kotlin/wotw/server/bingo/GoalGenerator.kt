@@ -525,6 +525,7 @@ fun generatePool() = mutableListOf(
         bool("swampStateGroup.creepDoorB", 21786, 29636),
         bool("swampStateGroup.creepDoorA", 21786, 25147),
         bool("swampStateGroup.creepDoorA", 21786, 53932),
+        bool("swampStateGroup.creepDoorB", 21786, 9402),
         bool("baursReachGroup.breakableWallA", 28895, 17510),
         bool("baursReachGroup.breakableWallB", 28895, 8934),
         bool("baursReachGroup.breakableRocksA", 28895, 7616),
