@@ -221,6 +221,25 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         if (allPlayersReady) {
             startRace()
+        } else if (!state.raceStarted && state.raceStartingAt != null) {
+            state.raceStartingAt = null
+
+            val message = PrintTextMessage(
+                "Countdown cancelled because a player left the lobby",
+                Vector2(0f, -1.3f),
+                0,
+                4f,
+                screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
+                horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
+                alignment = PrintTextMessage.ALIGNMENT_CENTER,
+                withBox = true,
+                withSound = true,
+                queue = "race_timer",
+            )
+
+            server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
+                server.connections.toPlayers(multiverseMembers, message)
+            }
         }
     }
 
