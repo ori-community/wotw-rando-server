@@ -10,6 +10,7 @@ import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.game.PlayerJoinedEvent
 import wotw.server.game.PlayerLeftEvent
+import wotw.server.game.PlayerMovedEvent
 import wotw.server.game.handlers.PlayerId
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.WorldStateCache
@@ -96,6 +97,8 @@ class MultiverseUtil(val server: WotwBackendServer) {
                         }
 
                         server.gameHandlerRegistry.getHandler(newMultiverseId).onMultiverseEvent(PlayerJoinedEvent(player))
+                    } else {
+                        server.gameHandlerRegistry.getHandler(newMultiverseId).onMultiverseEvent(PlayerMovedEvent(player))
                     }
                 }
             }

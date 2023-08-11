@@ -15,6 +15,10 @@ data class PlayerJoinedEvent(
     val player: User,
 )
 
+data class PlayerMovedEvent( // Moved inside a universe
+    val player: User,
+)
+
 data class PlayerLeftEvent(
     val player: User,
 )

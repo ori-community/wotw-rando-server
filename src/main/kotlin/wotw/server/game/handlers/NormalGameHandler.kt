@@ -13,6 +13,7 @@ import wotw.server.database.model.*
 import wotw.server.game.MultiverseEvent
 import wotw.server.game.PlayerJoinedEvent
 import wotw.server.game.PlayerLeftEvent
+import wotw.server.game.PlayerMovedEvent
 import wotw.server.game.inventory.WorldInventory
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.*
@@ -175,6 +176,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
 
         multiverseEventBus.register(this, PlayerJoinedEvent::class) {
+            checkRaceStartCondition()
+        }
+
+        multiverseEventBus.register(this, PlayerMovedEvent::class) {
             checkRaceStartCondition()
         }
 
