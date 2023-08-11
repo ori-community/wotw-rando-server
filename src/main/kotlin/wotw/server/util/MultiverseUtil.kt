@@ -8,6 +8,8 @@ import wotw.io.messages.protobuf.UberStateUpdateMessage
 import wotw.server.database.PlayerEnvironmentCacheEntry
 import wotw.server.database.model.User
 import wotw.server.database.model.World
+import wotw.server.game.PlayerJoinedEvent
+import wotw.server.game.PlayerLeftEvent
 import wotw.server.game.handlers.PlayerId
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.WorldStateCache
@@ -46,6 +48,9 @@ class MultiverseUtil(val server: WotwBackendServer) {
 
     suspend fun movePlayerToWorld(player: User, world: World) {
         if (player.currentWorld != world) {
+            val previousMultiverseId = player.currentWorld?.universe?.multiverse?.id?.value
+            val newMultiverseId = world.universe.multiverse.id.value
+
             removePlayerFromCurrentWorld(player, player.currentWorld?.universe?.multiverse?.id?.value != world.universe.multiverse.id.value)
 
             player.currentWorld = world
@@ -83,6 +88,16 @@ class MultiverseUtil(val server: WotwBackendServer) {
                     world.id.value,
                     player.id.value,
                 )
+
+                newSuspendedTransaction {
+                    if (previousMultiverseId != newMultiverseId) {
+                        previousMultiverseId?.let {
+                            server.gameHandlerRegistry.getHandler(it).onMultiverseEvent(PlayerLeftEvent(player))
+                        }
+
+                        server.gameHandlerRegistry.getHandler(newMultiverseId).onMultiverseEvent(PlayerJoinedEvent(player))
+                    }
+                }
             }
         }
     }

@@ -55,7 +55,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
                 val message = PrintTextMessage(
                     if (secondsUntilStart <= 0) "<s_4>Go!</>" else "<s_2>Race starting in $secondsUntilStart</>",
-                    Vector2(0f, -1.3f),
+                    Vector2(0f, -2.2f),
                     0,
                     if (secondsUntilStart <= 0) 1f else 3f,
                     screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
@@ -175,10 +175,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
 
         multiverseEventBus.register(this, PlayerJoinedEvent::class) {
-            // If we are in the countdown phase, reset the countdown...
-            if (state.raceModeEnabled && state.raceStartingAt?.let { s -> Instant.now().toEpochMilli() < s } == true) {
-                state.raceStartingAt = null
-            }
+            checkRaceStartCondition()
         }
 
         multiverseEventBus.register(this, PlayerLeftEvent::class) {
@@ -225,8 +222,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             state.raceStartingAt = null
 
             val message = PrintTextMessage(
-                "Countdown cancelled because a player left the lobby",
-                Vector2(0f, -1.3f),
+                "Countdown cancelled",
+                Vector2(0f, -2.2f),
                 0,
                 4f,
                 screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
@@ -240,6 +237,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
                 server.connections.toPlayers(multiverseMembers, message)
             }
+
+            notifyMultiverseOrClientInfoChanged()
         }
     }
 

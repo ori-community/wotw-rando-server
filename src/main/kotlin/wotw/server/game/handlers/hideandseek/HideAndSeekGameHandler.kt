@@ -549,16 +549,12 @@ class HideAndSeekGameHandler(
         }
 
         multiverseEventBus.register(this, PlayerJoinedEvent::class) { message ->
-            logger().info("joined: ${message.worldId}")
-
             doAfterTransaction {
                 updatePlayerInfoCache()
             }
         }
 
         multiverseEventBus.register(this, PlayerLeftEvent::class) { message ->
-            logger().info("left: ${message.worldId}")
-
             doAfterTransaction {
                 updatePlayerInfoCache()
             }

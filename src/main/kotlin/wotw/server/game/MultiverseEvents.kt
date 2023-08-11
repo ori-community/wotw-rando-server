@@ -13,14 +13,10 @@ data class WorldDeletedEvent(
 
 data class PlayerJoinedEvent(
     val player: User,
-    val worldId: Long,
-    val universeId: Long,
 )
 
 data class PlayerLeftEvent(
     val player: User,
-    val worldId: Long,
-    val universeId: Long,
 )
 
 data class MultiverseEvent(
