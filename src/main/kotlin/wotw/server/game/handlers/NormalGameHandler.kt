@@ -338,7 +338,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     state.worldFinishedTimes[world.id.value] = 0f // ...DNF the world
                 } else {
                     state.worldFinishedTimes[world.id.value] =
-                        world.members.maxOf { player -> state.playerFinishedTimes[player.id.value] ?: 0f }
+                        world.members.maxOf { player -> state.playerFinishedTimes.getOrDefault(player.id.value, 0f) }
                 }
 
                 lazilyNotifyClientInfoChanged = true
@@ -352,7 +352,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     state.universeFinishedTimes[world.universe.id.value] = 0f // DNF the universe
                 } else {
                     state.universeFinishedTimes[world.universe.id.value] =
-                        world.universe.worlds.maxOf { w -> state.worldFinishedTimes[w.id.value] ?: 0f }
+                        world.universe.worlds.maxOf { w -> state.worldFinishedTimes.getOrDefault(w.id.value, 0f) }
                 }
 
                 lazilyNotifyClientInfoChanged = true
@@ -409,7 +409,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                         val realTimeMillis =
                             Instant.ofEpochMilli(startingAt).until(Instant.now(), ChronoUnit.MILLIS)
                         state.playerFinishedTimes[playerId] =
-                            (realTimeMillis.toFloat() / 1000f) - (state.playerLoadingTimes[playerId] ?: 0f)
+                            (realTimeMillis.toFloat() / 1000f) - (state.playerLoadingTimes.getOrDefault(playerId, 0f))
                         lazilyNotifyClientInfoChanged = true
                     }
 
@@ -437,7 +437,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         val multiverse = getMultiverse()
         if (multiverse.universes.all { universe -> state.universeFinishedTimes.containsKey(universe.id.value) }) {
             // All universes finished
-            endRace(multiverse.universes.maxOf { universe -> state.universeFinishedTimes[universe.id.value] ?: 0f })
+            endRace(multiverse.universes.maxOf { universe -> state.universeFinishedTimes.getOrDefault(universe.id.value, 0f) })
         }
     }
 
