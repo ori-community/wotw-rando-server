@@ -12,7 +12,7 @@ buildscript {
 }
 
 val kotlin_version = "1.8.22"
-val ktor_version = "2.3.2"
+val ktor_version = "2.3.3"
 val logback_version = "1.2.11"
 val exposed_version = "0.41.1"
 val serialization_version = "1.5.1"
