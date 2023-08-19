@@ -7,6 +7,7 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.*
 import wotw.server.database.model.Seed
@@ -68,28 +69,6 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             call.respond(seedInfo)
         }
 
-        get("seeds/{id}/spoiler") {
-            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
-
-            val acceptItems = call.request.acceptItems()
-
-            for (acceptItem in acceptItems) {
-                if (acceptItem.value == "text/plain") {
-                    call.respond(newSuspendedTransaction {
-                        val seed = Seed.findById(id) ?: throw NotFoundException()
-                        seed.spoilerText
-                    })
-                    return@get
-                } else if (acceptItem.value == "application/json") {
-                    call.respond(newSuspendedTransaction {
-                        val seed = Seed.findById(id) ?: throw NotFoundException()
-                        seed.spoiler
-                    })
-                    return@get
-                }
-            }
-        }
-
         get("world-seeds/{id}/file") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
 
@@ -128,6 +107,39 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         HttpStatusCode.InternalServerError,
                     )
                 }
+            }
+        }
+
+        authenticate(JWT_AUTH) {
+            get("seeds/{id}/spoiler") {
+                val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
+
+                val acceptItems = call.request.acceptItems()
+
+                call.respond(
+                    newSuspendedTransaction {
+                        val seed = Seed.findById(id) ?: throw NotFoundException()
+                        val user = authenticatedUser()
+
+                        if (!seed.spoilerDownloads.contains(user)) {
+                            seed.spoilerDownloads = SizedCollection(seed.spoilerDownloads + user)
+
+                            seed.multiverses.forEach { multiverse ->
+                                server.gameHandlerRegistry.getHandler(multiverse).notifyMultiverseOrClientInfoChanged()
+                            }
+                        }
+
+                        for (acceptItem in acceptItems) {
+                            if (acceptItem.value == "text/plain") {
+                                return@newSuspendedTransaction seed.spoilerText
+                            } else if (acceptItem.value == "application/json") {
+                                return@newSuspendedTransaction seed.spoiler
+                            }
+                        }
+
+                        return@newSuspendedTransaction seed.spoiler
+                    }
+                )
             }
         }
     }

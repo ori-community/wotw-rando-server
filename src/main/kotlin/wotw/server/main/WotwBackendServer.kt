@@ -129,6 +129,7 @@ class WotwBackendServer {
                 GameStates,
                 Users,
                 BingoCardClaims,
+                SeedSpoilerDownloads,
                 Spectators,
                 Seeds,
                 WorldSeeds,

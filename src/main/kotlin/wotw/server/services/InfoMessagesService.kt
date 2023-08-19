@@ -47,6 +47,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         multiverse.locked,
         multiverse.isLockable,
         multiverse.race?.let { generateRaceInfo(it) },
+        multiverse.seed?.spoilerDownloads?.map { generateUserInfo(it) } ?: listOf(),
     )
 
     fun generateUniverseInfo(universe: Universe, color: String? = null) = UniverseInfo(

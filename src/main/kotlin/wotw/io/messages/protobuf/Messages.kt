@@ -70,6 +70,7 @@ data class MultiverseInfoMessage(
     @ProtoNumber(9) val locked: Boolean = false,
     @ProtoNumber(10) val isLockable: Boolean = true,
     @ProtoNumber(11) @Required val race: RaceInfo? = null,
+    @ProtoNumber(12) val seedSpoilerDownloaders: List<UserInfo>,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

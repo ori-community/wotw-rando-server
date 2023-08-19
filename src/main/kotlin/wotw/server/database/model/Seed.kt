@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.javatime.datetime
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.UniverseSettings
 import wotw.server.database.jsonb
+import wotw.server.database.model.Race.Companion.referrersOn
 
 object Seeds : LongIdTable("seeds") {
     // TODO: Make seedgen return the used UniverseSettings and save them here instead of the preset
@@ -28,6 +29,8 @@ class Seed(id: EntityID<Long>): LongEntity(id){
     var spoilerText by Seeds.spoilerText
     var creator by User optionalReferencedOn Seeds.creator
     val worldSeeds by WorldSeed referrersOn WorldSeeds.seed
+    var spoilerDownloads by User via SeedSpoilerDownloads
+    val multiverses by Multiverse optionalReferrersOn Multiverses.seedId
 }
 
 object WorldSeeds : LongIdTable("world_seeds") {
