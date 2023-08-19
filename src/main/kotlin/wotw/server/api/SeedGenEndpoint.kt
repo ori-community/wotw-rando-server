@@ -13,6 +13,7 @@ import wotw.io.messages.*
 import wotw.server.database.model.Seed
 import wotw.server.database.model.WorldSeed
 import wotw.server.main.WotwBackendServer
+import wotw.server.util.doAfterTransaction
 import wotw.server.util.logger
 import wotw.server.util.then
 import kotlin.io.path.Path
@@ -124,8 +125,12 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         if (!seed.spoilerDownloads.contains(user)) {
                             seed.spoilerDownloads = SizedCollection(seed.spoilerDownloads + user)
 
-                            seed.multiverses.forEach { multiverse ->
-                                server.gameHandlerRegistry.getHandler(multiverse).notifyMultiverseOrClientInfoChanged()
+                            val affectedMultiverseIds = seed.multiverses.map { m -> m.id.value }
+
+                            doAfterTransaction {
+                                affectedMultiverseIds.forEach { multiverseId ->
+                                    server.gameHandlerRegistry.getHandler(multiverseId).notifyMultiverseOrClientInfoChanged()
+                                }
                             }
                         }
 
