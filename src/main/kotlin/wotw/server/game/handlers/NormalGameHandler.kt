@@ -434,10 +434,14 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
     private suspend fun checkAllUniversesFinished() {
         assertTransaction()
 
+        if (!state.raceStarted) {
+            return
+        }
+
         val multiverse = getMultiverse()
         if (multiverse.universes.all { universe -> state.universeFinishedTimes.containsKey(universe.id.value) }) {
             // All universes finished
-            endRace(multiverse.universes.maxOf { universe -> state.universeFinishedTimes.getOrDefault(universe.id.value, 0f) })
+            endRace(multiverse.universes.maxOfOrNull { universe -> state.universeFinishedTimes.getOrDefault(universe.id.value, 0f) } ?: 0f)
         }
     }
 
