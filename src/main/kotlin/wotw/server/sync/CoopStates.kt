@@ -93,6 +93,7 @@ val questIds = mapOf(
     "Rebuilding the Glades" to UberId(14019, 44578),
     "Regrowing the Glades" to UberId(14019, 26394),
     "FindToad" to UberId(14019, 48794),
+    "The Silent Teeth" to UberId(937, 34641),
 )
 //    "Into The Darkness" to UberId(14019, 33776), bad to sync for reasons
 
