@@ -704,7 +704,6 @@ fun generatePool() = mutableListOf(
         bool("UpperPools.RightBubblesEX", 5377, 21860),
         bool("UpperPools.LeftBubblesEX", 5377, 628),
         bool("UpperPools.FishPoolEX", 5377, 33110),
-        bool("UpperPools.CurrentEX", 5377, 52791),
         bool("EastHollow.KwolokSwimRightEX", 46462, 20780),
         bool("EastPools.BehindCrusherEX", 5377, 18345),
         bool("EastPools.CurrentEX", 5377, 17396),
