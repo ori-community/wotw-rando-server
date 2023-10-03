@@ -117,34 +117,35 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 val acceptItems = call.request.acceptItems()
 
-                call.respond(
-                    newSuspendedTransaction {
-                        val seed = Seed.findById(id) ?: throw NotFoundException()
-                        val user = authenticatedUser()
+                val (contentType, body) = newSuspendedTransaction {
+                    val seed = Seed.findById(id) ?: throw NotFoundException()
+                    val user = authenticatedUser()
 
-                        if (!seed.spoilerDownloads.contains(user)) {
-                            seed.spoilerDownloads = SizedCollection(seed.spoilerDownloads + user)
+                    if (!seed.spoilerDownloads.contains(user)) {
+                        seed.spoilerDownloads = SizedCollection(seed.spoilerDownloads + user)
 
-                            val affectedMultiverseIds = seed.multiverses.map { m -> m.id.value }
+                        val affectedMultiverseIds = seed.multiverses.map { m -> m.id.value }
 
-                            doAfterTransaction {
-                                affectedMultiverseIds.forEach { multiverseId ->
-                                    server.gameHandlerRegistry.getHandler(multiverseId).notifyMultiverseOrClientInfoChanged()
-                                }
+                        doAfterTransaction {
+                            affectedMultiverseIds.forEach { multiverseId ->
+                                server.gameHandlerRegistry.getHandler(multiverseId).notifyMultiverseOrClientInfoChanged()
                             }
                         }
-
-                        for (acceptItem in acceptItems) {
-                            if (acceptItem.value == "text/plain") {
-                                return@newSuspendedTransaction seed.spoilerText
-                            } else if (acceptItem.value == "application/json") {
-                                return@newSuspendedTransaction seed.spoiler.toString()
-                            }
-                        }
-
-                        return@newSuspendedTransaction seed.spoiler.toString()
                     }
-                )
+
+                    for (acceptItem in acceptItems) {
+                        if (acceptItem.value == "text/plain") {
+                            return@newSuspendedTransaction "text/plain" to  seed.spoilerText
+                        } else if (acceptItem.value == "application/json") {
+                            return@newSuspendedTransaction "application/json" to seed.spoiler.toString()
+                        }
+                    }
+
+                    return@newSuspendedTransaction "application/json" to seed.spoiler.toString()
+                }
+
+                call.response.header("Content-Type", contentType)
+                call.respond(body)
             }
         }
     }
