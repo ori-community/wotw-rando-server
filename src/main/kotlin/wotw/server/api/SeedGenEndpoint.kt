@@ -138,11 +138,11 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             if (acceptItem.value == "text/plain") {
                                 return@newSuspendedTransaction seed.spoilerText
                             } else if (acceptItem.value == "application/json") {
-                                return@newSuspendedTransaction seed.spoiler
+                                return@newSuspendedTransaction seed.spoiler.toString()
                             }
                         }
 
-                        return@newSuspendedTransaction seed.spoiler
+                        return@newSuspendedTransaction seed.spoiler.toString()
                     }
                 )
             }
