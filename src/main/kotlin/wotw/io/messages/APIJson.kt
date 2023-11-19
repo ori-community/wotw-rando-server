@@ -143,3 +143,9 @@ data class SeedGenResponse(
 
 @Serializable
 data class TokenRequest(val scopes: Set<String>, val duration: Long? = null)
+
+@Serializable
+data class ImpersonateRequest(val userId: String)
+
+@Serializable
+data class ClaimBingoCardRequest(val x: Int, val y: Int)

@@ -17,11 +17,13 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.ImpersonateRequest
 import wotw.io.messages.TokenRequest
 import wotw.io.messages.json
 import wotw.server.database.model.User
 import wotw.server.exception.MissingScopeException
 import wotw.server.main.WotwBackendServer
+import wotw.server.util.logger
 import java.util.*
 
 const val DISCORD_OAUTH = "discordOAuth"
@@ -89,12 +91,23 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             withExpiresAt(Date(getTimeMillis() + it))
                         } ?: this
                     })
-
                 }
 
                 get("/test") {
                     call.response.status(HttpStatusCode.OK)
                 }
+            }
+        }
+
+        if (!System.getenv("ALLOW_IMPERSONATION").isNullOrBlank()) {
+            logger().warn("WARNING: Impersonation is enabled!")
+
+            post<ImpersonateRequest>("/impersonate") { request ->
+                val user = newSuspendedTransaction {
+                    User.findById(request.userId) ?: throw NotFoundException("User not found")
+                }
+
+                call.respond(createJWTToken(user, Scope.ALL))
             }
         }
     }

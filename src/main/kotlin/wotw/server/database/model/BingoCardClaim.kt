@@ -13,6 +13,10 @@ object BingoCardClaims : LongIdTable("bingo_card_claims") {
     val x = integer("x")
     val y = integer("y")
     val manual = bool("manual")
+
+    init {
+        index(true, universeId, x, y)
+    }
 }
 
 class BingoCardClaim(id: EntityID<Long>) : LongEntity(id) {

@@ -377,7 +377,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             val results = server.sync.aggregateStates(player, uberStates)
 
             getMultiverse().board?.let { board ->
-                val newBingoCardClaims = world.universe.multiverse.updateCompletions(world.universe)
+                val newBingoCardClaims = world.universe.multiverse.getNewBingoCardClaims(world.universe)
 
                 if (board.config.lockout) {
                     newBingoCardClaims

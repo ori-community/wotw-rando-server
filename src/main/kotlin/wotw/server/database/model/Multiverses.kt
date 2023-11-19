@@ -37,7 +37,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val worlds: Collection<World>
         get() = universes.flatMap { it.worlds }
     private val states by GameState referrersOn GameStates.multiverseId
-    private val bingoCardClaims by BingoCardClaim referrersOn BingoCardClaims.multiverseId
+    val bingoCardClaims by BingoCardClaim referrersOn BingoCardClaims.multiverseId
     var spectators by User via Spectators
 
     var gameHandlerType by Multiverses.gameHandlerType
@@ -62,18 +62,18 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val members
         get() = players + spectators
 
-    suspend fun updateCompletions(universe: Universe): List<BingoCardClaim> {
+    suspend fun getNewBingoCardClaims(universe: Universe): List<BingoCardClaim> {
         val newClaims = mutableListOf<BingoCardClaim>()
 
         val board = board ?: return emptyList()
         val state =
             UniverseStateCache.get(universe.id.value)//universeStates[universe]?.uberStateData ?: UberStateMap.empty
-        val completions = bingoCardClaims.filter { it.universe == universe }.map { it.x to it.y }
+        val claimedSquarePositions = bingoCardClaims.filter { it.universe == universe }.map { it.x to it.y }
 
         for (x in 1..board.size) {
             for (y in 1..board.size) {
                 val point = x to y
-                if (point in completions) continue
+                if (point in claimedSquarePositions) continue
                 if (board.goals[point]?.isCompleted(state) == true) {
                     newClaims.add(BingoCardClaim.new {
                         this.universe = universe
@@ -201,10 +201,6 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             else -> {
                 goals.filter { (_, goal) -> goal.visibleFor.contains(targetUniverse?.id?.value) }
             }
-        }
-
-        this.bingoCardClaims.forEach { event ->
-            goals[event.x to event.y]?.visibleFor?.add(event.universe.id.value)
         }
 
         return BingoBoardMessage(
