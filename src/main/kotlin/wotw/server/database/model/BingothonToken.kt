@@ -10,6 +10,7 @@ import wotw.server.database.StringIdTable
 
 object BingothonTokens : StringIdTable("bingothon_tokens") {
     val owner = reference("owner_id", Users, ReferenceOption.CASCADE, ReferenceOption.CASCADE).uniqueIndex()
+    val multiverseId = BingothonTokens.reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val created = datetime("created_at").defaultExpression(CurrentDateTime)
 }
 
@@ -17,5 +18,6 @@ class BingothonToken(id: EntityID<String>): StringEntity(id){
     companion object : StringEntityClass<BingothonToken>(BingothonTokens)
 
     var owner by User referencedOn BingothonTokens.owner
+    var multiverse by Multiverse referencedOn BingothonTokens.multiverseId
     var created by BingothonTokens.created
 }

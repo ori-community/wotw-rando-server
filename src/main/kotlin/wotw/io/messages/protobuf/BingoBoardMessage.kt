@@ -49,6 +49,7 @@ data class BingothonBingoSquare(
     val text: String,
     val html: String,
     val completedBy: LinkedHashSet<Long>,
+    val visibleFor: LinkedHashSet<Long>,
 )
 
 @Serializable

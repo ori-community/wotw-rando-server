@@ -149,3 +149,6 @@ data class ImpersonateRequest(val userId: String)
 
 @Serializable
 data class ClaimBingoCardRequest(val x: Int, val y: Int)
+
+@Serializable
+data class BingothonTokenRequest(val multiverseId: Long)
