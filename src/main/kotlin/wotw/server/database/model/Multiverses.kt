@@ -92,8 +92,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
 
     suspend fun createBingoBoardMessage(
         targetUniverse: Universe?,
-        spectator: Boolean = false,
-        forceAllVisible: Boolean = false
+        spectator: Boolean = false
     ): BingoBoardMessage {
         val board = board ?: return BingoBoardMessage()
 
@@ -196,7 +195,6 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         }
 
         goals = when {
-            forceAllVisible -> goals
             spectator -> goals
             else -> {
                 goals.filter { (_, goal) -> goal.visibleFor.contains(targetUniverse?.id?.value) }
