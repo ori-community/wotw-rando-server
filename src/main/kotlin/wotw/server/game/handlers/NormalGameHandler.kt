@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 data class NormalGameHandlerState(
     @ProtoNumber(1) @Required @JsonNames("raceStartingAt", "startingAt") var raceStartingAt: Long? = null,
     @ProtoNumber(2) @Required var finishedTime: Float? = null,
-    @ProtoNumber(3) var playerLoadingTimes: MutableMap<String, Float> = mutableMapOf(),
+    @ProtoNumber(3) var playerInGameTimes: MutableMap<String, Float> = mutableMapOf(),
     @ProtoNumber(4) var playerFinishedTimes: MutableMap<String, Float> = mutableMapOf(),
     @ProtoNumber(5) var worldFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
     @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
@@ -140,8 +140,21 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             }
         }
 
-        messageEventBus.register(this, ReportLoadingTimeMessage::class) { message, playerId ->
-            state.playerLoadingTimes[playerId] = message.loadingTime
+        messageEventBus.register(this, ReportInGameTimeMessage::class) { message, playerId ->
+            state.playerInGameTimes[playerId] = message.inGameTime
+
+            if (message.isFinished) {
+                if (!state.playerFinishedTimes.containsKey(playerId)) {
+                    state.playerFinishedTimes[playerId] = message.inGameTime
+
+                    newSuspendedTransaction {
+                        val player = User.findById(playerId) ?: error("Error: Reported time for unknown user $playerId")
+                        val world = player.currentWorld ?: error("Error: Player $playerId is not in a world")
+                        checkWorldAndUniverseFinished(world)
+                    }
+                }
+            }
+
             lazilyNotifyClientInfoChanged = true
         }
 
@@ -400,20 +413,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                                 }
                             }
                         }
-                }
-            }
-
-            state.raceStartingAt?.let { startingAt ->
-                if (results.containsKey(gameFinished)) {
-                    if (!state.playerFinishedTimes.containsKey(playerId) && results[gameFinished]!!.sentValue > 0.5) {
-                        val realTimeMillis =
-                            Instant.ofEpochMilli(startingAt).until(Instant.now(), ChronoUnit.MILLIS)
-                        state.playerFinishedTimes[playerId] =
-                            (realTimeMillis.toFloat() / 1000f) - (state.playerLoadingTimes.getOrDefault(playerId, 0f))
-                        lazilyNotifyClientInfoChanged = true
-                    }
-
-                    checkWorldAndUniverseFinished(world)
                 }
             }
 

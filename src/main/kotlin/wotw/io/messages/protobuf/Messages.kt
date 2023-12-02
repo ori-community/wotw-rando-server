@@ -433,8 +433,9 @@ data class ResourceRequestMessage(
 )
 
 @Serializable
-data class ReportLoadingTimeMessage(
-    @ProtoNumber(1) val loadingTime: Float = 0f,
+data class ReportInGameTimeMessage(
+    @ProtoNumber(1) val inGameTime: Float = 0f,
+    @ProtoNumber(2) val isFinished: Boolean = false,
 )
 
 @Serializable
