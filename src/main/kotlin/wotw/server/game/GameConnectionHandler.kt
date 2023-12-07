@@ -3,6 +3,7 @@ package wotw.server.game
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.InitGameSyncMessage
 import wotw.io.messages.protobuf.PrintTextMessage
+import wotw.io.messages.protobuf.SetSaveGuidRestrictionsMessage
 import wotw.io.messages.protobuf.Vector2
 import wotw.server.database.model.User
 import wotw.server.io.ClientConnection
@@ -53,8 +54,10 @@ class GameConnectionHandler(
                 InitGameSyncMessage(
                     states.toList(),
                     handler.shouldBlockStartingNewGame(),
-                    handler.getPlayerSaveGuid(playerId),
-                    true,
+                    SetSaveGuidRestrictionsMessage(
+                        handler.getPlayerSaveGuid(playerId),
+                        true,
+                    ),
                 )
             )
 

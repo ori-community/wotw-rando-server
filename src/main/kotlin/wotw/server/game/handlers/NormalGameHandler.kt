@@ -121,6 +121,14 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         messageEventBus.register(this, SetPlayerSaveGuidMessage::class) { message, playerId ->
             state.playerSaveGuids[playerId] = message.playerSaveGuid
+
+            server.connections.toPlayers(
+                listOf(playerId),
+                SetSaveGuidRestrictionsMessage(
+                    message.playerSaveGuid,
+                    true,
+                )
+            )
         }
 
         messageEventBus.register(this, ResourceRequestMessage::class) { message, playerId ->
