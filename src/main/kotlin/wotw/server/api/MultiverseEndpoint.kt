@@ -450,6 +450,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 onMessage(PlayerUseCatchingAbilityMessage::class) { connectionHandler?.onMessage(this) }
                 onMessage(ReportInGameTimeMessage::class) { connectionHandler?.onMessage(this) }
                 onMessage(ReportPlayerRaceReadyMessage::class) { connectionHandler?.onMessage(this) }
+                onMessage(SetPlayerSaveGuidMessage::class) { connectionHandler?.onMessage(this) }
 
                 onClose {
                     logger.info("WebSocket for player $playerId disconnected (close, ${closeReason.await()})")
