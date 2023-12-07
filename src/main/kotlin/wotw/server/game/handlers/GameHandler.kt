@@ -3,6 +3,7 @@ package wotw.server.game.handlers
 import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protoBuf
+import wotw.io.messages.protobuf.MoodGuid
 import wotw.io.messages.protobuf.SetBlockStartingNewGameMessage
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
@@ -53,6 +54,14 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     open suspend fun getAdditionalDebugInformation(): String? = null
 
     abstract suspend fun generateStateAggregationRegistry(world: World): AggregationStrategyRegistry
+
+    /**
+     * @param playerId PlayerId
+     * @return Return the save GUID for a player, or null if the client should force creating a new save file
+     */
+    open suspend fun getPlayerSaveGuid(playerId: PlayerId): MoodGuid? {
+        return null
+    }
 
     /**
      * Whether clients should block starting a new game

@@ -35,6 +35,7 @@ data class NormalGameHandlerState(
     @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
     @ProtoNumber(7) var raceModeEnabled: Boolean = false,
     @ProtoNumber(8) var raceStarted: Boolean = false,
+    @ProtoNumber(9) var playerSaveGuids: MutableMap<String, MoodGuid> = mutableMapOf(),
 )
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
@@ -116,6 +117,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 UpdatePlayerPositionMessage(playerId, message.x, message.y, message.ghostFrameData),
                 unreliable = true,
             )
+        }
+
+        messageEventBus.register(this, SetPlayerSaveGuidMessage::class) { message, playerId ->
+            state.playerSaveGuids[playerId] = message.playerSaveGuid
         }
 
         messageEventBus.register(this, ResourceRequestMessage::class) { message, playerId ->
@@ -322,7 +327,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         notifyMultiverseOrClientInfoChanged()
     }
 
-    override fun getClientInfo(): NormalGameHandlerState? {
+    override fun getClientInfo(): NormalGameHandlerState {
         return state
     }
 
@@ -467,5 +472,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
 
         return aggregationRegistry
+    }
+
+    override suspend fun getPlayerSaveGuid(playerId: PlayerId): MoodGuid? {
+        return state.playerSaveGuids[playerId]
     }
 }

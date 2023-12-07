@@ -49,7 +49,14 @@ class GameConnectionHandler(
             var handler = server.gameHandlerRegistry.getHandler(multiverse.id.value)
             val states = handler.generateStateAggregationRegistry(world).getSyncedStates()
 
-            this@GameConnectionHandler.connection.sendMessage(InitGameSyncMessage(states.toList(), handler.shouldBlockStartingNewGame()))
+            this@GameConnectionHandler.connection.sendMessage(
+                InitGameSyncMessage(
+                    states.toList(),
+                    handler.shouldBlockStartingNewGame(),
+                    handler.getPlayerSaveGuid(playerId),
+                    true,
+                )
+            )
 
             val worldMemberNames = world.members.map { it.name }
             var greeting = "${player.name} - Connected to multiverse ${multiverse.id.value}"

@@ -124,9 +124,24 @@ data class UberStateUpdateMessage(
 )
 
 @Serializable
+data class MoodGuid(
+    @ProtoNumber(1) val a: Int,
+    @ProtoNumber(2) val b: Int,
+    @ProtoNumber(3) val c: Int,
+    @ProtoNumber(4) val d: Int,
+)
+
+@Serializable
 data class InitGameSyncMessage(
     @ProtoNumber(1) val uberStates: List<UberId> = emptyList(),
     @ProtoNumber(2) val blockStartingNewGame: Boolean = false,
+    @ProtoNumber(3) val playerSaveGuid: MoodGuid? = null,
+    @ProtoNumber(4) val shouldRestrictSaveGuid: Boolean = false,
+)
+
+@Serializable
+data class SetPlayerSaveGuidMessage(
+    @ProtoNumber(1) val playerSaveGuid: MoodGuid,
 )
 
 @Serializable

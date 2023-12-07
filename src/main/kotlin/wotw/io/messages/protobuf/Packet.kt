@@ -69,6 +69,7 @@ data class Packet(
             25 to typeOf<ReportInGameTimeMessage>(),
             26 to typeOf<SetBlockStartingNewGameMessage>(),
             27 to typeOf<ReportPlayerRaceReadyMessage>(),
+            28 to typeOf<SetPlayerSaveGuidMessage>(),
 
             100 to typeOf<TrackerUpdate>(),
             101 to typeOf<ResetTracker>(),
