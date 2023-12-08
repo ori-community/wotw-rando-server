@@ -198,7 +198,6 @@ val pickupIds = mapOf(
     "GladesTown.HandToHandSoup" to UberId(14019, 26318),
     "GladesTown.FamilyReunionKey" to UberId(14019, 27804),
     "GladesTown.AcornQI" to UberId(14019, 2782),
-    // "GladesTown.MokiAcornQuest" to UberId(14019, 33776),
     "GladesTown.HoleHutEC" to UberId(42178, 52786),
     "GladesTown.AboveGromHC" to UberId(44310, 29043),
     "GladesTown.LupoSwimHC" to UberId(44310, 17523),

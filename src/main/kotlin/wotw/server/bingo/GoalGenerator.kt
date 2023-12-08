@@ -35,7 +35,8 @@ fun generatePool() = mutableListOf(
         pickupsIn.pools,
         pickupsIn.reach,
         pickupsIn.wastes,
-        pickupsIn.willow
+        pickupsIn.willow,
+        pickupsIn.houses,
     ).weighted(300),
     bool("Spin the Wheel outside Luma Pools", 945, 12852),
 
@@ -1359,10 +1360,4 @@ class BingoBoardGenerator {
 
         return board
     }
-}
-
-fun main() {
-    println(System.currentTimeMillis())
-    //println(Json{allowStructuredMapKeys = true}.encodeToString(BingoBoardGenerator().generateBoard(BingoGenProperties("roastbeef", 2, true))))
-    println(System.currentTimeMillis())
 }
