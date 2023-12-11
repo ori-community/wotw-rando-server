@@ -476,9 +476,9 @@ val pickupIds = mapOf(
     "OpherShop.StaticStar" to UberId(1, 1106),
     "OpherShop.ChargeBlaze" to UberId(1, 1115),
     "OpherShop.RapidSentry" to UberId(1, 1116),
-    "LupoShop.HCMapIcon" to UberId(48248, 41666),
-    "LupoShop.ECMapIcon" to UberId(48248, 19396),
-    "LupoShop.ShardMapIcon" to UberId(48248, 57987),
+    "LupoShop.HCMapIcon" to UberId(15, 41666),
+    "LupoShop.ECMapIcon" to UberId(15, 19396),
+    "LupoShop.ShardMapIcon" to UberId(15, 57987),
 )
 
 val safeMaxLevers = listOf(
