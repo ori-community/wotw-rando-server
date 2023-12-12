@@ -815,15 +815,15 @@ fun generatePool() = mutableListOf(
     bool("Drain the room next to Water Dash tree", 5377, 29911),
     bool("Break the log in Inkwater", 21786, 59922),
     threshold("Drain Kwolok's Hollow", 937, 42245, 2, hideValue = true),
-    threshold("Collect Items", 6, 2, triag(40, 240, 100)),
-    threshold("Collect Keystones", 6, 0, triag(4, 24, 10)),
+    threshold("Collect Items", 14, 2, triag(40, 240, 100)),
+    threshold("Collect Keystones", 14, 0, triag(4, 24, 10)),
     oneof(
-        threshold("Collect Ore", 6, 5, triag(6, 35, 16)),
-        threshold("Spend Ore", 6, 6, triag(6, 35, 16)),
+        threshold("Collect Ore", 14, 5, triag(6, 35, 16)),
+        threshold("Spend Ore", 14, 6, triag(6, 35, 16)),
     ),
     oneof(
-        threshold("Collect Spirit Light", 6, 3, triag(2000, 6000, 4000)),
-        threshold("Spend Spirit Light", 6, 4, triag(2000, 6000, 3000)),
+        threshold("Collect Spirit Light", 14, 3, triag(2000, 6000, 4000)),
+        threshold("Spend Spirit Light", 14, 4, triag(2000, 6000, 3000)),
     ),
     bool("Open Wellspring 2nd floor", 37858, 9487),
     group(
