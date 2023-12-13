@@ -163,13 +163,13 @@ fun generatePool() = mutableListOf(
     oneof(
         group(
             "Find # Key Item[s]",
-            bool("Bash", 6, 1000),
-            bool("Glide", 6, 1014),
-            bool("Light Burst", 6, 1051),
-            bool("Flash", 6, 1062),
-            bool("Burrow", 6, 1101),
-            bool("Water Dash", 6, 1104),
-            bool("Flap", 6, 1118),
+            bool("Bash", 24, 0),
+            bool("Glide", 24, 14),
+            bool("Light Burst", 24, 51),
+            bool("Flash", 24, 62),
+            bool("Burrow", 24, 101),
+            bool("Water Dash", 24, 104),
+            bool("Flap", 24, 118),
             bool("Clean Water", 6, 2000),
             maxRepeats = 1
         ),
