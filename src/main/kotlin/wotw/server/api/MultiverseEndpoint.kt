@@ -388,6 +388,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val setupResult = newSuspendedTransaction { connectionHandler!!.setup() }
 
+                    server.connections.registerMultiverseConnection(
+                        socketConnection,
+                        playerId,
+                        setupResult?.multiverseId,
+                    )
+
                     if (setupResult == null) {
                         server.connections.toPlayers(
                             listOf(playerId), makeServerTextMessage(
@@ -401,12 +407,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         val world = World.findById(setupResult.worldId)
                         world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList()
                     }
-
-                    server.connections.registerMultiverseConnection(
-                        socketConnection,
-                        playerId,
-                        setupResult.multiverseId
-                    )
 
                     // Check if all players are online
                     val allPlayersOnline = multiversePlayerIds.all {
