@@ -389,10 +389,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val setupResult = newSuspendedTransaction { connectionHandler!!.setup() }
 
                     if (setupResult == null) {
-                        logger.info("MultiverseEndpoint: game_sync: Player $playerId is not part of an active multiverse")
-                        return this@webSocket.close(
-                            CloseReason(CloseReason.Codes.NORMAL, "Player is not part of an active multiverse")
+                        server.connections.toPlayers(
+                            listOf(playerId), makeServerTextMessage(
+                                "You are not part of an active multiverse.\nPlease join or create one.",
+                            )
                         )
+                        return;
                     }
 
                     val multiversePlayerIds = newSuspendedTransaction {
