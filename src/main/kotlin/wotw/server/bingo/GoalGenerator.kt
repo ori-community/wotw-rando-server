@@ -17,8 +17,8 @@ fun generatePool() = mutableListOf(
         bool("Mouldwood Depths", 48248, 48423),
         bool("Windswept Wastes", 48248, 61146),
         bool("Willows End", 48248, 4045),
-        bool("Wellspring Glades", 48248, 19396),
-        bool("Silent Woods", 48248, 57987),
+        bool("Wellspring Glades", 15, 19396),
+        bool("Silent Woods", 15, 57987),
 
         countGoal = { it.nextTriangular(2, 8, 5) },
         maxRepeats = 2
