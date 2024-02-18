@@ -156,6 +156,15 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         messageEventBus.register(this, ReportInGameTimeMessage::class) { message, playerId ->
             state.playerInGameTimes[playerId] = message.inGameTime
 
+            val currentInGameTime = state.playerInGameTimes[playerId] ?: 0f
+
+            if (currentInGameTime > message.inGameTime) {
+                server.connections.toPlayers(listOf(playerId), OverrideInGameTimeMessage(currentInGameTime))
+                return@register
+            } else {
+                state.playerInGameTimes[playerId] = message.inGameTime
+            }
+
             if (message.isFinished) {
                 if (!state.playerFinishedTimes.containsKey(playerId)) {
                     state.playerFinishedTimes[playerId] = message.inGameTime

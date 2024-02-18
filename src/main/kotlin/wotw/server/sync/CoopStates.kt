@@ -2,7 +2,6 @@ package wotw.server.sync
 
 import wotw.io.messages.protobuf.UberId
 import wotw.server.api.*
-import wotw.server.sync.ShareScope
 
 fun multiStates() = (0..2000).map { UberId(12, it) }
 

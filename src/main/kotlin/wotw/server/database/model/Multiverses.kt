@@ -332,7 +332,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 }
 
                 1 -> {
-                    world.name = memberNames[0];
+                    world.name = memberNames[0]
                 }
 
                 2 -> {

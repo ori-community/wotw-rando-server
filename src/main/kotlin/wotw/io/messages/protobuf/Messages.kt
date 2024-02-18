@@ -459,6 +459,11 @@ data class ReportInGameTimeMessage(
 )
 
 @Serializable
+data class OverrideInGameTimeMessage(
+    @ProtoNumber(1) val inGameTime: Float = 0f,
+)
+
+@Serializable
 data class SetBlockStartingNewGameMessage(
     @ProtoNumber(1) val blockStartingNewGame: Boolean = false,
 )
