@@ -89,26 +89,10 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 val multiverse = newSuspendedTransaction {
                     Multiverse.new {
-                        if (props?.infectionConfig != null) {
-                            gameHandlerType = GameHandlerType.INFECTION
-                            gameHandlerStateJson = json.encodeToString(
-                                serializer(), InfectionGameHandlerState(
-                                    playerRevealIntervalIncreasePerSeeker = props.infectionConfig.playerRevealIntervalIncreasePerSeeker,
-                                )
-                            )
-                        } else if (props?.hideAndSeekConfig != null) {
-                            gameHandlerType = GameHandlerType.HIDE_AND_SEEK
-                            gameHandlerStateJson = json.encodeToString(
-                                serializer(), HideAndSeekGameHandlerState(
-                                    secondsUntilCatchPhase = props.hideAndSeekConfig.secondsUntilCatchPhase,
-                                )
-                            )
-                        } else {
-                            if (props?.seedId != null)
-                                seed = Seed.findById(props.seedId) ?: throw NotFoundException()
-                            if (props?.bingoConfig != null)
-                                board = BingoBoardGenerator().generateBoard(props)
-                        }
+                        if (props?.seedId != null)
+                            seed = Seed.findById(props.seedId) ?: throw NotFoundException()
+                        if (props?.bingoConfig != null)
+                            board = BingoBoardGenerator().generateBoard(props)
                     }
                 }
                 call.respondText("${multiverse.id.value}", status = HttpStatusCode.Created)
