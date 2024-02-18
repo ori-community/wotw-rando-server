@@ -336,11 +336,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 }
 
                 2 -> {
-                    if (memberNames.contains("Appletree") && memberNames.contains("zre")) {
-                        world.name = "Applezree"
-                    } else {
-                        world.name = "${memberNames[0]} and ${memberNames[1]}"
-                    }
+                    world.name = "${memberNames[0]} and ${memberNames[1]}"
                 }
 
                 else -> {
