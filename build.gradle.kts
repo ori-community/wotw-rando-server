@@ -1,8 +1,3 @@
-// import com.google.protobuf.gradle.generateProtoTasks
-// import com.google.protobuf.gradle.id
-// import com.google.protobuf.gradle.ofSourceSet
-// import com.google.protobuf.gradle.protobuf
-// import com.google.protobuf.gradle.protoc
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
@@ -11,18 +6,16 @@ buildscript {
     }
 }
 
-val kotlin_version = "1.9.10"
-val ktor_version = "2.3.6"
-val logback_version = "1.2.11"
-val exposed_version = "0.41.1"
-val serialization_version = "1.6.0"
-val krontab_version = "2.1.2"
-// val protobuf_version = "3.19.4"
+val kotlinVersion = "1.9.22"
+val ktorVersion = "2.3.8"
+val logbackVersion = "1.5.0"
+val exposedVersion = "0.47.0"
+val serializationVersion = "1.6.3"
+val krontabVersion = "2.2.8"
 
 plugins {
-    kotlin("jvm") version "1.8.22"
-    // id("com.google.protobuf") version "0.8.18"
-    kotlin("plugin.serialization") version "1.8.22"
+    kotlin("jvm") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 repositories {
@@ -31,54 +24,46 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
-    implementation("dev.inmo:krontab:$krontab_version")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serializationVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serializationVersion")
+    implementation("dev.inmo:krontab:$krontabVersion")
 
     implementation("io.github.classgraph:classgraph:4.8.147")
     implementation("io.sentry:sentry:6.0.0")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1-native-mt")
-    // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
 
-    implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
-    implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
-    implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
-    implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
-    implementation("org.jetbrains.exposed:exposed-java-time:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
 
 
-    implementation("com.zaxxer:HikariCP:5.0.1")
+    implementation("com.zaxxer:HikariCP:5.1.0")
 
-    implementation("org.postgresql:postgresql:42.3.8")
+    implementation("org.postgresql:postgresql:42.7.1")
 
-    implementation("dev.kord:kord-core:0.8.0-M14")
-
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-websockets-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-html-builder-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-status-pages:$ktor_version")
-    implementation("io.ktor:ktor-network-tls-certificates-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-auth-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-sessions-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-auto-head-response:$ktor_version")
-    implementation("io.ktor:ktor-server-status-pages:$ktor_version")
-    implementation("io.ktor:ktor-server-cors:$ktor_version")
-    implementation("io.ktor:ktor-server-http-redirect:$ktor_version")
-    implementation("io.ktor:ktor-server-call-logging:$ktor_version")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
-    implementation("io.ktor:ktor-client-core-jvm:$ktor_version")
-    implementation("io.ktor:ktor-network-jvm:$ktor_version")
-
-    // protobuf(files("./src/proto"))
-    // implementation("com.google.protobuf:protobuf-gradle-plugin:0.8.18")
-    // api("com.google.protobuf:protobuf-java-util:$protobuf_version")
-    // api("com.google.protobuf:protobuf-kotlin:$protobuf_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-websockets-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-html-builder-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
+    implementation("io.ktor:ktor-network-tls-certificates-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-sessions-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-auto-head-response:$ktorVersion")
+    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
+    implementation("io.ktor:ktor-server-cors:$ktorVersion")
+    implementation("io.ktor:ktor-server-http-redirect:$ktorVersion")
+    implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-client-core-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-network-jvm:$ktorVersion")
 }
 
 
@@ -108,21 +93,5 @@ tasks.create<JavaExec>("run") {
 
     classpath(configurations["runtimeClasspath"], jvmJar)
 }
-val compileKotlin: KotlinCompile by tasks
 
-// protobuf {
-//     protoc {
-//         artifact = "com.google.protobuf:protoc:$protobuf_version"
-//     }
-//
-//     // Generates the java Protobuf-lite code for the Protobufs in this project. See
-//     // https://github.com/google/protobuf-gradle-plugin#customizing-protobuf-compilation
-//     // for more information.
-//     generateProtoTasks {
-//         ofSourceSet("main").forEach {
-//             it.builtins {
-//                 id("kotlin")
-//             }
-//         }
-//     }
-// }
+val compileKotlin: KotlinCompile by tasks
