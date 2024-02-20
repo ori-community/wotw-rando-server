@@ -5,7 +5,6 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
-import wotw.server.database.model.Races.nullable
 
 object Races : LongIdTable("races") {
     val finishedTime = float("finished_time").nullable()
