@@ -1,4 +1,4 @@
-package wotw.server.game.handlers.hideandseek
+package wotw.server.game.handlers.deprecated.hideandseek
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber

@@ -1,4 +1,4 @@
-package wotw.server.game.handlers.infection
+package wotw.server.game.handlers.deprecated.infection
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
