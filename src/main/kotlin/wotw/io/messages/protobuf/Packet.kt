@@ -72,6 +72,7 @@ data class Packet(
             28 to typeOf<SetPlayerSaveGuidMessage>(),
             29 to typeOf<SetSaveGuidRestrictionsMessage>(),
             30 to typeOf<OverrideInGameTimeMessage>(),
+            31 to typeOf<ShowUINotificationMessage>(),
 
             100 to typeOf<TrackerUpdate>(),
             101 to typeOf<ResetTracker>(),

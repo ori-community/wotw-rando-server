@@ -84,9 +84,11 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
 
                         if (clientVersion == null || !SUPPORTED_CLIENT_VERSIONS.isSatisfiedBy(clientVersion)) {
                             logger().warn("Tried to authenticate with an unsupported client version: $clientVersion")
-                            sendMessage(
-                                makeServerTextMessage("You are playing with an incompatible version of the Randomizer.\nPlease make sure you are on the latest version", 10f)
-                            )
+
+                            val text = "You are playing with an incompatible version of the Randomizer.\nPlease make sure you are on the latest version"
+                            sendMessage(makeServerTextMessage(text, 10f))
+                            sendMessage(ShowUINotificationMessage(text, "error"))
+
                             webSocket.close()
                             return
                         }

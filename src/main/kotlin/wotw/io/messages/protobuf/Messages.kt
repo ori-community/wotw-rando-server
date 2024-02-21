@@ -465,6 +465,12 @@ data class OverrideInGameTimeMessage(
 )
 
 @Serializable
+data class ShowUINotificationMessage(
+    @ProtoNumber(1) val text: String,
+    @ProtoNumber(2) val color: String,
+)
+
+@Serializable
 data class SetBlockStartingNewGameMessage(
     @ProtoNumber(1) val blockStartingNewGame: Boolean = false,
 )
