@@ -245,6 +245,7 @@ data class RequestUpdatesMessage(
 @Serializable
 data class AuthenticateMessage(
     @ProtoNumber(1) val jwt: String,
+    @ProtoNumber(2) val clientVersion: String,
 )
 
 @Serializable

@@ -12,6 +12,7 @@ val logbackVersion = "1.5.0"
 val exposedVersion = "0.47.0"
 val serializationVersion = "1.6.3"
 val krontabVersion = "2.2.8"
+val semverVersion = "1.4.2"
 
 plugins {
     kotlin("jvm") version "1.9.22"
@@ -29,6 +30,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serializationVersion")
     implementation("dev.inmo:krontab:$krontabVersion")
 
+    implementation("io.github.z4kn4fein:semver:$semverVersion")
     implementation("io.github.classgraph:classgraph:4.8.147")
     implementation("io.sentry:sentry:6.0.0")
 

@@ -3,16 +3,17 @@ package wotw.server.io
 import com.auth0.jwt.impl.JWTParser
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
+import io.github.z4kn4fein.semver.toVersionOrNull
 import io.ktor.network.sockets.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.websocket.*
-import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.errors.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
+import wotw.server.SUPPORTED_CLIENT_VERSIONS
 import wotw.server.api.WotwUserPrincipal
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
@@ -79,6 +80,17 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                     val message = Packet.deserialize(frame.data) ?: continue
 
                     if (message is AuthenticateMessage) {
+                        val clientVersion = message.clientVersion.toVersionOrNull()
+
+                        if (clientVersion == null || !SUPPORTED_CLIENT_VERSIONS.isSatisfiedBy(clientVersion)) {
+                            logger().warn("Tried to authenticate with an unsupported client version: $clientVersion")
+                            sendMessage(
+                                makeServerTextMessage("You are playing with an incompatible version of the Randomizer.\nPlease make sure you are on the latest version", 10f)
+                            )
+                            webSocket.close()
+                            return
+                        }
+
                         if (principal == null) {
                             val verifier = WotwBackendServer.getJwtVerifier()
                             val decodedJwt = verifier.verify(message.jwt)
