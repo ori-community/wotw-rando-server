@@ -1,4 +1,4 @@
-package wotw.server
+package wotw.server.constants
 
 import io.github.z4kn4fein.semver.constraints.toConstraint
 

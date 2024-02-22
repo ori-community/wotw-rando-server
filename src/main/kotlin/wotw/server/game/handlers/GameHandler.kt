@@ -22,8 +22,11 @@ typealias PlayerId = String
 
 object GameHandlerType {
     const val NORMAL = 0
+    @Deprecated("unmaintained")
     const val HIDE_AND_SEEK = 1
+    @Deprecated("unmaintained")
     const val INFECTION = 2
+    const val LEAGUE = 3
 }
 
 abstract class GameHandler<CLIENT_INFO_TYPE : Any>(

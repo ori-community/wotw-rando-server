@@ -13,7 +13,7 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
-import wotw.server.SUPPORTED_CLIENT_VERSIONS
+import wotw.server.constants.SUPPORTED_CLIENT_VERSIONS
 import wotw.server.api.WotwUserPrincipal
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
