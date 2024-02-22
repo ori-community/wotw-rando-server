@@ -12,10 +12,10 @@ import kotlin.math.min
 
 object LeagueSeasons : LongIdTable() {
     val name = varchar("name", 64)
-    val startAt = datetime("start_at")
-    val endAt = datetime("end_at")
-    val gameCronSchedule = varchar("game_cron_schedule", 64)
-    val currentGameId = reference("current_game_id", LeagueGames, ReferenceOption.CASCADE)
+    val scheduleStartAt = datetime("schedule_start_at")
+    val scheduleEndAt = datetime("schedule_end_at")
+    val scheduleCron = varchar("schedule_cron", 64)
+    val currentGameId = optReference("current_game_id", LeagueGames, ReferenceOption.CASCADE)
 
     /**
      * Base points awarded for submitting a run
@@ -42,16 +42,19 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<LeagueSeason>(LeagueSeasons)
 
     var name by LeagueSeasons.name
-    var startAt by LeagueSeasons.startAt
-    var endAt by LeagueSeasons.endAt
-    var gameCronSchedule by LeagueSeasons.gameCronSchedule
+    var scheduleStartAt by LeagueSeasons.scheduleStartAt
+    var scheduleEndAt by LeagueSeasons.scheduleEndAt
+    var scheduleCron by LeagueSeasons.scheduleCron
     var basePoints by LeagueSeasons.basePoints
     var speedPoints by LeagueSeasons.speedPoints
     var speedPointsRangeFactor by LeagueSeasons.speedPointsRangeFactor
     var discardWorstGamesCount by LeagueSeasons.discardWorstGamesCount
-    var currentGame by LeagueGame referencedOn LeagueSeasons.currentGameId
+    var currentGame by LeagueGame optionalReferencedOn LeagueSeasons.currentGameId
     val games by LeagueGame referrersOn LeagueGames.seasonId
     val memberships by LeagueSeasonMembership referrersOn LeagueSeasonMemberships.seasonId
+
+    // Allow joining before the first game has ended
+    val canJoin get() = games.count() <= 1L && currentGame == games.firstOrNull()
 
     fun recalculateMembershipPoints() {
         assertTransaction()
