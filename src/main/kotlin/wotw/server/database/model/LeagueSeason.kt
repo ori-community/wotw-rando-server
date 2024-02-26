@@ -1,19 +1,29 @@
 package wotw.server.database.model
 
+import com.cronutils.model.CronType
+import com.cronutils.model.definition.CronDefinitionBuilder
+import com.cronutils.model.time.ExecutionTime
+import com.cronutils.parser.CronParser
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.javatime.datetime
+import wotw.io.messages.UniversePreset
+import wotw.io.messages.WorldPreset
+import wotw.server.game.handlers.GameHandlerType
+import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
+import wotw.server.util.logger
+import java.time.Clock
+import java.time.LocalDateTime
+import java.time.ZonedDateTime
+import kotlin.jvm.optionals.getOrNull
 import kotlin.math.max
 import kotlin.math.min
 
 object LeagueSeasons : LongIdTable() {
     val name = varchar("name", 64)
-    val scheduleStartAt = datetime("schedule_start_at")
-    val scheduleEndAt = datetime("schedule_end_at")
     val scheduleCron = varchar("schedule_cron", 64)
     val currentGameId = optReference("current_game_id", LeagueGames, ReferenceOption.CASCADE)
 
@@ -39,11 +49,11 @@ object LeagueSeasons : LongIdTable() {
 }
 
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
-    companion object : LongEntityClass<LeagueSeason>(LeagueSeasons)
+    companion object : LongEntityClass<LeagueSeason>(LeagueSeasons) {
+        private val cronParser = CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
+    }
 
     var name by LeagueSeasons.name
-    var scheduleStartAt by LeagueSeasons.scheduleStartAt
-    var scheduleEndAt by LeagueSeasons.scheduleEndAt
     var scheduleCron by LeagueSeasons.scheduleCron
     var basePoints by LeagueSeasons.basePoints
     var speedPoints by LeagueSeasons.speedPoints
@@ -82,5 +92,50 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
             membership.points = countingSubmissions.sumOf { it.points }
         }
+    }
+
+    suspend fun createScheduledGame(seedGeneratorService: SeedGeneratorService) {
+        assertTransaction()
+
+        this.currentGame?.recalculateSubmissionPoints()
+
+        // TODO: Allow customizing seedgen config
+        val seedGeneratorResult = seedGeneratorService.generateSeed(UniversePreset(
+            worldSettings = listOf(
+                WorldPreset(
+                    includes = setOf("gorlek"),
+                    spawn = "Random",
+                    goals = setOf("Trees"),
+                )
+            ),
+            online = true
+        ))
+
+        if (seedGeneratorResult.seed == null) {
+            throw RuntimeException("Failed to generate seed for League game")
+        }
+
+        val multiverse = Multiverse.new {
+            this.gameHandlerType = GameHandlerType.LEAGUE
+            this.isLockable = false
+            this.seed = seedGeneratorResult.seed
+            this.locked = true
+        }
+
+        val game = LeagueGame.new {
+            this.season = this@LeagueSeason
+            this.createdAt = LocalDateTime.now()
+            this.multiverse = multiverse
+        }
+
+        this.currentGame = game
+    }
+
+    fun getNextScheduledGameTime(): ZonedDateTime? {
+        val cron = cronParser.parse(this.scheduleCron)
+        val nextScheduledGameTime = ExecutionTime
+            .forCron(cron)
+            .nextExecution(this.currentGame?.createdAt?.atZone(Clock.systemDefaultZone().zone) ?: ZonedDateTime.now())
+        return nextScheduledGameTime.getOrNull()
     }
 }

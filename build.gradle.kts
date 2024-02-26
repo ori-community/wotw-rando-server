@@ -11,7 +11,7 @@ val ktorVersion = "2.3.8"
 val logbackVersion = "1.5.0"
 val exposedVersion = "0.47.0"
 val serializationVersion = "1.6.3"
-val krontabVersion = "2.2.8"
+val cronutilsVersion = "9.2.0"
 val semverVersion = "1.4.2"
 
 plugins {
@@ -28,7 +28,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serializationVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serializationVersion")
-    implementation("dev.inmo:krontab:$krontabVersion")
+    implementation("com.cronutils:cron-utils:$cronutilsVersion")
 
     implementation("io.github.z4kn4fein:semver:$semverVersion")
     implementation("io.github.classgraph:classgraph:4.8.147")

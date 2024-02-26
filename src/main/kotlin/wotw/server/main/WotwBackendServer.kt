@@ -45,6 +45,7 @@ import wotw.server.database.PlayerEnvironmentCache
 import wotw.server.database.model.*
 import wotw.server.exception.*
 import wotw.server.game.GameHandlerRegistry
+import wotw.server.game.handlers.league.LeagueManager
 import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.services.InfoMessagesService
@@ -217,6 +218,8 @@ class WotwBackendServer {
 
     val gameHandlerRegistry = GameHandlerRegistry(this)
 
+    val leagueManager = LeagueManager(this)
+
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)
 
@@ -340,6 +343,10 @@ class WotwBackendServer {
                     gameHandlerRegistry.cacheAndStartHandler(it)
                 }
             }
+
+            logger.info("Initializing League service...")
+            leagueManager.cacheLeagueSeasonSchedules()
+            leagueManager.startScheduler()
 
             val udpSocketBuilder = aSocket(ActorSelectorManager(Dispatchers.IO)).udp()
 

@@ -5,13 +5,17 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.javatime.CurrentDateTime
+import org.jetbrains.exposed.sql.javatime.datetime
+import wotw.server.database.model.LeagueSeasonMemberships.defaultExpression
 import wotw.server.util.assertTransaction
 import kotlin.math.ceil
 import kotlin.math.max
 
 object LeagueGames : LongIdTable() {
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
-    val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
+    val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE).uniqueIndex()
+    val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 }
 
 class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
@@ -19,9 +23,10 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
 
     var season by LeagueSeason referencedOn LeagueGames.seasonId
     var multiverse by Multiverse referencedOn LeagueGames.multiverseId
+    var createdAt by LeagueGames.createdAt
     val submissions by LeagueGameSubmission referrersOn LeagueGameSubmissions.gameId
 
-    val isCurrent get() = season.currentGame.id.value == this.id.value
+    val isCurrent get() = season.currentGame?.id?.value == this.id.value
 
     fun recalculateSubmissionPoints() {
         assertTransaction()

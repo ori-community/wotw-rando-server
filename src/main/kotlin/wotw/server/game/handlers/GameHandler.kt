@@ -11,6 +11,7 @@ import wotw.server.database.model.World
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.deprecated.hideandseek.HideAndSeekGameHandler
 import wotw.server.game.handlers.deprecated.infection.InfectionGameHandler
+import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.util.EventBus
 import wotw.util.EventBusWithMetadata
@@ -146,6 +147,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
             GameHandlerType.NORMAL to NormalGameHandler::class,
             GameHandlerType.HIDE_AND_SEEK to HideAndSeekGameHandler::class,
             GameHandlerType.INFECTION to InfectionGameHandler::class,
+            GameHandlerType.LEAGUE to LeagueGameHandler::class,
         )
 
         fun getByGameHandlerByType(type: Int): KClass<out GameHandler<out Any>> {

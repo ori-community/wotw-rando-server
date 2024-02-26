@@ -32,7 +32,7 @@ class SeedGeneratorService(private val server: WotwBackendServer) {
     private val seedgenExec =
         System.getenv("SEEDGEN_PATH") ?: throw ServerConfigurationException("No seed generator available!")
 
-    suspend fun generate(config: UniversePreset): Result<SeedGeneratorGenerationResult> {
+    private suspend fun generate(config: UniversePreset): Result<SeedGeneratorGenerationResult> {
         val timeout = System.getenv("SEEDGEN_TIMEOUT")?.toLongOrNull() ?: 30000
 
         val processBuilder = ProcessBuilder(
