@@ -39,8 +39,15 @@ class LeagueManager(server: WotwBackendServer) {
                             return@forEach
                         }
 
-                        season.createScheduledGame(server.seedGeneratorService)
-                        successfullyScheduledSeasons.add(season)
+                        try {
+                            newSuspendedTransaction {
+                                season.createScheduledGame(server.seedGeneratorService)
+                                successfullyScheduledSeasons.add(season)
+                            }
+                        } catch (e: Exception) {
+                            logger().error("LeagueManager: Failed to create scheduled game for season $seasonId. Will retry next time...")
+                            e.printStackTrace()
+                        }
                     }
 
                     // Remove all successfully scheduled seasons...
