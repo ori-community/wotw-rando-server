@@ -131,6 +131,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             )
         }
 
+        // TODO: Implement in client
         messageEventBus.register(this, ResourceRequestMessage::class) { message, playerId ->
             val playerPopulationCache = server.playerEnvironmentCache.get(playerId)
 

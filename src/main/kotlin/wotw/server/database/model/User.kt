@@ -30,4 +30,8 @@ class User(id: EntityID<String>) : StringEntity(id) {
 
     val currentMultiverse: Multiverse?
         get() = currentWorld?.universe?.multiverse
+
+    override fun toString(): String {
+        return "$name (${id.value})"
+    }
 }

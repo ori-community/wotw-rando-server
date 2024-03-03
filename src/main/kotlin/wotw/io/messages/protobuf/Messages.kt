@@ -129,7 +129,11 @@ data class MoodGuid(
     @ProtoNumber(2) val b: Int,
     @ProtoNumber(3) val c: Int,
     @ProtoNumber(4) val d: Int,
-)
+) {
+    override fun toString(): String {
+        return "[$a, $b, $c, $d]"
+    }
+}
 
 @Serializable
 data class SetSaveGuidRestrictionsMessage(

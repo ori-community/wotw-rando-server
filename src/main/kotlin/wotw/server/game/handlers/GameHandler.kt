@@ -7,6 +7,7 @@ import wotw.io.messages.protobuf.MoodGuid
 import wotw.io.messages.protobuf.SetBlockStartingNewGameMessage
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
+import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.handlers.deprecated.hideandseek.HideAndSeekGameHandler
@@ -125,6 +126,10 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
 
             server.connections.toObservers(multiverseId, message = message)
         }
+    }
+
+    open suspend fun canJoin(user: User): Boolean {
+        return true
     }
 
     protected suspend fun notifyShouldBlockStartingGameChanged() {

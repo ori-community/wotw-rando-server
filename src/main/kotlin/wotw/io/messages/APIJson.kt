@@ -152,3 +152,8 @@ data class ClaimBingoCardRequest(val x: Int, val y: Int)
 
 @Serializable
 data class BingothonTokenRequest(val multiverseId: Long)
+
+@Serializable
+data class CreateLeagueSubmissionRequest(
+    val saveFileBase64: String,
+)
