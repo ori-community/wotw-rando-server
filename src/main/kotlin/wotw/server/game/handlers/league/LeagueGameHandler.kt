@@ -107,7 +107,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return !didSubmitForThisGame(user) && isLeagueSeasonMember(user) && getLeagueGame().isCurrent
     }
 
-    suspend fun createSubmission(user: User, time: Float?) {
+    suspend fun createSubmission(user: User, time: Float?, saveFile: ByteArray = ByteArray(0)) {
         newSuspendedTransaction {
             val membership = getLeagueSeasonMembership(user)
 
@@ -120,7 +120,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 this.game = getLeagueGame()
                 this.membership = membership
                 this.time = time
-                this.saveFile = ByteArray(0)  // TODO
+                this.saveFile = saveFile
             }
 
             submission.flush()

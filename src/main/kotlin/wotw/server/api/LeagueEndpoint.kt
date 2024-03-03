@@ -7,6 +7,7 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.util.*
 import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.game.WotwSaveFileReader
@@ -38,7 +39,10 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     throw BadRequestException("Invalid save file GUID, expected $expectedSaveGuid but got ${saveData.saveFileGuid}")
                 }
 
-                handler.createSubmission(authenticatedUser(), saveData.inGameTime)
+                val saveFileArray = ByteArray(saveFileBuffer.limit())
+                saveFileBuffer.get(saveFileArray)
+
+                handler.createSubmission(authenticatedUser(), saveData.inGameTime, saveFileArray)
 
                 call.respond(HttpStatusCode.Created)
             }
