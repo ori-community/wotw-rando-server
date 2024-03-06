@@ -6,7 +6,9 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
+import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.datetime
+import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.server.database.model.LeagueSeasonMemberships.defaultExpression
 import wotw.server.util.assertTransaction
 import kotlin.math.ceil
@@ -15,7 +17,7 @@ import kotlin.math.max
 object LeagueGames : LongIdTable() {
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE).uniqueIndex()
-    val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
+    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
 }
 
 class LeagueGame(id: EntityID<Long>) : LongEntity(id) {

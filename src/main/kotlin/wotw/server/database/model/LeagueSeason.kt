@@ -9,22 +9,39 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.javatime.datetime
+import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.WorldPreset
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
 import wotw.server.util.logger
-import java.time.Clock
-import java.time.LocalDateTime
-import java.time.ZonedDateTime
+import java.time.*
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.max
 import kotlin.math.min
 
 object LeagueSeasons : LongIdTable() {
     val name = varchar("name", 64)
+
+    /**
+     * Cron schedule in UNIX format. Schedules that are restricted to a time range
+     * and don't repeat infinitely are not allowed.
+     * Example: "00 12 * * fri" = at 12:00 every Friday
+     */
     val scheduleCron = varchar("schedule_cron", 64)
+
+    /**
+     * Point in time from which on games should be created for this season
+     */
+    val scheduleStartAt = timestamp("schedule_start_at")
+
+    /**
+     * How many games this Season should host.
+     */
+    val gameCount = integer("game_count").default(4)
+
     val currentGameId = optReference("current_game_id", LeagueGames, ReferenceOption.CASCADE)
 
     /**
@@ -55,6 +72,8 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
     var name by LeagueSeasons.name
     var scheduleCron by LeagueSeasons.scheduleCron
+    var scheduleStartAt by LeagueSeasons.scheduleStartAt
+    var gameCount by LeagueSeasons.gameCount
     var basePoints by LeagueSeasons.basePoints
     var speedPoints by LeagueSeasons.speedPoints
     var speedPointsRangeFactor by LeagueSeasons.speedPointsRangeFactor
@@ -65,6 +84,8 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
     // Allow joining before the first game has ended
     val canJoin get() = games.count() <= 1L && currentGame == games.firstOrNull()
+
+    val hasReachedGameCountLimit get() = games.count() >= gameCount
 
     fun recalculateMembershipPoints() {
         assertTransaction()
@@ -94,11 +115,24 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         }
     }
 
-    suspend fun createScheduledGame(seedGeneratorService: SeedGeneratorService) {
+    fun finishCurrentGame() {
         assertTransaction()
+
+        if (this.currentGame == null) {
+            throw RuntimeException("Cannot finish current game because there is no current game")
+        }
 
         this.currentGame?.recalculateSubmissionPoints()
         this.recalculateMembershipPoints()
+        this.currentGame = null
+    }
+
+    suspend fun createScheduledGame(seedGeneratorService: SeedGeneratorService) {
+        assertTransaction()
+
+        if (this.currentGame != null) {
+            throw RuntimeException("Cannot create scheduled game. Please finish the current game first.")
+        }
 
         // TODO: Allow customizing seedgen config
         val seedGeneratorResult = seedGeneratorService.generateSeed(UniversePreset(
@@ -125,18 +159,25 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
         val game = LeagueGame.new {
             this.season = this@LeagueSeason
-            this.createdAt = LocalDateTime.now()
+            this.createdAt = Instant.now()
             this.multiverse = multiverse
         }
 
         this.currentGame = game
     }
 
-    fun getNextScheduledGameTime(): ZonedDateTime? {
+    fun getNextScheduledGameTime(): ZonedDateTime {
         val cron = cronParser.parse(this.scheduleCron)
+
+        // Find the next schedule time that is after the most recent game, or now
+        // if no games have been created yet
         val nextScheduledGameTime = ExecutionTime
             .forCron(cron)
-            .nextExecution(this.currentGame?.createdAt?.atZone(Clock.systemDefaultZone().zone) ?: ZonedDateTime.now())
-        return nextScheduledGameTime.getOrNull()
+            .nextExecution(this.games.maxOfOrNull { it.createdAt }?.atZone(ZoneId.systemDefault()) ?: ZonedDateTime.now())
+            .getOrNull() ?: throw RuntimeException("Cron expression '$scheduleCron' does not seem to repeat infinitely")
+
+        val scheduleStartAtZoned = this.scheduleStartAt.atZone(ZoneId.systemDefault())
+
+        return maxOf(scheduleStartAtZoned, nextScheduledGameTime)
     }
 }

@@ -15,20 +15,22 @@ import java.util.concurrent.TimeUnit
  */
 class LeagueManager(server: WotwBackendServer) {
     /**
+     * Times when Seasons need to be processed.
+     * Processing = finishing current game and eventually creating next game.
      * {time -> [LeagueSeason IDs]
      */
-    private var upcomingSeasonGames = sortedMapOf<ZonedDateTime, MutableList<Long>>()
+    private var upcomingSeasonProcessingTimes = sortedMapOf<ZonedDateTime, MutableList<Long>>()
 
     private val scheduler = Scheduler {
         val now = ZonedDateTime.now()
 
-        for (time in upcomingSeasonGames.keys) {
+        for (time in upcomingSeasonProcessingTimes.keys) {
             if (now < time) {  // We can break here because the keys are sorted in ascending order
                 break
             }
 
             newSuspendedTransaction {
-                upcomingSeasonGames[time]?.let { seasonIds ->
+                upcomingSeasonProcessingTimes[time]?.let { seasonIds ->
                     val successfullyScheduledSeasons = mutableListOf<LeagueSeason>()
 
                     seasonIds.forEach { seasonId ->
@@ -41,7 +43,17 @@ class LeagueManager(server: WotwBackendServer) {
 
                         try {
                             newSuspendedTransaction {
-                                season.createScheduledGame(server.seedGeneratorService)
+                                if (season.currentGame != null) {
+                                    season.finishCurrentGame()
+                                }
+
+                                // Don't create more games if we reached this season's end.
+                                // If we don't create a new game, this season won't be scheduled
+                                // here anymore.
+                                if (!season.hasReachedGameCountLimit) {
+                                    season.createScheduledGame(server.seedGeneratorService)
+                                }
+
                                 successfullyScheduledSeasons.add(season)
                             }
                         } catch (e: Exception) {
@@ -62,7 +74,7 @@ class LeagueManager(server: WotwBackendServer) {
         }
 
         // Remove empty time slots
-        upcomingSeasonGames.keys.removeAll { upcomingSeasonGames[it]?.isEmpty() == true }
+        upcomingSeasonProcessingTimes.keys.removeAll { upcomingSeasonProcessingTimes[it]?.isEmpty() == true }
     }
 
     fun startScheduler() {
@@ -70,17 +82,24 @@ class LeagueManager(server: WotwBackendServer) {
     }
 
     private fun cacheLeagueSeasonSchedule(season: LeagueSeason) {
-        season.getNextScheduledGameTime()?.let { time ->
-            upcomingSeasonGames[time]?.also { cache ->
+        // If we have a current game, we need to schedule to clean up the potentially last game.
+        // If there's no current game, we only need to schedule if more games are supposed to be
+        // created for that season.
+        if (season.currentGame != null || !season.hasReachedGameCountLimit) {
+            val time = season.getNextScheduledGameTime()
+
+            logger().debug("LeagueManager: Scheduled season for processing {} at {}", season.id.value, time)
+
+            upcomingSeasonProcessingTimes[time]?.also { cache ->
                 cache.add(season.id.value)
             } ?: {
-                upcomingSeasonGames[time] = mutableListOf(season.id.value)
+                upcomingSeasonProcessingTimes[time] = mutableListOf(season.id.value)
             }
         }
     }
 
     suspend fun cacheLeagueSeasonSchedules() {
-        upcomingSeasonGames.clear()
+        upcomingSeasonProcessingTimes.clear()
         newSuspendedTransaction {
             LeagueSeason.all().forEach(::cacheLeagueSeasonSchedule)
         }
