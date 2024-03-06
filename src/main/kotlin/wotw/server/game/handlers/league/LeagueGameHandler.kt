@@ -4,7 +4,9 @@ import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
+import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
+import wotw.server.exception.ConflictException
 import wotw.server.game.MultiverseEvent
 import wotw.server.game.PlayerLeftEvent
 import wotw.server.game.handlers.GameHandler
@@ -13,6 +15,7 @@ import wotw.server.game.handlers.PlayerId
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import wotw.server.util.logger
+import wotw.server.util.makeServerTextMessage
 
 
 @Serializable
@@ -96,13 +99,6 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return getLeagueGame().submissions.any { it.membership.user.id == user.id }
     }
 
-    override suspend fun canJoin(user: User): Boolean {
-        // Allow joining if user is part of the league season
-        return newSuspendedTransaction {
-            isLeagueSeasonMember(user) && getLeagueGame().isCurrent
-        }
-    }
-
     suspend fun canSubmit(user: User): Boolean {
         return !didSubmitForThisGame(user) && isLeagueSeasonMember(user) && getLeagueGame().isCurrent
     }
@@ -136,7 +132,31 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return state.playerSaveGuids[playerId]
     }
 
-    override fun canSpectate(player: User): Boolean {
+    override fun canSpectate(user: User): Boolean {
         return false
+    }
+
+    // We only support creating new universes. Every other join operation
+    // does nothing by design since league games don't support multiple
+    // worlds anyway and players don't interact with it like normal games
+    override suspend fun onPlayerCreateUniverseRequest(user: User) {
+        if (!canSubmit(user)) {
+            throw ConflictException("You cannot join this game because it is not possible for you to submit")
+        }
+
+        val multiverse = getMultiverse()
+        val universe = Universe.new {
+            name = ""
+            this.multiverse = multiverse
+        }
+
+        GameState.new {
+            this.multiverse = multiverse
+            this.universe = universe
+            this.uberStateData = UberStateMap()
+        }
+
+        val world = World.new(universe, "${user.name}'s World")
+        server.multiverseUtil.movePlayerToWorld(user, world)
     }
 }

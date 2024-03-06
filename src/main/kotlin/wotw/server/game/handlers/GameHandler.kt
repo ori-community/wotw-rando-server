@@ -140,13 +140,6 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         }
     }
 
-    /**
-     * Return whether a user is allowed to join this game
-     */
-    open suspend fun canJoin(user: User): Boolean {
-        return true
-    }
-
     protected suspend fun notifyShouldBlockStartingGameChanged() {
         newSuspendedTransaction {
             val message = SetBlockStartingNewGameMessage(shouldBlockStartingNewGame())

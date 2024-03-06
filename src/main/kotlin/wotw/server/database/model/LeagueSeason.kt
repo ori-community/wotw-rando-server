@@ -119,7 +119,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             this.gameHandlerType = GameHandlerType.LEAGUE
             this.isLockable = false
             this.seed = seedGeneratorResult.seed
-            this.locked = true
+            this.locked = false
         }
 
         val game = LeagueGame.new {

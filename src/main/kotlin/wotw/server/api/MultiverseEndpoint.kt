@@ -102,9 +102,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
 
                     val handler = server.gameHandlerRegistry.getHandler(multiverse)
-                    if (!handler.canJoin(player)) {
-                        throw ConflictException("You cannot join this multiverse because the game handler does not allow it")
-                    }
 
                     val universe = universeId?.let { multiverse.universes.firstOrNull { it.id.value == universeId } ?: throw NotFoundException("Universe not found") }
 
@@ -142,9 +139,6 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
 
                     val handler = server.gameHandlerRegistry.getHandler(multiverse)
-                    if (!handler.canJoin(player)) {
-                        throw ConflictException("You cannot join this multiverse because the game handler does not allow it")
-                    }
 
                     val world = multiverse.worlds.firstOrNull { it.id.value == worldId } ?: throw NotFoundException("World does not exist!")
                     handler.onPlayerJoinWorldRequest(player, world)
