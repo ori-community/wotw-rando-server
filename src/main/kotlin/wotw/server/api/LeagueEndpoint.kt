@@ -34,6 +34,10 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
                     val user = authenticatedUser()
 
+                    if (!season.canJoin) {
+                        throw BadRequestException("You cannot join this season")
+                    }
+
                     if (season.memberships.any { it.user.id == user.id }) {
                         throw BadRequestException("User is already part of that season")
                     }
