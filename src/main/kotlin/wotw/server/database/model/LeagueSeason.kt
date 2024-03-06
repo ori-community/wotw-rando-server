@@ -98,6 +98,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         assertTransaction()
 
         this.currentGame?.recalculateSubmissionPoints()
+        this.recalculateMembershipPoints()
 
         // TODO: Allow customizing seedgen config
         val seedGeneratorResult = seedGeneratorService.generateSeed(UniversePreset(
