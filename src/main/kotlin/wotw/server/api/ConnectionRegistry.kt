@@ -17,10 +17,18 @@ import java.util.concurrent.CopyOnWriteArrayList
 class ConnectionRegistry(val server: WotwBackendServer) {
     val logger = logger()
 
+    companion object {
+        enum class OriType {
+            WillOfTheWisps,
+            BlindForest,
+        }
+    }
+
     data class PlayerConnection(
         val clientConnection: ClientConnection,
         val multiverseId: Long?,
         var raceReady: Boolean,
+        val oriType: OriType,
     )
 
     data class MultiverseObserverConnection(
@@ -81,11 +89,11 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         }
     }
 
-    suspend fun registerMultiverseConnection(socket: ClientConnection, playerId: String, multiverseId: Long? = null) =
+    suspend fun registerMultiverseConnection(socket: ClientConnection, playerId: String, multiverseId: Long? = null, oriType: OriType) =
         run {
             unregisterMultiverseConnection(playerId)
 
-            playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId, false)
+            playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId, false, oriType)
             if (multiverseId != null) {
                 newSuspendedTransaction {
                     broadcastMultiverseInfoMessage(multiverseId)

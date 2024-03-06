@@ -378,7 +378,13 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
         }
 
-        webSocket("game_sync/") {
+        webSocket("client-websocket/{game_type}") {
+            val oriType = when (call.parameters["game_type"]) {
+                "wotw" -> ConnectionRegistry.Companion.OriType.WillOfTheWisps
+                "bf" -> ConnectionRegistry.Companion.OriType.BlindForest
+                else -> throw BadRequestException("Invalid game socket name. Must be 'wotw' or 'bf'.")
+            }
+
             handleClientSocket {
                 var playerId = ""
                 var connectionHandler: GameConnectionHandler? = null
@@ -392,6 +398,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         socketConnection,
                         playerId,
                         setupResult?.multiverseId,
+                        oriType,
                     )
 
                     if (setupResult == null) {
