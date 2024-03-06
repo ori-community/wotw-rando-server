@@ -97,6 +97,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         season.name,
         season.memberships.map(::generateLeagueSeasonMembershipInfo),
         season.games.map(::generateLeagueGameInfo),
+        season.canJoin,
         season.currentGame?.id?.value,
     )
 }

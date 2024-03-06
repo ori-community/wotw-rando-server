@@ -504,5 +504,6 @@ data class LeagueSeasonInfo(
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val memberships: List<LeagueSeasonMembershipInfo>,
     @ProtoNumber(4) val games: List<LeagueGameInfo>,
-    @ProtoNumber(5) @Required val currentGameId: Long? = null,
+    @ProtoNumber(5) val canJoin: Boolean,
+    @ProtoNumber(6) @Required val currentGameId: Long? = null,
 )
