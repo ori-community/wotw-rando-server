@@ -70,6 +70,7 @@ data class PlayerInfo(
     }
 }
 
+@Deprecated("Unmaintained")
 class HideAndSeekGameHandler(
     multiverseId: Long,
     server: WotwBackendServer,
@@ -645,7 +646,7 @@ class HideAndSeekGameHandler(
         server.sync.syncStates(playerId, results)
     }
 
-    override suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler) {
+    override suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler, setupResult: GameConnectionHandlerSyncResult) {
         broadcastPlayerVisibility()
     }
 

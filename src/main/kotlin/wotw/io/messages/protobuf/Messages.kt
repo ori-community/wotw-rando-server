@@ -483,3 +483,26 @@ data class SetBlockStartingNewGameMessage(
 data class ReportPlayerRaceReadyMessage(
     @ProtoNumber(1) val raceReady: Boolean = false,
 )
+
+@Serializable
+data class LeagueSeasonMembershipInfo(
+    @ProtoNumber(1) val user: UserInfo,
+    @ProtoNumber(2) val points: Int,
+    @ProtoNumber(3) val joinedAt: Long,
+)
+
+@Serializable
+data class LeagueGameInfo(
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val multiverseId: Long,
+    @ProtoNumber(3) val submissionCount: Long,
+)
+
+@Serializable
+data class LeagueSeasonInfo(
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val name: String,
+    @ProtoNumber(3) val memberships: List<LeagueSeasonMembershipInfo>,
+    @ProtoNumber(4) val games: List<LeagueGameInfo>,
+    @ProtoNumber(5) @Required val currentGameId: Long? = null,
+)

@@ -3,6 +3,7 @@ package wotw.server.services
 import wotw.io.messages.protobuf.*
 import wotw.server.database.model.*
 import wotw.server.main.WotwBackendServer
+import java.time.ZoneOffset
 
 class InfoMessagesService(private val server: WotwBackendServer) {
     val COLORS = arrayOf(
@@ -24,14 +25,14 @@ class InfoMessagesService(private val server: WotwBackendServer) {
 
     fun generateRaceTeamInfo(raceTeam: RaceTeam) = RaceTeamInfo(
         raceTeam.id.value,
-        raceTeam.members.map { member -> generateRaceTeamMemberInfo(member) },
+        raceTeam.members.map(::generateRaceTeamMemberInfo),
         raceTeam.points,
         raceTeam.finishedTime,
     )
 
     fun generateRaceInfo(race: Race) = RaceInfo(
         race.id.value,
-        race.teams.map { team -> generateRaceTeamInfo(team) },
+        race.teams.map(::generateRaceTeamInfo),
         race.finishedTime,
     )
 
@@ -40,14 +41,14 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         multiverse.universes.sortedBy { it.id }
             .mapIndexed { index, universe -> generateUniverseInfo(universe, COLORS[index % COLORS.size]) },
         multiverse.board != null,
-        multiverse.spectators.map { generateUserInfo(it) },
+        multiverse.spectators.map(::generateUserInfo),
         multiverse.seed?.id?.value,
         multiverse.gameHandlerType,
         server.gameHandlerRegistry.getHandler(multiverse).getSerializedClientInfo(),
         multiverse.locked,
         multiverse.isLockable,
-        multiverse.race?.let { generateRaceInfo(it) },
-        multiverse.seed?.spoilerDownloads?.map { generateUserInfo(it) } ?: listOf(),
+        multiverse.race?.let(::generateRaceInfo),
+        multiverse.seed?.spoilerDownloads?.map(::generateUserInfo) ?: listOf(),
     )
 
     fun generateUniverseInfo(universe: Universe, color: String? = null) = UniverseInfo(
@@ -64,7 +65,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
             world.id.value,
             world.name,
             color ?: COLORS[world.universe.worlds.sortedBy { it.id }.indexOf(world) % COLORS.size],
-            world.members.map { generateUserInfo(it) },
+            world.members.map(::generateUserInfo),
             world.seed?.id?.value,
         )
 
@@ -77,5 +78,25 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         user.isDeveloper,
         user.points,
         server.connections.playerMultiverseConnections[user.id.value]?.raceReady ?: false,
+    )
+
+    fun generateLeagueSeasonMembershipInfo(membership: LeagueSeasonMembership) = LeagueSeasonMembershipInfo(
+        generateUserInfo(membership.user),
+        membership.points,
+        membership.joinedAt.toEpochMilli(),
+    )
+
+    fun generateLeagueGameInfo(game: LeagueGame) = LeagueGameInfo(
+        game.id.value,
+        game.multiverse.id.value,
+        game.submissions.count(),
+    )
+
+    fun generateLeagueSeasonInfo(season: LeagueSeason) = LeagueSeasonInfo(
+        season.id.value,
+        season.name,
+        season.memberships.map(::generateLeagueSeasonMembershipInfo),
+        season.games.map(::generateLeagueGameInfo),
+        season.currentGame?.id?.value,
     )
 }

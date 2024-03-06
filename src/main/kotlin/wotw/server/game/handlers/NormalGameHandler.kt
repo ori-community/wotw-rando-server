@@ -9,17 +9,17 @@ import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.*
 import wotw.server.bingo.Point
+import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
-import wotw.server.game.MultiverseEvent
-import wotw.server.game.PlayerJoinedEvent
-import wotw.server.game.PlayerLeftEvent
-import wotw.server.game.PlayerMovedEvent
+import wotw.server.exception.ConflictException
+import wotw.server.game.*
 import wotw.server.game.inventory.WorldInventory
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.*
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.assertTransaction
+import wotw.server.util.makeServerTextMessage
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -38,8 +38,7 @@ data class NormalGameHandlerState(
     @ProtoNumber(9) var playerSaveGuids: MutableMap<String, MoodGuid> = mutableMapOf(),
 )
 
-class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
-    GameHandler<NormalGameHandlerState>(multiverseId, server) {
+class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHandler<NormalGameHandlerState>(multiverseId, server) {
     private var state = NormalGameHandlerState()
 
     private var lazilyNotifyClientInfoChanged = false
@@ -123,8 +122,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
             state.playerSaveGuids[playerId] = message.playerSaveGuid
 
             server.connections.toPlayers(
-                listOf(playerId),
-                SetSaveGuidRestrictionsMessage(
+                listOf(playerId), SetSaveGuidRestrictionsMessage(
                     message.playerSaveGuid,
                     true,
                 )
@@ -195,6 +193,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     checkRaceStartCondition()
                     notifyShouldBlockStartingGameChanged()
                 }
+
                 "forfeit" -> {
                     if (state.raceStarted) {
                         newSuspendedTransaction {
@@ -305,12 +304,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 this.finishedTime = finishedTime
             }
 
-            val universeRanks = state.universeFinishedTimes
-                .toList()
-                .filter { (universeId, finishedTime) -> finishedTime != 0f && Universe.findById(universeId) != null }
-                .sortedBy { (_, finishedTime) -> finishedTime }
-                .mapIndexed { index, (universeId, _) -> Pair(universeId, index) }
-                .toMap()
+            val universeRanks = state.universeFinishedTimes.toList().filter { (universeId, finishedTime) -> finishedTime != 0f && Universe.findById(universeId) != null }
+                .sortedBy { (_, finishedTime) -> finishedTime }.mapIndexed { index, (universeId, _) -> Pair(universeId, index) }.toMap()
 
             multiverse.universes.forEach() { universe ->
                 val team = RaceTeam.new {
@@ -361,8 +356,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return !state.raceStarted
     }
 
-    private suspend fun updateUberState(message: UberStateUpdateMessage, playerId: String) =
-        batchUpdateUberStates(UberStateBatchUpdateMessage(message), playerId)
+    private suspend fun updateUberState(message: UberStateUpdateMessage, playerId: String) = batchUpdateUberStates(UberStateBatchUpdateMessage(message), playerId)
 
     private suspend fun checkWorldAndUniverseFinished(world: World) {
         assertTransaction()
@@ -373,8 +367,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 if (world.members.any { player -> state.playerFinishedTimes[player.id.value] == 0f }) { // If any player DNF'd...
                     state.worldFinishedTimes[world.id.value] = 0f // ...DNF the world
                 } else {
-                    state.worldFinishedTimes[world.id.value] =
-                        world.members.maxOf { player -> state.playerFinishedTimes.getOrDefault(player.id.value, 0f) }
+                    state.worldFinishedTimes[world.id.value] = world.members.maxOf { player -> state.playerFinishedTimes.getOrDefault(player.id.value, 0f) }
                 }
 
                 lazilyNotifyClientInfoChanged = true
@@ -387,8 +380,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 if (world.universe.worlds.any { w -> state.worldFinishedTimes[w.id.value] == 0f }) { // If any world DNF'd...
                     state.universeFinishedTimes[world.universe.id.value] = 0f // DNF the universe
                 } else {
-                    state.universeFinishedTimes[world.universe.id.value] =
-                        world.universe.worlds.maxOf { w -> state.worldFinishedTimes.getOrDefault(w.id.value, 0f) }
+                    state.universeFinishedTimes[world.universe.id.value] = world.universe.worlds.maxOf { w -> state.worldFinishedTimes.getOrDefault(w.id.value, 0f) }
                 }
 
                 lazilyNotifyClientInfoChanged = true
@@ -407,8 +399,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         val results = newSuspendedTransaction {
             val player = User.findById(playerId) ?: error("Error: Requested uber state update on unknown user")
-            val world =
-                player.currentWorld ?: error("Error: Requested uber state update for user that is not in a world")
+            val world = player.currentWorld ?: error("Error: Requested uber state update for user that is not in a world")
 
             val results = server.sync.aggregateStates(player, uberStates)
 
@@ -416,9 +407,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 val newBingoCardClaims = world.universe.multiverse.getNewBingoCardClaims(world.universe)
 
                 if (board.config.lockout) {
-                    newBingoCardClaims
-                        .filter { claim -> getMultiverse().getLockoutGoalOwnerMap()[claim.x to claim.y]?.id?.value == world.universe.id.value }
-                        .forEach { claim ->
+                    newBingoCardClaims.filter { claim -> getMultiverse().getLockoutGoalOwnerMap()[claim.x to claim.y]?.id?.value == world.universe.id.value }.forEach { claim ->
                             board.goals[Point(claim.x, claim.y)]?.let { goal ->
                                 server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
                                     val playerEnvironmentCache = server.playerEnvironmentCache.get(playerId)
@@ -494,5 +483,111 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
     override suspend fun getPlayerSaveGuid(playerId: PlayerId): MoodGuid? {
         return state.playerSaveGuids[playerId]
+    }
+
+    private suspend fun movePlayerToWorld(user: User, world: World) {
+        server.multiverseUtil.movePlayerToWorld(user, world)
+        getMultiverse().updateAutomaticWorldNames()
+    }
+
+    override suspend fun onPlayerCreateWorldRequest(user: User, universe: Universe) {
+        val multiverse = getMultiverse()
+
+        if (multiverse.seed != null) throw ConflictException("Cannot manually create or remove worlds from seed-linked universes")
+
+        server.connections.toPlayers(
+            (multiverse.players - universe.members).map { it.id.value }, makeServerTextMessage(
+                "${user.name} joined this game in another universe",
+            ), false
+        )
+
+        server.connections.toPlayers(
+            universe.members.map { it.id.value }, makeServerTextMessage(
+                "${user.name} joined a new world in your universe",
+            )
+        )
+
+        val world = World.new(universe, user.name + "'s World")
+        movePlayerToWorld(user, world)
+    }
+
+    override suspend fun onPlayerJoinWorldRequest(user: User, world: World) {
+        val multiverse = getMultiverse()
+        if (!world.members.contains(user)) {
+            movePlayerToWorld(user, world)
+
+            server.connections.toPlayers(
+                (multiverse.players - world.universe.members - user).map { it.id.value }, makeServerTextMessage(
+                    "${user.name} joined this game in another universe",
+                )
+            )
+
+            server.connections.toPlayers(
+                (world.universe.members - world.members - user).map { it.id.value }, makeServerTextMessage(
+                    "${user.name} joined your universe in another world",
+                )
+            )
+
+            server.connections.toPlayers(
+                (world.members - user).map { it.id.value }, makeServerTextMessage(
+                    "${user.name} joined your world",
+                )
+            )
+        }
+    }
+
+    override suspend fun onPlayerCreateUniverseRequest(user: User) {
+        val multiverse = getMultiverse()
+        val universe = Universe.new {
+            name = "${user.name}'s Universe"
+            this.multiverse = multiverse
+        }
+
+        server.connections.toPlayers(
+            (multiverse.players - user).map { it.id.value }, makeServerTextMessage(
+                "${user.name} joined this game in a new universe",
+            )
+        )
+
+        GameState.new {
+            this.multiverse = multiverse
+            this.universe = universe
+            this.uberStateData = UberStateMap()
+        }
+
+        val world = multiverse.seed?.let { seed ->
+            var first: World? = null
+
+            seed.worldSeeds.forEach { worldSeed ->
+                val world = World.new(universe, worldSeed.id.value.toString(), worldSeed)
+                if (first == null) {
+                    first = world
+                }
+            }
+
+            first ?: throw RuntimeException("Seed group does not contain any world")
+        } ?: World.new(universe, "${user.name}'s World")
+
+        movePlayerToWorld(user, world)
+    }
+
+    override suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler, setupResult: GameConnectionHandlerSyncResult) {
+        val multiversePlayerIds = newSuspendedTransaction {
+            val world = World.findById(setupResult.worldId)
+            world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList()
+        }
+
+        // Check if all players are online
+        val allPlayersOnline = multiversePlayerIds.all {
+            server.connections.playerMultiverseConnections[it]?.multiverseId == setupResult.multiverseId
+        }
+
+        if (allPlayersOnline && multiversePlayerIds.count() >= 2) {
+            server.connections.toPlayers(
+                multiversePlayerIds, makeServerTextMessage(
+                    "All ${multiversePlayerIds.count()} players are connected!",
+                )
+            )
+        }
     }
 }

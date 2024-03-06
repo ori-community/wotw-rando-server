@@ -135,4 +135,8 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
     override suspend fun getPlayerSaveGuid(playerId: PlayerId): MoodGuid? {
         return state.playerSaveGuids[playerId]
     }
+
+    override fun canSpectate(player: User): Boolean {
+        return false
+    }
 }

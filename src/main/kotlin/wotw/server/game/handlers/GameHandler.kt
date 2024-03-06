@@ -7,9 +7,11 @@ import wotw.io.messages.protobuf.MoodGuid
 import wotw.io.messages.protobuf.SetBlockStartingNewGameMessage
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.database.model.Multiverse
+import wotw.server.database.model.Universe
 import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.game.GameConnectionHandler
+import wotw.server.game.GameConnectionHandlerSyncResult
 import wotw.server.game.handlers.deprecated.hideandseek.HideAndSeekGameHandler
 import wotw.server.game.handlers.deprecated.infection.InfectionGameHandler
 import wotw.server.game.handlers.league.LeagueGameHandler
@@ -75,10 +77,17 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         return false
     }
 
+    /**
+     * Called after this game handler has been unfrozen and loaded from the database
+     */
     open fun start() {}
+
+    /**
+     * Called before this game handler is being frozen/serialized and stored to the database
+     */
     open fun stop() {}
 
-    open suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler) {}
+    open suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler, setupResult: GameConnectionHandlerSyncResult) {}
 
     /**
      * Return false if the game handler must not be destroyed currently.
@@ -97,6 +106,9 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         }
     }
 
+    /**
+     * Return serializable data that is sent to game clients
+     */
     open fun getClientInfo(): CLIENT_INFO_TYPE? {
         return null
     }
@@ -128,6 +140,9 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         }
     }
 
+    /**
+     * Return whether a user is allowed to join this game
+     */
     open suspend fun canJoin(user: User): Boolean {
         return true
     }
@@ -162,5 +177,27 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         fun getByGameHandlerType(handler: KClass<out GameHandler<out Any>>): Int {
             return handlerTypeMap.inverse[handler] ?: throw IllegalArgumentException()
         }
+    }
+
+    /**
+     * Called when [user] requests to create a new [Universe] in this game
+     */
+    open suspend fun onPlayerCreateUniverseRequest(user: User) {}
+
+    /**
+     * Called when [user] requests to create a new [World] in [universe]. [universe] is expected to be part of this game.
+     */
+    open suspend fun onPlayerCreateWorldRequest(user: User, universe: Universe) {}
+
+    /**
+     * Called when [user] requests to join [world]. [world] is expected to be part of this game.
+     */
+    open suspend fun onPlayerJoinWorldRequest(user: User, world: World) {}
+
+    /**
+     * Return true if [user] is allowed to become a spectator of this game
+     */
+    open fun canSpectate(user: User): Boolean {
+        return true
     }
 }

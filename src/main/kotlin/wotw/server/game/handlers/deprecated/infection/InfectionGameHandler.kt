@@ -68,6 +68,7 @@ data class PlayerInfo(
     }
 }
 
+@Deprecated("Unmaintained")
 class InfectionGameHandler(
     multiverseId: Long,
     server: WotwBackendServer,
@@ -695,7 +696,7 @@ class InfectionGameHandler(
         server.sync.syncStates(playerId, results)
     }
 
-    override suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler) {
+    override suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler, setupResult: GameConnectionHandlerSyncResult) {
         broadcastPlayerVisibility()
     }
 

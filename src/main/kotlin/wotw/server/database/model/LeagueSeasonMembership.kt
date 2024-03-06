@@ -6,7 +6,9 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
+import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.datetime
+import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.server.database.model.BingothonTokens.defaultExpression
 import wotw.server.database.model.LeagueGame.Companion.referrersOn
 import wotw.server.database.model.RaceTeamMembers.nullable
@@ -14,7 +16,7 @@ import wotw.server.database.model.RaceTeamMembers.nullable
 object LeagueSeasonMemberships : LongIdTable() {
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
     val userId = reference("user_id", Users, ReferenceOption.CASCADE)
-    val joinedAt = datetime("joined_at").defaultExpression(CurrentDateTime)
+    val joinedAt = timestamp("joined_at").defaultExpression(CurrentTimestamp())
     val points = integer("points").default(0)
 }
 
