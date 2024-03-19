@@ -12,6 +12,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.*
 import wotw.server.database.model.Seed
 import wotw.server.database.model.WorldSeed
+import wotw.server.exception.ForbiddenException
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.doAfterTransaction
 import wotw.server.util.logger
@@ -60,6 +61,10 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
             val seedInfo = newSuspendedTransaction {
                 val seed = Seed.findById(id) ?: throw NotFoundException()
 
+                if (!seed.allowDownload) {
+                    throw ForbiddenException("You cannot download this seed")
+                }
+
                 SeedInfo(
                     seed.id.value,
                     seed.worldSeeds.map { it.id.value },
@@ -75,6 +80,11 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
             val worldSeedContent = newSuspendedTransaction {
                 val worldSeed = WorldSeed.findById(id) ?: throw NotFoundException("World seed not found")
+
+                if (!worldSeed.seed.allowDownload) {
+                    throw ForbiddenException("You cannot download this seed")
+                }
+
                 worldSeed.content
             }
 
@@ -120,6 +130,10 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val (contentType, body) = newSuspendedTransaction {
                     val seed = Seed.findById(id) ?: throw NotFoundException()
                     val user = authenticatedUser()
+
+                    if (!seed.allowDownload) {
+                        throw ForbiddenException("You cannot download this seed/spoiler")
+                    }
 
                     if (!seed.spoilerDownloads.contains(user)) {
                         seed.spoilerDownloads = SizedCollection(seed.spoilerDownloads + user)

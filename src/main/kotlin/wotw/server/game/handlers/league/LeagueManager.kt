@@ -45,13 +45,15 @@ class LeagueManager(server: WotwBackendServer) {
                             newSuspendedTransaction {
                                 if (season.currentGame != null) {
                                     season.finishCurrentGame()
+                                    logger().info("LeagueManager: Finished current game for season $seasonId")
                                 }
 
                                 // Don't create more games if we reached this season's end.
                                 // If we don't create a new game, this season won't be scheduled
                                 // here anymore.
                                 if (!season.hasReachedGameCountLimit) {
-                                    season.createScheduledGame(server.seedGeneratorService)
+                                    val game = season.createScheduledGame(server.seedGeneratorService)
+                                    logger().info("LeagueManager: Scheduled game ${game.id} (Multiverse ${game.multiverse.id.value}) for season $seasonId")
                                 }
 
                                 successfullyScheduledSeasons.add(season)
@@ -92,7 +94,7 @@ class LeagueManager(server: WotwBackendServer) {
 
             upcomingSeasonProcessingTimes[time]?.also { cache ->
                 cache.add(season.id.value)
-            } ?: {
+            } ?: run {
                 upcomingSeasonProcessingTimes[time] = mutableListOf(season.id.value)
             }
         }

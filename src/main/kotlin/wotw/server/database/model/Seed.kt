@@ -19,6 +19,7 @@ object Seeds : LongIdTable("seeds") {
     val spoilerText = text("spoiler_text")
     val creator = optReference("creator_id", Users)
     val created = datetime("created_at").defaultExpression(CurrentDateTime)
+    val allowDownload = bool("allow_download").default(true)
 }
 
 class Seed(id: EntityID<Long>): LongEntity(id){
@@ -28,6 +29,7 @@ class Seed(id: EntityID<Long>): LongEntity(id){
     var spoiler by Seeds.spoiler
     var spoilerText by Seeds.spoilerText
     var creator by User optionalReferencedOn Seeds.creator
+    var allowDownload by Seeds.allowDownload
     val worldSeeds by WorldSeed referrersOn WorldSeeds.seed
     var spoilerDownloads by User via SeedSpoilerDownloads
     val multiverses by Multiverse optionalReferrersOn Multiverses.seedId

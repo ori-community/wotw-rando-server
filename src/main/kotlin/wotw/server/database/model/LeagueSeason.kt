@@ -22,7 +22,7 @@ import kotlin.jvm.optionals.getOrNull
 import kotlin.math.max
 import kotlin.math.min
 
-object LeagueSeasons : LongIdTable() {
+object LeagueSeasons : LongIdTable("league_seasons") {
     val name = varchar("name", 64)
 
     /**
@@ -127,7 +127,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         this.currentGame = null
     }
 
-    suspend fun createScheduledGame(seedGeneratorService: SeedGeneratorService) {
+    suspend fun createScheduledGame(seedGeneratorService: SeedGeneratorService): LeagueGame {
         assertTransaction()
 
         if (this.currentGame != null) {
@@ -164,6 +164,8 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         }
 
         this.currentGame = game
+
+        return game
     }
 
     fun getNextScheduledGameTime(): ZonedDateTime {

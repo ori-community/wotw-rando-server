@@ -79,8 +79,6 @@ class GameConnectionHandler(
                 multiverse.id.value,
             )
 
-            handler.onGameConnectionSetup(this@GameConnectionHandler, setupResult)
-
             return@newSuspendedTransaction setupResult
         }
     }

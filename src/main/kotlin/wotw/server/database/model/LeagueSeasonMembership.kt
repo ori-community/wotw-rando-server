@@ -13,7 +13,7 @@ import wotw.server.database.model.BingothonTokens.defaultExpression
 import wotw.server.database.model.LeagueGame.Companion.referrersOn
 import wotw.server.database.model.RaceTeamMembers.nullable
 
-object LeagueSeasonMemberships : LongIdTable() {
+object LeagueSeasonMemberships : LongIdTable("league_season_memberships") {
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
     val userId = reference("user_id", Users, ReferenceOption.CASCADE)
     val joinedAt = timestamp("joined_at").defaultExpression(CurrentTimestamp())

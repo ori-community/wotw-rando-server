@@ -285,6 +285,11 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         setupResult?.multiverseId,
                         oriType,
                     )
+
+                    setupResult?.multiverseId?.let { multiverseId ->
+                        val handler = server.gameHandlerRegistry.getHandler(multiverseId)
+                        handler.onGameConnectionSetup(connectionHandler!!, setupResult)
+                    }
                 }
 
                 val entityChangeHandler: (EntityChange) -> Unit = {

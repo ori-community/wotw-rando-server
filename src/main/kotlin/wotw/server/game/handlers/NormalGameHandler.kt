@@ -572,9 +572,20 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
     }
 
     override suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler, setupResult: GameConnectionHandlerSyncResult) {
-        val multiversePlayerIds = newSuspendedTransaction {
+        val (multiversePlayerIds, seedContent) = newSuspendedTransaction {
             val world = World.findById(setupResult.worldId)
-            world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList()
+
+            (
+                world?.universe?.multiverse?.players?.map { it.id.value } ?: emptyList()
+            ) to world?.seed?.content
+        }
+
+        // Send the seed
+        if (seedContent != null) {
+            server.connections.toPlayers(
+                listOf(connectionHandler.currentPlayerId),
+                SetSeedMessage(seedContent),
+            )
         }
 
         // Check if all players are online

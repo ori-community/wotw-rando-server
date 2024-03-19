@@ -415,9 +415,7 @@ data class RequestSeedMessage(
 
 @Serializable
 data class SetSeedMessage(
-    @ProtoNumber(1) val name: String,
-    @ProtoNumber(2) val seedContent: String,
-    @ProtoNumber(3) val init: Boolean = false, // This is something for the client, ask wolf. We just pipe it through
+    @ProtoNumber(1) val seedContent: String,
 )
 
 @Serializable

@@ -6,6 +6,8 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.client.*
+import io.ktor.client.engine.*
+import io.ktor.client.engine.java.*
 import io.ktor.http.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
@@ -138,6 +140,10 @@ class WotwBackendServer {
                 Races,
                 RaceTeams,
                 RaceTeamMembers,
+                LeagueSeasons,
+                LeagueGames,
+                LeagueGameSubmissions,
+                LeagueSeasonMemberships,
             )
         }
     }
@@ -299,7 +305,11 @@ class WotwBackendServer {
 
                 install(Authentication) {
                     oauth(DISCORD_OAUTH) {
-                        client = HttpClient()
+                        client = HttpClient(Java) {
+                            engine {
+                                protocolVersion = java.net.http.HttpClient.Version.HTTP_2
+                            }
+                        }
                         providerLookup = { discordOauthProvider }
                         urlProvider = { redirectUrl("/api/auth/handle-login") }
                     }

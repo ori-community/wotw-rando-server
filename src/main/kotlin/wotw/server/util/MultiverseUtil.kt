@@ -112,7 +112,7 @@ class MultiverseUtil(val server: WotwBackendServer) {
             } ?: listOf()
 
             val setSeedMessage = World.findById(worldId)?.seed?.let { seed ->
-                SetSeedMessage("${seed.id.value}.wotwr", seed.content)
+                SetSeedMessage(seed.content)
             }
 
             uberStateUpdateMessages to setSeedMessage

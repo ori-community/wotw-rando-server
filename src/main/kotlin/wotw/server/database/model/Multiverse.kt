@@ -17,7 +17,7 @@ import java.util.*
 import kotlin.math.ceil
 import kotlin.to
 
-object Multiverses : LongIdTable("multiverse") {
+object Multiverses : LongIdTable("multiverses") {
     val seedId = reference("seed_id", Seeds).nullable()
     val raceId = reference("race_id", Races).nullable()
     val board = jsonb("board", BingoBoard.serializer()).nullable()

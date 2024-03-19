@@ -46,7 +46,7 @@ dependencies {
 
     implementation("com.zaxxer:HikariCP:5.1.0")
 
-    implementation("org.postgresql:postgresql:42.7.1")
+    implementation("org.postgresql:postgresql:42.7.3")
 
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
@@ -66,6 +66,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-client-core-jvm:$ktorVersion")
     implementation("io.ktor:ktor-network-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-java:$ktorVersion")
 }
 
 

@@ -12,7 +12,7 @@ import wotw.server.bingo.UberStateMap
 import wotw.server.database.jsonb
 import kotlin.reflect.typeOf
 
-object GameStates : LongIdTable() {
+object GameStates : LongIdTable("game_states") {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val universeId = optReference("universe_id", Universes, ReferenceOption.CASCADE)
     val worldId = optReference("world_id", Worlds, ReferenceOption.CASCADE)
@@ -62,6 +62,5 @@ class GameState(id: EntityID<Long>) : LongEntity(id) {
         MULTIVERSE,
         UNIVERSE,
         WORLD,
-        INVALID,
     }
 }

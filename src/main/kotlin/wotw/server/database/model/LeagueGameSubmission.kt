@@ -6,10 +6,10 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
-object LeagueGameSubmissions : LongIdTable() {
+object LeagueGameSubmissions : LongIdTable("league_game_submissions") {
     val gameId = reference("game_id", LeagueGames, ReferenceOption.CASCADE)
     val membershipId = reference("membership_id", LeagueSeasonMemberships, ReferenceOption.CASCADE)
-    val saveFile = binary("save_file", 256 * 1024)
+    val saveFile = binary("save_file", 512 * 1024)
     val time = float("time").nullable()
     val points = integer("points").default(0)
     val videoUrl = varchar("video_url", 128).nullable()

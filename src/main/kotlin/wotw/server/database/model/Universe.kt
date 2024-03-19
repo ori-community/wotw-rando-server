@@ -7,7 +7,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import wotw.server.bingo.UberStateMap
 
-object Universes : LongIdTable() {
+object Universes : LongIdTable("universes") {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val name = varchar("name", 255)
 }
@@ -25,7 +25,7 @@ class Universe(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<Universe>(Universes)
 }
 
-object Worlds : LongIdTable() {
+object Worlds : LongIdTable("worlds") {
     val universeId = reference("universe_id", Universes, ReferenceOption.CASCADE)
     val name = varchar("name", 255)
     val seed = reference("world_seed", WorldSeeds).nullable()

@@ -6,7 +6,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
-object SeedSpoilerDownloads : LongIdTable() {
+object SeedSpoilerDownloads : LongIdTable("seed_spoiler_downloads") {
     val seedId = reference("seed_id", Seeds, ReferenceOption.CASCADE)
     val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
 

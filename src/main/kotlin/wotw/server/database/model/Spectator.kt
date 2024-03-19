@@ -6,7 +6,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
-object Spectators : LongIdTable() {
+object Spectators : LongIdTable("spectators") {
     val gameId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
 

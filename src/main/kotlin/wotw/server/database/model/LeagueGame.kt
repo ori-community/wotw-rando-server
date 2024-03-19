@@ -14,7 +14,7 @@ import wotw.server.util.assertTransaction
 import kotlin.math.ceil
 import kotlin.math.max
 
-object LeagueGames : LongIdTable() {
+object LeagueGames : LongIdTable("league_games") {
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE).uniqueIndex()
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
