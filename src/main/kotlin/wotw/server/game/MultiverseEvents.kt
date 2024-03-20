@@ -2,6 +2,7 @@ package wotw.server.game
 
 import wotw.server.database.model.User
 import wotw.server.database.model.World
+import wotw.server.database.model.WorldMembership
 
 data class WorldCreatedEvent(
     val world: World,
@@ -25,7 +26,7 @@ data class PlayerLeftEvent(
 
 data class MultiverseEvent(
     val event: String,
-    val sender: User,
+    val sender: WorldMembership,
     val payload: Any? = null,
 )
 

@@ -5,14 +5,13 @@ import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.BingothonTokenRequest
 import wotw.io.messages.protobuf.*
-import wotw.server.database.model.BingothonToken
-import wotw.server.database.model.BingothonTokens
-import wotw.server.database.model.Multiverse
+import wotw.server.database.model.*
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.randomString
@@ -34,9 +33,12 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     throw BadRequestException("Bingothon does not support boards sized other than 5x5 yet")
                 }
 
-                val currentPlayerUniverseInThisMultiverse = if (multiverse.universes.contains(player.currentWorld?.universe)) {
-                    player.currentWorld?.universe
-                } else { null }
+                val currentPlayerUniverseInThisMultiverse = Universe.find {
+                    (Universes.id eq Worlds.universeId) and
+                            (Worlds.id eq WorldMemberships.worldId) and
+                            (WorldMemberships.userId eq player.id.value) and
+                            (Universes.multiverseId eq multiverse.id)
+                }.firstOrNull()
 
                 val bingoInfo = multiverse.bingoUniverseInfo()
                 val bingoData = BingoData(multiverse.createBingoBoardMessage(currentPlayerUniverseInThisMultiverse, playerIsSpectator), bingoInfo)

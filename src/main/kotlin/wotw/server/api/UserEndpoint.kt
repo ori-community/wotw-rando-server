@@ -34,7 +34,9 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 name = it
                                 isCustomName = true
 
-                                this.currentWorld?.universe?.multiverse?.updateAutomaticWorldNames();
+                                this.multiverses.forEach { multiverse ->
+                                    multiverse.updateAutomaticWorldNames()
+                                }
                             }
                         )
                     }

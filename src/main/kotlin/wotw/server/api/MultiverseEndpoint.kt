@@ -9,11 +9,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.launch
-import org.jetbrains.exposed.dao.EntityChange
-import org.jetbrains.exposed.dao.EntityHook
-import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.SizedCollection
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.MultiverseCreationConfig
 import wotw.io.messages.protobuf.*
@@ -166,8 +163,8 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         throw ForbiddenException("You cannot spectate this game because the game handler does not allow it")
                     }
 
-                    if (multiverse.members.contains(player)) {
-                        server.multiverseUtil.removePlayerFromCurrentWorld(player, true)
+                    multiverse.memberships.firstOrNull { it.user.id == player.id }?.let { worldMembership ->
+                        server.multiverseUtil.leaveMultiverse(worldMembership)
                     }
 
                     if (!multiverse.spectators.contains(player)) {
@@ -175,7 +172,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                         if (!multiverse.locked) {
                             server.connections.toPlayers(
-                                multiverse.players.map { it.id.value }, makeServerTextMessage(
+                                multiverse.memberships.map { it.id.value }, makeServerTextMessage(
                                     "${player.name} is now spectating this game",
                                 )
                             )
@@ -211,7 +208,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     multiverse.locked = !multiverse.locked
 
                     server.connections.toPlayers(
-                        multiverse.players.map { it.id.value }, makeServerTextMessage(
+                        multiverse.memberships.map { it.id.value }, makeServerTextMessage(
                             "${player.name} ${if (multiverse.locked) "locked" else "unlocked"} this game",
                         )
                     )
@@ -231,12 +228,12 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     newSuspendedTransaction {
                         val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
 
-                        if (!multiverse.members.contains(authenticatedUser())) {
-                            throw BadRequestException("You cannot trigger custom events on this multiverse since you are not part of it")
-                        }
+                        val worldMembership = WorldMembership.find {
+                            (WorldMemberships.multiverseId eq multiverseId) and (WorldMemberships.userId eq wotwPrincipal().userId)
+                        }.firstOrNull() ?: throw BadRequestException("You cannot trigger custom events on this multiverse since you are not part of it")
 
                         server.gameHandlerRegistry.getHandler(multiverse).onMultiverseEvent(
-                            MultiverseEvent(event, authenticatedUser()),
+                            MultiverseEvent(event, worldMembership),
                         )
                     }
 
@@ -263,47 +260,21 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
         }
 
-        webSocket("client-websocket/{game_type}") {
+        webSocket("client-websocket/{multiverse_id}/{game_type}") {
             val oriType = when (call.parameters["game_type"]) {
                 "wotw" -> ConnectionRegistry.Companion.OriType.WillOfTheWisps
                 "bf" -> ConnectionRegistry.Companion.OriType.BlindForest
                 else -> throw BadRequestException("Invalid game socket name. Must be 'wotw' or 'bf'.")
             }
 
+            val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+
             handleClientSocket {
-                var playerId = ""
+                var worldMembershipId: Long? = null
                 var connectionHandler: GameConnectionHandler? = null
 
-                suspend fun setupGameSync() {
-                    connectionHandler = GameConnectionHandler(playerId, socketConnection, server)
-
-                    val setupResult = newSuspendedTransaction { connectionHandler!!.setup() }
-
-                    server.connections.registerMultiverseConnection(
-                        socketConnection,
-                        playerId,
-                        setupResult?.multiverseId,
-                        oriType,
-                    )
-
-                    setupResult?.multiverseId?.let { multiverseId ->
-                        val handler = server.gameHandlerRegistry.getHandler(multiverseId)
-                        handler.onGameConnectionSetup(connectionHandler!!, setupResult)
-                    }
-                }
-
-                val entityChangeHandler: (EntityChange) -> Unit = {
-                    it.toEntity(User.Companion)?.let { player ->
-                        if (player.id.value == playerId && player.currentMultiverse?.id?.value != connectionHandler?.multiverseId) {
-                            launch {
-                                setupGameSync()
-                            }
-                        }
-                    }
-                }
-
                 afterAuthenticated {
-                    playerId = principal.userId
+                    val playerId = principal.userId
 
                     principalOrNull?.hasScope(Scope.MULTIVERSE_CONNECT) ?: this@webSocket.close(
                         CloseReason(
@@ -311,9 +282,35 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
                     )
 
-                    EntityHook.subscribe(entityChangeHandler)
+                    connectionHandler = GameConnectionHandler(playerId, multiverseId, socketConnection, server)
+                    val setupResult = connectionHandler!!.setup()
 
-                    setupGameSync()
+                    if (setupResult == null) {
+                        socketConnection.sendMessage(
+                            makeServerTextMessage(
+                                "You are not part of an active multiverse.\nPlease join or create one.",
+                            )
+                        )
+
+                        this@webSocket.flush()
+                        this@webSocket.close(
+                            CloseReason(
+                                CloseReason.Codes.VIOLATED_POLICY, "GameConnectionHandler could not be set up"
+                            )
+                        )
+                        return@afterAuthenticated
+                    }
+
+                    worldMembershipId = setupResult.worldMembershipId
+
+                    server.connections.registerMultiverseConnection2(
+                        socketConnection,
+                        setupResult.worldMembershipId,
+                        oriType,
+                    )
+
+                    val handler = server.gameHandlerRegistry.getHandler(setupResult.multiverseId)
+                    handler.onGameConnectionSetup(connectionHandler!!, setupResult)
                 }
 
                 onMessage(UberStateUpdateMessage::class) { connectionHandler?.onMessage(this) }
@@ -325,22 +322,19 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 onMessage(SetPlayerSaveGuidMessage::class) { connectionHandler?.onMessage(this) }
 
                 onClose {
-                    logger.info("WebSocket for player $playerId disconnected (close, ${closeReason.await()})")
+                    logger.info("WebSocket for World Membership $worldMembershipId disconnected (close, ${closeReason.await()})")
 
-                    if (playerId != "") {
-                        server.connections.unregisterMultiverseConnection(playerId)
+                    worldMembershipId?.let {
+                        server.connections.unregisterMultiverseConnection(it)
                     }
-
-                    EntityHook.unsubscribe(entityChangeHandler)
                 }
 
                 onError {
-                    logger.info("WebSocket for player $playerId disconnected (error, ${closeReason.await()}, $it)")
-                    if (playerId != "") {
-                        server.connections.unregisterMultiverseConnection(playerId)
-                    }
+                    logger.info("WebSocket for World Membership $worldMembershipId disconnected (error, ${closeReason.await()}, $it)")
 
-                    EntityHook.unsubscribe(entityChangeHandler)
+                    worldMembershipId?.let {
+                        server.connections.unregisterMultiverseConnection(it)
+                    }
                 }
             }
         }

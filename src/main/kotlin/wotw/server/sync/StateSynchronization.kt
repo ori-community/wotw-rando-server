@@ -7,9 +7,7 @@ import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.api.UberStateSyncStrategy
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.EntityCache
-import wotw.server.database.model.GameState
-import wotw.server.database.model.Multiverse
-import wotw.server.database.model.User
+import wotw.server.database.model.*
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import java.util.concurrent.ConcurrentHashMap
@@ -58,18 +56,17 @@ object MultiverseStateCache : EntityCache<Long, UberStateMap>(
 class StateSynchronization(private val server: WotwBackendServer) {
     val aggregationStrategiesCache: ConcurrentHashMap<Long, AggregationStrategyRegistry> = ConcurrentHashMap()
 
-    //Requires active transaction
     suspend fun aggregateState(
-        player: User,
+        worldMembership: WorldMembership,
         uberId: UberId,
         value: Double
-    ): Map<UberId, AggregationResult> = aggregateStates(player, mapOf(uberId to value))
+    ): Map<UberId, AggregationResult> = aggregateStates(worldMembership, mapOf(uberId to value))
 
     suspend fun aggregateStates(
-        player: User,
+        worldMembership: WorldMembership,
         states: Map<UberId, Double>
     ): Map<UberId, AggregationResult> {
-        val world = player.currentWorld ?: return emptyMap()
+        val world = worldMembership.world
         val universe = world.universe
         val multiverse = universe.multiverse
 
@@ -85,7 +82,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     ShareScope.WORLD -> WorldStateCache.getOrNull(world.id.value)
                     ShareScope.UNIVERSE -> UniverseStateCache.getOrNull(universe.id.value)
                     ShareScope.MULTIVERSE -> MultiverseStateCache.getOrNull(multiverse.id.value)
-                    ShareScope.PLAYER -> PlayerStateCache.getOrNull(player.id.value)
+                    ShareScope.PLAYER -> PlayerStateCache.getOrNull(worldMembership.user.id.value)
                 } ?: return@map uberId to AggregationResult(value, strategy)
 
                 val oldValue = cache[uberId]
@@ -100,10 +97,10 @@ class StateSynchronization(private val server: WotwBackendServer) {
         }.toMap()
     }
 
-    suspend fun syncStates(playerId: String, uberId: UberId, update: AggregationResult) =
-        syncStates(playerId, mapOf(Pair(uberId, update)))
+    suspend fun sendUberStateUpdates(worldMembershipId: Long, uberId: UberId, update: AggregationResult) =
+        sendUberStateUpdates(worldMembershipId, mapOf(Pair(uberId, update)))
 
-    suspend fun syncStates(playerId: String, updates: Map<UberId, AggregationResult>) {
+    suspend fun sendUberStateUpdates(worldMembershipId: Long, updates: Map<UberId, AggregationResult>) {
         val triggered = updates.filterValues { it.triggered }
         val playerUpdates = triggered.filterValues {
             val strategy = it.strategy
@@ -122,7 +119,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         shareScopeUpdates.entries.forEach { (scope, states) ->
             if (scope !== null)
                 server.connections.sendTo(
-                    playerId, scope, false,
+                    worldMembershipId, scope, false,
                     *states.map { (uberId, result) ->
                         UberStateUpdateMessage(
                             uberId,
@@ -133,7 +130,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
         }
 
         if (playerUpdates.isNotEmpty()) {
-            server.connections.toPlayers(listOf(playerId), UberStateBatchUpdateMessage(
+            server.connections.toPlayers(listOf(worldMembershipId), UberStateBatchUpdateMessage(
                 playerUpdates.map { (uberId, result) ->
                     UberStateUpdateMessage(
                         uberId,
@@ -154,7 +151,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
             val worldUpdates = multiverse.worlds.map { world ->
                 val bingoPlayerData = multiverse.bingoUniverseInfo(world.universe)
                 Triple(
-                    world.members.map { it.id.value },
+                    world.memberships.map { it.id.value } to world.members.map { it.id.value },
                     UberStateBatchUpdateMessage(
                         UberStateUpdateMessage(
                             UberId(10, 0),
@@ -175,6 +172,7 @@ class StateSynchronization(private val server: WotwBackendServer) {
                     )
                 )
             }
+
             Triple(
                 syncBingoUniversesMessage,
                 SyncBoardMessage(
@@ -187,9 +185,10 @@ class StateSynchronization(private val server: WotwBackendServer) {
 
         server.connections.toObservers(multiverseId, message = syncBingoUniversesMessage)
         server.connections.toObservers(multiverseId, true, spectatorBoard)
-        stateUpdates.forEach { (players, goalStateUpdate, board) ->
-            server.connections.toPlayers(players, goalStateUpdate)
-            players.forEach { playerId ->
+        stateUpdates.forEach { (playerAndWorldMembershipIds, goalStateUpdate, board) ->
+            server.connections.toPlayers(playerAndWorldMembershipIds.first, goalStateUpdate)
+
+            playerAndWorldMembershipIds.second.forEach { playerId ->
                 server.connections.toObservers(multiverseId, playerId, board)
             }
         }

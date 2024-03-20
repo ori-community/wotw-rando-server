@@ -39,6 +39,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     private val states by GameState referrersOn GameStates.multiverseId
     val bingoCardClaims by BingoCardClaim referrersOn BingoCardClaims.multiverseId
     var spectators by User via Spectators
+    val memberships by WorldMembership referrersOn WorldMemberships.multiverseId
 
     var gameHandlerType by Multiverses.gameHandlerType
     var gameHandlerActive by Multiverses.gameHandlerActive
@@ -59,7 +60,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         get() = worlds
             .flatMap { it.members }
             .toSet()
-    val members
+    val playersAndSpectators
         get() = players + spectators
 
     suspend fun getNewBingoCardClaims(universe: Universe): List<BingoCardClaim> {

@@ -8,7 +8,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.ClaimBingoCardRequest
-import wotw.io.messages.ImpersonateRequest
 import wotw.io.messages.admin.RemoteTrackerEndpointDescriptor
 import wotw.server.database.model.BingoCardClaim
 import wotw.server.database.model.User
@@ -20,13 +19,13 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
         authenticate(JWT_AUTH) {
             route("dev") {
-                get("/caches/population/{player_id}") {
+                get("/caches/population/{world_membership_id}") {
                     requireDeveloper()
 
-                    val playerId = call.parameters["player_id"] ?: throw BadRequestException("player_id required")
+                    val worldMembershipId = call.parameters["world_membership_id"]?.toLongOrNull() ?: throw BadRequestException("world_membership_id required")
 
                     val populationCacheContent = newSuspendedTransaction {
-                        server.playerEnvironmentCache.get(playerId)
+                        server.worldMembershipEnvironmentCache.get(worldMembershipId)
                     }
 
                     call.respond(populationCacheContent)
@@ -37,8 +36,8 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     newSuspendedTransaction {
                         val user = authenticatedUser()
-                        val multiverse = user.currentMultiverse ?: throw BadRequestException("You are currently not in a multiverse")
-                        val universe = user.currentWorld?.universe ?: throw BadRequestException("You are currently not in a multiverse")
+                        val multiverse = user.mostRecentMultiverse ?: throw BadRequestException("You are currently not in a multiverse")
+                        val universe = user.mostRecentWorldMembership?.world?.universe ?: throw BadRequestException("You are currently not in a multiverse")
                         val board = multiverse.board ?: throw NotFoundException("The multiverse you are in does not have a bingo board")
                         val claims = multiverse.bingoCardClaims
                         val multiverseId = multiverse.id.value

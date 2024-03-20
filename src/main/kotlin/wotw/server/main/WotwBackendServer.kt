@@ -6,7 +6,6 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.client.*
-import io.ktor.client.engine.*
 import io.ktor.client.engine.java.*
 import io.ktor.http.*
 import io.ktor.network.selector.*
@@ -43,7 +42,7 @@ import org.slf4j.event.Level
 import wotw.io.messages.protobuf.UdpPacket
 import wotw.server.api.*
 import wotw.server.database.MultiverseMemberCache
-import wotw.server.database.PlayerEnvironmentCache
+import wotw.server.database.WorldMembershipEnvironmentCache
 import wotw.server.database.model.*
 import wotw.server.exception.*
 import wotw.server.game.GameHandlerRegistry
@@ -129,6 +128,7 @@ class WotwBackendServer {
                 Multiverses,
                 Universes,
                 Worlds,
+                WorldMemberships,
                 GameStates,
                 Users,
                 BingoCardClaims,
@@ -164,7 +164,7 @@ class WotwBackendServer {
     val sync = StateSynchronization(this)
     val seedGeneratorService = SeedGeneratorService(this)
 
-    val playerEnvironmentCache = PlayerEnvironmentCache()
+    val worldMembershipEnvironmentCache = WorldMembershipEnvironmentCache()
     val multiverseMemberCache = MultiverseMemberCache()
 
     val cacheScheduler = Scheduler {

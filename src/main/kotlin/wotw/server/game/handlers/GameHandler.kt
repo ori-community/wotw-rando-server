@@ -12,8 +12,6 @@ import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.GameConnectionHandlerSyncResult
-import wotw.server.game.handlers.deprecated.hideandseek.HideAndSeekGameHandler
-import wotw.server.game.handlers.deprecated.infection.InfectionGameHandler
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.util.EventBus
@@ -23,6 +21,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.createType
 
 typealias PlayerId = String
+typealias WorldMembershipId = Long
 
 object GameHandlerType {
     const val NORMAL = 0
@@ -37,14 +36,14 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     val multiverseId: Long,
     val server: WotwBackendServer,
 ) {
-    protected val messageEventBus = EventBusWithMetadata<PlayerId>()
+    protected val messageEventBus = EventBusWithMetadata<WorldMembershipId>()
     protected val multiverseEventBus = EventBus()
 
     fun getMultiverse(): Multiverse {
         return Multiverse.findById(multiverseId) ?: throw RuntimeException("Could not find multiverse $multiverseId for game handler")
     }
 
-    suspend fun onMessage(message: Any, sender: PlayerId) {
+    suspend fun onMessage(message: Any, sender: WorldMembershipId) {
         messageEventBus.send(message, sender)
     }
 
@@ -66,7 +65,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
      * @param playerId PlayerId
      * @return Return the save GUID for a player, or null if the client should force creating a new save file
      */
-    open suspend fun getPlayerSaveGuid(playerId: PlayerId): MoodGuid? {
+    open suspend fun getPlayerSaveGuid(worldMembershipId: WorldMembershipId): MoodGuid? {
         return null
     }
 
@@ -129,9 +128,9 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
             val multiverse = getMultiverse()
             val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
 
-            server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
+            server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
                 server.connections.toPlayers(
-                    multiverseMembers,
+                    worldMembershipIds,
                     message,
                 )
             }
@@ -144,9 +143,9 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
         newSuspendedTransaction {
             val message = SetBlockStartingNewGameMessage(shouldBlockStartingNewGame())
 
-            server.multiverseMemberCache.getOrNull(multiverseId)?.memberIds?.let { multiverseMembers ->
+            server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
                 server.connections.toPlayers(
-                    multiverseMembers,
+                    worldMembershipIds,
                     message,
                 )
             }
@@ -158,8 +157,6 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     companion object {
         private val handlerTypeMap = biMapOf(
             GameHandlerType.NORMAL to NormalGameHandler::class,
-            GameHandlerType.HIDE_AND_SEEK to HideAndSeekGameHandler::class,
-            GameHandlerType.INFECTION to InfectionGameHandler::class,
             GameHandlerType.LEAGUE to LeagueGameHandler::class,
         )
 

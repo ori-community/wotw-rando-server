@@ -1,9 +1,12 @@
 package wotw.server.game
 
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.InitGameSyncMessage
 import wotw.io.messages.protobuf.SetSaveGuidRestrictionsMessage
 import wotw.server.database.model.User
+import wotw.server.database.model.WorldMembership
+import wotw.server.database.model.WorldMemberships
 import wotw.server.io.ClientConnection
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.makeServerTextMessage
@@ -12,42 +15,44 @@ data class GameConnectionHandlerSyncResult(
     val worldId: Long,
     val universeId: Long,
     val multiverseId: Long,
+    val worldMembershipId: Long,
 )
 
 class GameConnectionHandler(
     private var playerId: String,
+    private val multiverseId: Long,
     private val connection: ClientConnection,
     private val server: WotwBackendServer,
 ) {
-    var multiverseId: Long? = null
+    var worldMembershipId: Long? = null
         private set
 
     val currentPlayerId
         get() = playerId
 
     suspend fun onMessage(message: Any) {
-        multiverseId?.let {
-            server.gameHandlerRegistry.getHandler(it).onMessage(message, playerId)
+        worldMembershipId?.let {
+            server.gameHandlerRegistry.getHandler(multiverseId).onMessage(message, it)
         }
     }
 
     suspend fun setup(): GameConnectionHandlerSyncResult? {
         return newSuspendedTransaction {
-            val player = User.findById(playerId)
-            val world = player?.currentWorld
+            val worldMembership = WorldMembership.find {
+                (WorldMemberships.userId eq playerId) and (WorldMemberships.multiverseId eq multiverseId)
+            }.firstOrNull()
 
-            if (player == null || world == null) {
-                this@GameConnectionHandler.connection.sendMessage(
-                    makeServerTextMessage(
-                        "You are not part of an active multiverse.\nPlease join or create one.",
-                    )
-                )
+            val player = User.findById(playerId)
+
+            if (player == null || worldMembership == null) {
                 return@newSuspendedTransaction null
             }
 
+            val world = worldMembership.world
+
             val universe = world.universe
             val multiverse = universe.multiverse
-            multiverseId = multiverse.id.value
+            this@GameConnectionHandler.worldMembershipId = worldMembership.id.value
 
             val handler = server.gameHandlerRegistry.getHandler(multiverse.id.value)
             val states = handler.generateStateAggregationRegistry(world).getSyncedStates()
@@ -57,7 +62,7 @@ class GameConnectionHandler(
                     states.toList(),
                     handler.shouldBlockStartingNewGame(),
                     SetSaveGuidRestrictionsMessage(
-                        handler.getPlayerSaveGuid(playerId),
+                        handler.getPlayerSaveGuid(worldMembership.id.value),
                         true,
                     ),
                 )
@@ -77,6 +82,7 @@ class GameConnectionHandler(
                 world.id.value,
                 universe.id.value,
                 multiverse.id.value,
+                worldMembership.id.value,
             )
 
             return@newSuspendedTransaction setupResult

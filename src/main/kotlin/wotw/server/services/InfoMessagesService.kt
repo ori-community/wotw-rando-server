@@ -49,6 +49,8 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         multiverse.isLockable,
         multiverse.race?.let(::generateRaceInfo),
         multiverse.seed?.spoilerDownloads?.map(::generateUserInfo) ?: listOf(),
+        multiverse.memberships.filter { server.connections.playerMultiverseConnections.containsKey(it.id.value) }.map { it.user.id.value },
+        multiverse.memberships.filter { server.connections.playerMultiverseConnections[it.id.value]?.raceReady == true }.map { it.user.id.value },
     )
 
     fun generateUniverseInfo(universe: Universe, color: String? = null) = UniverseInfo(
@@ -73,11 +75,8 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         user.id.value,
         user.name,
         user.avatarId,
-        server.connections.playerMultiverseConnections[user.id.value]?.multiverseId,
-        user.currentMultiverse?.id?.value,
         user.isDeveloper,
         user.points,
-        server.connections.playerMultiverseConnections[user.id.value]?.raceReady ?: false,
     )
 
     fun generateLeagueSeasonMembershipInfo(membership: LeagueSeasonMembership) = LeagueSeasonMembershipInfo(

@@ -11,11 +11,8 @@ data class UserInfo(
     @ProtoNumber(1) val id: String,
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val avatarId: String?,
-    @ProtoNumber(4) val connectedMultiverseId: Long?,
-    @ProtoNumber(5) val currentMultiverseId: Long?,
     @ProtoNumber(6) val isDeveloper: Boolean,
     @ProtoNumber(7) val points: Int,
-    @ProtoNumber(8) val raceReady: Boolean,
 )
 
 @Serializable
@@ -71,6 +68,8 @@ data class MultiverseInfoMessage(
     @ProtoNumber(10) val isLockable: Boolean = true,
     @ProtoNumber(11) @Required val race: RaceInfo? = null,
     @ProtoNumber(12) val seedSpoilerDownloadedBy: List<UserInfo>,
+    @ProtoNumber(13) val connectedUserIds: List<String>,
+    @ProtoNumber(14) val raceReadyUserIds: List<String>,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

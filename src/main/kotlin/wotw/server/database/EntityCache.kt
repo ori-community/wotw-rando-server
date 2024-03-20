@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.Multiverse
-import wotw.server.database.model.User
+import wotw.server.database.model.WorldMembership
 import java.util.concurrent.ConcurrentHashMap
 
 open class EntityCache<KEY : Any, VALUE : Any>(
@@ -84,28 +84,31 @@ open class EntityCache<KEY : Any, VALUE : Any>(
 }
 
 @Serializable
-data class PlayerEnvironmentCacheEntry(
+data class WorldMembershipEnvironmentCacheEntry(
+    val worldMembershipId: Long,
     val playerId: String,
     val worldId: Long?,
-    val universeMemberIds: Set<String>,
-    val worldMemberIds: Set<String>,
+    val universeWorldMembershipIds: Set<Long>,
+    val worldWorldMembershipIds: Set<Long>,
 )
 
 @Serializable
 data class MultiverseMemberCacheEntry(
     val multiverseId: Long,
-    val memberIds: Set<String>,
+    val playerAndSpectatorPlayerIds: Set<String>,
+    val worldMembershipIds: Set<Long>,
 )
 
-class PlayerEnvironmentCache : EntityCache<String, PlayerEnvironmentCacheEntry>({ playerId ->
+class WorldMembershipEnvironmentCache : EntityCache<Long, WorldMembershipEnvironmentCacheEntry>({ worldMembershipId ->
     val retrieveFn = suspend {
-        val player = User.findById(playerId)
+        val worldMembership = WorldMembership.findById(worldMembershipId)
 
-        PlayerEnvironmentCacheEntry(
-            playerId,
-            player?.currentWorld?.id?.value,
-            player?.currentWorld?.universe?.members?.map { it.id.value }?.toSet() ?: emptySet(),
-            player?.currentWorld?.members?.map { it.id.value }?.toSet() ?: emptySet(),
+        WorldMembershipEnvironmentCacheEntry(
+            worldMembershipId,
+            worldMembership?.user?.id?.value ?: "<invalid cache>",
+            worldMembership?.world?.id?.value,
+            worldMembership?.world?.universe?.memberships?.map { it.id.value }?.toSet() ?: emptySet(),
+            worldMembership?.world?.memberships?.map { it.id.value }?.toSet() ?: emptySet(),
         )
     }
 
@@ -124,7 +127,8 @@ class MultiverseMemberCache : EntityCache<Long, MultiverseMemberCacheEntry>({ mu
 
         MultiverseMemberCacheEntry(
             multiverseId,
-            multiverse?.members?.map { it.id.value }?.toSet() ?: emptySet(),
+            multiverse?.playersAndSpectators?.map { it.id.value }?.toSet() ?: emptySet(),
+            multiverse?.memberships?.map { it.id.value }?.toSet() ?: emptySet(),
         )
     }
 

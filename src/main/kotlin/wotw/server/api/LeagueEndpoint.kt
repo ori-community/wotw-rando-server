@@ -8,10 +8,14 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.LeagueSeason
 import wotw.server.database.model.LeagueSeasonMembership
+import wotw.server.database.model.WorldMembership
+import wotw.server.database.model.WorldMemberships
 import wotw.server.game.WotwSaveFileReader
+import wotw.server.game.handlers.WorldMembershipId
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 
@@ -55,12 +59,17 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(HttpStatusCode.Created, seasonInfo)
             }
 
-            post("league/submission") {
-                val (handler, canSubmit) = newSuspendedTransaction {
+            post("league/{multiverse_id}/submission") {
+                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+
+                val (handler, canSubmit, worldMembershipId) = newSuspendedTransaction {
                     val user = authenticatedUser()
-                    val multiverse = user.currentMultiverse ?: throw BadRequestException("You are not part of an active multiverse")
-                    val handler = server.gameHandlerRegistry.getHandler(multiverse) as? LeagueGameHandler ?: throw BadRequestException("You are not in a League game")
-                    return@newSuspendedTransaction handler to handler.canSubmit(user)
+                    val worldMembership = WorldMembership
+                        .find { (WorldMemberships.userId eq user.id.value) and (WorldMemberships.multiverseId eq multiverseId) }
+                        .firstOrNull() ?: throw BadRequestException("You are not part of that multiverse")
+
+                    val handler = server.gameHandlerRegistry.getHandler(worldMembership.multiverse) as? LeagueGameHandler ?: throw BadRequestException("This is not a league game")
+                    Triple(handler, handler.canSubmit(user), worldMembership.id.value)
                 }
 
                 if (!canSubmit) {
@@ -72,7 +81,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val saveFileBuffer = saveFilePacket.readByteBuffer()
                 val saveFileReader = WotwSaveFileReader(saveFileBuffer)
                 val saveData = saveFileReader.parse() ?: throw BadRequestException("Invalid save file data")
-                val expectedSaveGuid = handler.getPlayerSaveGuid(wotwPrincipal().userId)
+                val expectedSaveGuid = handler.getPlayerSaveGuid(worldMembershipId)
 
                 if (expectedSaveGuid != saveData.saveFileGuid) {
                     throw BadRequestException("Invalid save file GUID, expected $expectedSaveGuid but got ${saveData.saveFileGuid}")

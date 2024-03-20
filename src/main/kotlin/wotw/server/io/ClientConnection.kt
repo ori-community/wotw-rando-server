@@ -111,11 +111,8 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                                         user.id.value,
                                         user.name,
                                         user.avatarId,
-                                        null,
-                                        user.currentMultiverse?.id?.value,
                                         user.isDeveloper,
                                         user.points,
-                                        false,
                                     )
                                 }
 

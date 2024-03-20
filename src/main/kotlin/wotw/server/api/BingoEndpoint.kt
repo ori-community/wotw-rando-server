@@ -7,10 +7,10 @@ import io.ktor.server.websocket.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.websocket.*
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.BingoData
-import wotw.server.database.model.Multiverse
-import wotw.server.database.model.User
+import wotw.server.database.model.*
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -18,8 +18,6 @@ import java.util.concurrent.CancellationException
 
 class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
-        userboardWebsocket()
-
         authenticate(JWT_AUTH) {
             get("bingo/{multiverse_id}") {
                 val multiverseId =
@@ -36,15 +34,19 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 newSuspendedTransaction {
                     val boardData = newSuspendedTransaction {
                         val player = authenticatedUserOrNull()
-                        val currentPlayerWorld = player?.currentWorld
 
                         val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
                         multiverse.board ?: throw NotFoundException()
                         val info = multiverse.bingoUniverseInfo()
 
-                        val currentPlayerUniverseInThisMultiverse = if (multiverse.universes.contains(currentPlayerWorld?.universe)) {
-                            currentPlayerWorld?.universe
-                        } else { null }
+                        val currentPlayerUniverseInThisMultiverse = player?.id?.value?.let { playerId ->
+                            Universe.find {
+                                (Universes.id eq Worlds.universeId) and
+                                        (Worlds.id eq WorldMemberships.worldId) and
+                                        (WorldMemberships.userId eq playerId) and
+                                        (Universes.multiverseId eq multiverseId)
+                            }.firstOrNull()
+                        }
 
                         BingoData(multiverse.createBingoBoardMessage(currentPlayerUniverseInThisMultiverse, playerIsSpectator), info)
                     }
@@ -54,34 +56,6 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
 
         observerWebsocket()
-    }
-
-    private fun Route.userboardWebsocket() {
-        webSocket(path = "/observers/latest/") {
-            val playerId = call.wotwPrincipalOrNull()?.userId
-                ?: return@webSocket this.close(
-                    CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No playerId!")
-                )
-            if (!call.wotwPrincipal().hasScope(Scope.BOARDS_READ)) return@webSocket this.close(
-                CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No read access!")
-            )
-
-            handleClientSocket {
-                afterAuthenticated {
-                    server.connections.registerObserverConnection(socketConnection, null, playerId)
-                }
-                onClose {
-                    server.connections.unregisterObserverConnection(socketConnection, null, playerId)
-                }
-                onError {
-                    if (it !is CancellationException) {
-                        logger().error(it.message)
-                    }
-                    server.connections.unregisterObserverConnection(socketConnection, null, playerId)
-                    this@webSocket.close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "an error occurred"))
-                }
-            }
-        }
     }
 
     private fun Route.observerWebsocket() {

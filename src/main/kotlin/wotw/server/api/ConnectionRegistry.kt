@@ -5,6 +5,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.protobuf.RequestFullUpdate
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.User
+import wotw.server.database.model.WorldMembership
 import wotw.server.io.ClientConnection
 import wotw.server.main.WotwBackendServer
 import wotw.server.sync.ShareScope
@@ -26,7 +27,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     data class PlayerConnection(
         val clientConnection: ClientConnection,
-        val multiverseId: Long?,
+        val worldMembershipId: Long?,
         var raceReady: Boolean,
         val oriType: OriType,
     )
@@ -54,56 +55,57 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     val remoteTrackerEndpointIds: ConcurrentHashMap<String, String> = ConcurrentHashMap()
 
     /*
-    * A Map (MultiverseId?, PlayerId) -> WebSocketConnection
-    * If MultiverseId == null then Socket listens to newest
+    * A Map (MultiverseId, PlayerId) -> WebSocketConnection
     * */
     val playerObserverConnections =
-        MultiMap<Pair<Long?, String>, ClientConnection>(ConcurrentHashMap())
+        MultiMap<Pair<Long, String>, ClientConnection>(ConcurrentHashMap())
 
-    val playerMultiverseConnections: ConcurrentHashMap<String, PlayerConnection> = ConcurrentHashMap()
+    // WorldMembership ID -> Player Connection
+    val playerMultiverseConnections: ConcurrentHashMap<Long, PlayerConnection> = ConcurrentHashMap()
 
     //region Connection registering
 
     fun registerObserverConnection(
         socket: ClientConnection,
-        multiverseId: Long? = null,
+        multiverseId: Long,
         playerId: String,
         spectator: Boolean = false
     ) {
-        if (multiverseId != null)
-            multiverseObserverConnections[multiverseId] += MultiverseObserverConnection(socket, playerId, spectator)
-
+        multiverseObserverConnections[multiverseId] += MultiverseObserverConnection(socket, playerId, spectator)
         playerObserverConnections[multiverseId to playerId] += socket
     }
 
-    suspend fun broadcastMultiverseInfoMessage(multiverseId: Long) {
-        Multiverse.findById(multiverseId)?.let { multiverse ->
-            val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
-
-            toPlayers(
-                multiverse.players.map { it.id.value },
-                message,
-            )
-
-            toObservers(multiverseId, spectatorsOnly = false, message)
+    suspend fun broadcastMultiverseInfoMessage(worldMembershipId: Long) {
+        WorldMembership.findById(worldMembershipId)?.let { worldMembership ->
+            broadcastMultiverseInfoMessage(worldMembership.multiverse)
         }
     }
 
-    suspend fun registerMultiverseConnection(socket: ClientConnection, playerId: String, multiverseId: Long? = null, oriType: OriType) =
-        run {
-            unregisterMultiverseConnection(playerId)
+    suspend fun broadcastMultiverseInfoMessage(multiverse: Multiverse) {
+        val message = server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
 
-            playerMultiverseConnections[playerId] = PlayerConnection(socket, multiverseId, false, oriType)
-            if (multiverseId != null) {
-                newSuspendedTransaction {
-                    broadcastMultiverseInfoMessage(multiverseId)
-                }
+        toPlayers(
+            multiverse.memberships.map { it.id.value },
+            message,
+        )
+
+        toObservers(multiverse.id.value, spectatorsOnly = false, message)
+    }
+
+    suspend fun registerMultiverseConnection2(socket: ClientConnection, worldMembershipId: Long, oriType: OriType) =
+        run {
+            unregisterMultiverseConnection(worldMembershipId)
+
+            playerMultiverseConnections[worldMembershipId] = PlayerConnection(socket, worldMembershipId, false, oriType)
+            newSuspendedTransaction {
+                broadcastMultiverseInfoMessage(worldMembershipId)
             }
         }
 
-    suspend fun unregisterMultiverseConnection(playerId: String) = run {
-        val playerConnection = playerMultiverseConnections.remove(playerId)
-        playerConnection?.multiverseId?.let {
+    suspend fun unregisterMultiverseConnection(worldMembershipId: Long) = run {
+        val playerConnection = playerMultiverseConnections.remove(worldMembershipId)
+
+        playerConnection?.worldMembershipId?.let {
             newSuspendedTransaction {
                 broadcastMultiverseInfoMessage(it)
             }
@@ -116,7 +118,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
             .forEach { playerObserverConnections[it.key] -= socket }
     }
 
-    fun unregisterObserverConnection(socket: ClientConnection, multiverseId: Long? = null, playerId: String) {
+    fun unregisterObserverConnection(socket: ClientConnection, multiverseId: Long, playerId: String) {
         playerObserverConnections[multiverseId to playerId] -= socket
     }
 
@@ -224,30 +226,36 @@ class ConnectionRegistry(val server: WotwBackendServer) {
 
     // region Convenience sending functions
     suspend inline fun <reified T : Any> sendTo(
-        playerId: String,
+        worldMembershipId: Long,
         scope: ShareScope = ShareScope.PLAYER,
         excludePlayer: Boolean = false,
         vararg messages: T,
         unreliable: Boolean = false,
     ) {
-        val targets: MutableCollection<String> = newSuspendedTransaction {
-            val player = User.findById(playerId) ?: return@newSuspendedTransaction mutableSetOf()
-            val multiverse = player.currentMultiverse ?: return@newSuspendedTransaction mutableSetOf()
+        val targets: Iterable<Long> = newSuspendedTransaction {
+            val worldMembership = WorldMembership.findById(worldMembershipId) ?: return@newSuspendedTransaction mutableSetOf()
+            val player = worldMembership.user
+            val multiverse = worldMembership.multiverse
 
-            val affectedPlayers: Collection<User> = when (scope) {
-                ShareScope.PLAYER -> setOf(player)
-                ShareScope.WORLD -> multiverse.worlds.firstOrNull { player in it.members }?.members?.toList()
+            val affectedPlayers: Iterable<WorldMembership> = when (scope) {
+                ShareScope.PLAYER -> setOf(worldMembership)
+                ShareScope.WORLD -> multiverse.worlds.firstOrNull { worldMembership in it.memberships }?.memberships?.toList()
                     ?: emptySet()
 
-                ShareScope.UNIVERSE -> multiverse.universes.firstOrNull { it.worlds.any { player in it.members } }?.worlds?.flatMap { it.members }
+                ShareScope.UNIVERSE -> multiverse.universes.firstOrNull { it.worlds.any { worldMembership in it.memberships } }?.worlds?.flatMap { it.memberships }
                     ?: emptySet()
 
-                ShareScope.MULTIVERSE -> multiverse.players
+                ShareScope.MULTIVERSE -> multiverse.memberships
             }
-            affectedPlayers.map { it.id.value }.toMutableList()
+
+            val targets = affectedPlayers.map { it.id.value }.toMutableList()
+
+            if (excludePlayer) {
+                targets -= worldMembership.id.value
+            }
+
+            targets
         }
-        if (excludePlayer)
-            targets -= playerId
 
         toPlayers(targets, messages.toList(), unreliable)
     }
@@ -268,18 +276,18 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     }
 
     suspend inline fun <reified T : Any> toPlayers(
-        players: Iterable<String>,
+        worldMembershipIds: Iterable<Long>,
         message: T,
         unreliable: Boolean = false,
-    ) = toPlayers(players, listOf(message), unreliable)
+    ) = toPlayers(worldMembershipIds, listOf(message), unreliable)
 
     suspend inline fun <reified T : Any> toPlayers(
-        players: Iterable<String>,
+        worldMembershipIds: Iterable<Long>,
         messages: List<T>,
         unreliable: Boolean = false,
     ) {
-        for (player in players) {
-            playerMultiverseConnections[player]?.let { conn ->
+        for (worldMembershipId in worldMembershipIds) {
+            playerMultiverseConnections[worldMembershipId]?.let { conn ->
                 for (message in messages) {
                     try {
                         conn.clientConnection.sendMessage(message, unreliable)
@@ -318,13 +326,9 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         toObservers(multiverseId, playerId, *arrayOf(message))
 
     suspend inline fun <reified T : Any> toObservers(multiverseId: Long, playerId: String, vararg messages: T) {
-        var conns: Set<ClientConnection> = playerObserverConnections[multiverseId to playerId]
-        if (newSuspendedTransaction {
-                User.findById(playerId)?.currentMultiverse?.id?.value == multiverseId
-            })
-            conns = conns + playerObserverConnections[null to playerId]
+        val targetConnections: Set<ClientConnection> = playerObserverConnections[multiverseId to playerId]
 
-        conns.forEach { conn ->
+        targetConnections.forEach { conn ->
             for (message in messages) {
                 try {
                     conn.sendMessage(message, false)
@@ -338,8 +342,9 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     suspend fun notifyUserInfoChanged(playerId: String) {
         newSuspendedTransaction {
             val user = User.findById(playerId)
-            user?.currentMultiverse?.id?.value?.let {
-                broadcastMultiverseInfoMessage(multiverseId = it)
+
+            user?.multiverses?.forEach {
+                broadcastMultiverseInfoMessage(it)
             }
         }
     }

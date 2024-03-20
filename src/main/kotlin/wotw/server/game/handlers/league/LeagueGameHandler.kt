@@ -12,6 +12,7 @@ import wotw.server.game.PlayerLeftEvent
 import wotw.server.game.handlers.GameHandler
 import wotw.server.game.handlers.NormalGameHandlerState
 import wotw.server.game.handlers.PlayerId
+import wotw.server.game.handlers.WorldMembershipId
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import wotw.server.util.logger
@@ -55,18 +56,18 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
 
         // Mark user as DNF if they aborted a game with a >0 time
-        multiverseEventBus.register(this, PlayerLeftEvent::class) { event ->
-            val currentInGameTime = state.playerInGameTimes[event.player.id.value] ?: 0f
-            if (currentInGameTime > 0f && canSubmit(event.player)) {
-                createSubmission(event.player, null)
-            }
-        }
+        // multiverseEventBus.register(this, PlayerLeftEvent::class) { event ->
+        //     val currentInGameTime = state.playerInGameTimes[event.player.id.value] ?: 0f
+        //     if (currentInGameTime > 0f && canSubmit(event.player)) {
+        //         createSubmission(event.player, null)
+        //     }
+        // }
 
         multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
                 "forfeit" -> {
-                    if (canSubmit(message.sender)) {
-                        createSubmission(message.sender, null)
+                    if (canSubmit(message.sender.user)) {
+                        createSubmission(message.sender.user, null)
                     }
                 }
             }
@@ -128,8 +129,8 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return AggregationStrategyRegistry()
     }
 
-    override suspend fun getPlayerSaveGuid(playerId: PlayerId): MoodGuid? {
-        return state.playerSaveGuids[playerId]
+    override suspend fun getPlayerSaveGuid(worldMembershipId: WorldMembershipId): MoodGuid? {
+        return state.playerSaveGuids[worldMembershipId]
     }
 
     override fun canSpectate(user: User): Boolean {
