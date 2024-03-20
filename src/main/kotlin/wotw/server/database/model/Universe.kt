@@ -42,7 +42,7 @@ class World(id: EntityID<Long>) : LongEntity(id) {
     var name by Worlds.name
     var seed by WorldSeed optionalReferencedOn Worlds.seed
     val members by User via WorldMemberships
-    val memberships by WorldMembership referrersOn WorldMemberships.worldId
+    val memberships by WorldMembership.referrersOn(WorldMemberships.worldId, false)
     val hasCustomName by Worlds.hasCustomName
 
     companion object : LongEntityClass<World>(Worlds) {
