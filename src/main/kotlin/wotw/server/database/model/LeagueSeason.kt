@@ -150,6 +150,8 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             throw RuntimeException("Failed to generate seed for League game")
         }
 
+        seedGeneratorResult.seed.allowDownload = false
+
         val multiverse = Multiverse.new {
             this.gameHandlerType = GameHandlerType.LEAGUE
             this.isLockable = false
