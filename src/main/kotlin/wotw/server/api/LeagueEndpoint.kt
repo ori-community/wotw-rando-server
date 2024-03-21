@@ -10,12 +10,8 @@ import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.server.database.model.LeagueSeason
-import wotw.server.database.model.LeagueSeasonMembership
-import wotw.server.database.model.WorldMembership
-import wotw.server.database.model.WorldMemberships
+import wotw.server.database.model.*
 import wotw.server.game.WotwSaveFileReader
-import wotw.server.game.handlers.WorldMembershipId
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 
@@ -24,16 +20,25 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(JWT_AUTH) {
             get("league/seasons") {
                 call.respond(newSuspendedTransaction {
-                    LeagueSeason.all().map(server.infoMessagesService::generateLeagueSeasonInfo)
+                    LeagueSeason.all().map { server.infoMessagesService.generateLeagueSeasonInfo(it) }
                 })
             }
 
             get("league/seasons/{season_id}") {
-                val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+                val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
 
                 call.respond(newSuspendedTransaction {
                     val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
                     server.infoMessagesService.generateLeagueSeasonInfo(season)
+                })
+            }
+
+            get("league/games/{game_id}") {
+                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable game_id")
+
+                call.respond(newSuspendedTransaction {
+                    val game = LeagueGame.findById(gameId) ?: throw NotFoundException("Game not found")
+                    server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUser())
                 })
             }
 

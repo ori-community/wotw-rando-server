@@ -290,7 +290,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
      * Deletes empty worlds and universes and unlocks the game
      * if no members are left
      */
-    fun cleanup(newWorld: World? = null) {
+    fun cleanup(exceptWorld: World? = null) {
         val universesQueuedForDeletion = mutableSetOf<Universe>()
 
         for (world in worlds) {
@@ -299,7 +299,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
                 world.delete()
             }
 
-            if (world.universe.worlds.all { it.members.empty() } && newWorld?.universe != world.universe) {
+            if (world.universe.worlds.all { it.members.empty() } && exceptWorld?.universe != world.universe) {
                 universesQueuedForDeletion += world.universe
             }
         }

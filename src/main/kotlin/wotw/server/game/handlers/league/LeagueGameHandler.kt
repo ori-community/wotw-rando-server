@@ -146,6 +146,11 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
 
         val multiverse = getMultiverse()
+
+        if (multiverse.players.contains(user)) {
+            throw ConflictException("You cannot create a new universe in this league game because you are already part of it")
+        }
+
         val universe = Universe.new {
             name = ""
             this.multiverse = multiverse

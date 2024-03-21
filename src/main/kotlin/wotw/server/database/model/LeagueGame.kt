@@ -15,14 +15,20 @@ import kotlin.math.ceil
 import kotlin.math.max
 
 object LeagueGames : LongIdTable("league_games") {
+    val gameNumber = integer("game_number")
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE).uniqueIndex()
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
+
+    init {
+        uniqueIndex(gameNumber, seasonId)
+    }
 }
 
 class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<LeagueGame>(LeagueGames)
 
+    var gameNumber by LeagueGames.gameNumber
     var season by LeagueSeason referencedOn LeagueGames.seasonId
     var multiverse by Multiverse referencedOn LeagueGames.multiverseId
     var createdAt by LeagueGames.createdAt

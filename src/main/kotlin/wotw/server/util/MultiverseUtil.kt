@@ -58,7 +58,6 @@ class MultiverseUtil(val server: WotwBackendServer) {
 
         val universeWorldMembershipIds = world.universe.memberships.map { it.id.value }
 
-
         if (worldMembership == null) {
             worldMembership = WorldMembership.new {
                 this.user = player

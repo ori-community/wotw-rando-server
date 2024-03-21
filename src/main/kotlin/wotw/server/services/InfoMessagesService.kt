@@ -2,6 +2,7 @@ package wotw.server.services
 
 import wotw.io.messages.protobuf.*
 import wotw.server.database.model.*
+import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 import java.time.ZoneOffset
 
@@ -85,17 +86,26 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         membership.joinedAt.toEpochMilli(),
     )
 
-    fun generateLeagueGameInfo(game: LeagueGame) = LeagueGameInfo(
+    suspend fun generateLeagueGameInfo(game: LeagueGame, userForPermissions: User? = null) = LeagueGameInfo(
         game.id.value,
         game.multiverse.id.value,
         game.submissions.count(),
+        game.gameNumber,
+        game.isCurrent,
+        userForPermissions?.let { user ->
+            (server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler)?.let { leagueHandler ->
+                LeagueGamePermissionsInfo(
+                    leagueHandler.canSubmit(user)
+                )
+            }
+        },
     )
 
-    fun generateLeagueSeasonInfo(season: LeagueSeason) = LeagueSeasonInfo(
+    suspend fun generateLeagueSeasonInfo(season: LeagueSeason) = LeagueSeasonInfo(
         season.id.value,
         season.name,
         season.memberships.map(::generateLeagueSeasonMembershipInfo),
-        season.games.map(::generateLeagueGameInfo),
+        season.games.map { generateLeagueGameInfo(it) },
         season.canJoin,
         season.currentGame?.id?.value,
     )

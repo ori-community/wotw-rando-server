@@ -160,6 +160,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         }
 
         val game = LeagueGame.new {
+            this.gameNumber = (this@LeagueSeason.games.count() + 1).toInt()
             this.season = this@LeagueSeason
             this.createdAt = Instant.now()
             this.multiverse = multiverse

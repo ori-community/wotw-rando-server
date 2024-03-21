@@ -515,6 +515,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         val multiverse = getMultiverse()
         if (!world.members.contains(user)) {
             val worldMembership = movePlayerToWorld(user, world)
+            getMultiverse().cleanup(world)
 
             server.connections.toPlayers(
                 (multiverse.memberships - world.universe.memberships - worldMembership).map { it.id.value }, makeServerTextMessage(
@@ -563,6 +564,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         } ?: World.new(universe, "${user.name}'s World")
 
         val worldMembership = movePlayerToWorld(user, world)
+        getMultiverse().cleanup(world)
 
         server.connections.toPlayers(
             (multiverse.memberships - worldMembership).map { it.id.value }, makeServerTextMessage(
