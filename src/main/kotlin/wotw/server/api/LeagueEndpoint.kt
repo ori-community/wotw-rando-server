@@ -22,6 +22,12 @@ import wotw.server.main.WotwBackendServer
 class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
         authenticate(JWT_AUTH) {
+            get("league/seasons") {
+                call.respond(newSuspendedTransaction {
+                    LeagueSeason.all().map(server.infoMessagesService::generateLeagueSeasonInfo)
+                })
+            }
+
             get("league/seasons/{season_id}") {
                 val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 

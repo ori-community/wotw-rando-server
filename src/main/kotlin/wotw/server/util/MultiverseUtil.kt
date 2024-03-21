@@ -30,12 +30,12 @@ class MultiverseUtil(val server: WotwBackendServer) {
             }
         }
 
-        worldMembership.world.universe.multiverse.let { multiverse ->
-            multiverse.cleanup()
-            multiverse.updateAutomaticWorldNames()
+        worldMembership.world.universe.multiverse.let {
+            it.cleanup()
+            it.updateAutomaticWorldNames()
 
             doAfterTransaction {
-                server.multiverseMemberCache.invalidate(multiverse.id.value)
+                server.multiverseMemberCache.invalidate(it.id.value)
             }
         }
 
