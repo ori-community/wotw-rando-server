@@ -62,9 +62,10 @@ class GameConnectionHandler(
                     states.toList(),
                     handler.shouldBlockStartingNewGame(),
                     SetSaveGuidRestrictionsMessage(
-                        handler.getPlayerSaveGuid(worldMembership.id.value),
+                        handler.getPlayerSaveGuid(worldMembership),
                         true,
                     ),
+                    handler.shouldPreventCheats(worldMembership),
                 )
             )
 

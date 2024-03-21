@@ -480,8 +480,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         return aggregationRegistry
     }
 
-    override suspend fun getPlayerSaveGuid(worldMembershipId: WorldMembershipId): MoodGuid? {
-        return state.playerSaveGuids[worldMembershipId]
+    override suspend fun getPlayerSaveGuid(worldMembership: WorldMembership): MoodGuid? {
+        return state.playerSaveGuids[worldMembership.id.value]
     }
 
     private suspend fun movePlayerToWorld(user: User, world: World): WorldMembership {

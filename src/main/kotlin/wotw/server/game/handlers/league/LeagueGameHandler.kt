@@ -7,12 +7,11 @@ import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
+import wotw.server.game.GameConnectionHandler
+import wotw.server.game.GameConnectionHandlerSyncResult
 import wotw.server.game.MultiverseEvent
-import wotw.server.game.PlayerLeftEvent
 import wotw.server.game.handlers.GameHandler
 import wotw.server.game.handlers.NormalGameHandlerState
-import wotw.server.game.handlers.PlayerId
-import wotw.server.game.handlers.WorldMembershipId
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import wotw.server.util.logger
@@ -129,8 +128,12 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return AggregationStrategyRegistry()
     }
 
-    override suspend fun getPlayerSaveGuid(worldMembershipId: WorldMembershipId): MoodGuid? {
-        return state.playerSaveGuids[worldMembershipId]
+    override suspend fun getPlayerSaveGuid(worldMembership: WorldMembership): MoodGuid? {
+        return state.playerSaveGuids[worldMembership.id.value]
+    }
+
+    override suspend fun shouldPreventCheats(worldMembership: WorldMembership): Boolean {
+        return System.getenv("LEAGUE_ALLOW_CHEATS") != "true"
     }
 
     override fun canSpectate(user: User): Boolean {
@@ -162,7 +165,25 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
             this.uberStateData = UberStateMap()
         }
 
-        val world = World.new(universe, "${user.name}'s World")
+        val worldSeed = multiverse.seed?.worldSeeds?.firstOrNull() ?: throw RuntimeException("World seed not found")
+
+        val world = World.new(universe, "${user.name}'s World", worldSeed)
         server.multiverseUtil.movePlayerToWorld(user, world)
+    }
+
+    override suspend fun onGameConnectionSetup(connectionHandler: GameConnectionHandler, setupResult: GameConnectionHandlerSyncResult) {
+        val seedContent = newSuspendedTransaction {
+            World.findById(setupResult.worldId)?.seed?.content
+        }
+
+        // Send the seed
+        connectionHandler.worldMembershipId?.let { worldMembershipId ->
+            if (seedContent != null) {
+                server.connections.toPlayers(
+                    listOf(worldMembershipId),
+                    SetSeedMessage(seedContent),
+                )
+            }
+        }
     }
 }

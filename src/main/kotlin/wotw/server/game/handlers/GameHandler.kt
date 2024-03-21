@@ -6,10 +6,7 @@ import wotw.io.messages.protoBuf
 import wotw.io.messages.protobuf.MoodGuid
 import wotw.io.messages.protobuf.SetBlockStartingNewGameMessage
 import wotw.server.api.AggregationStrategyRegistry
-import wotw.server.database.model.Multiverse
-import wotw.server.database.model.Universe
-import wotw.server.database.model.User
-import wotw.server.database.model.World
+import wotw.server.database.model.*
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.GameConnectionHandlerSyncResult
 import wotw.server.game.handlers.league.LeagueGameHandler
@@ -65,8 +62,12 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
      * @param playerId PlayerId
      * @return Return the save GUID for a player, or null if the client should force creating a new save file
      */
-    open suspend fun getPlayerSaveGuid(worldMembershipId: WorldMembershipId): MoodGuid? {
+    open suspend fun getPlayerSaveGuid(worldMembership: WorldMembership): MoodGuid? {
         return null
+    }
+
+    open suspend fun shouldPreventCheats(worldMembership: WorldMembership): Boolean {
+        return false
     }
 
     /**

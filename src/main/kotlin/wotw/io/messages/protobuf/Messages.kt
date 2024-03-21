@@ -145,6 +145,7 @@ data class InitGameSyncMessage(
     @ProtoNumber(1) val uberStates: List<UberId> = emptyList(),
     @ProtoNumber(2) val blockStartingNewGame: Boolean = false,
     @ProtoNumber(3) val saveGuidRestrictions: SetSaveGuidRestrictionsMessage,
+    @ProtoNumber(4) val preventCheats: Boolean = false,
 )
 
 @Serializable
