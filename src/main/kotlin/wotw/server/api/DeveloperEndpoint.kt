@@ -8,11 +8,14 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.ClaimBingoCardRequest
+import wotw.io.messages.CreateLeagueSeasonRequest
 import wotw.io.messages.admin.RemoteTrackerEndpointDescriptor
 import wotw.server.database.model.BingoCardClaim
+import wotw.server.database.model.LeagueSeason
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.doAfterTransaction
+import java.time.Instant
 import java.util.*
 
 class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -100,6 +103,23 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
 
                     call.respondText(state, ContentType("text", "plain"))
+                }
+
+                post<CreateLeagueSeasonRequest>("/league/season") { request ->
+                    requireDeveloper()
+
+                    val seasonId = newSuspendedTransaction {
+                        LeagueSeason.new {
+                            name = request.name
+                            scheduleCron = request.cron
+                            scheduleStartAt = Instant.now()
+                            gameCount = request.gameCount
+                        }.id.value
+                    }
+
+                    server.leagueManager.cacheLeagueSeasonSchedules()
+
+                    call.respondText(seasonId.toString(), status = HttpStatusCode.Created)
                 }
             }
         }
