@@ -6,6 +6,7 @@ import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.User
+import wotw.server.exception.ForbiddenException
 import wotw.server.exception.MissingScopeException
 import wotw.server.exception.UnauthorizedException
 import wotw.server.main.WotwBackendServer
@@ -41,7 +42,7 @@ abstract class Endpoint(val server: WotwBackendServer) {
 
     suspend fun PipelineContext<Unit, ApplicationCall>.requireDeveloper() {
         if (!newSuspendedTransaction { authenticatedUser().isDeveloper }) {
-            throw MissingScopeException()
+            throw ForbiddenException("You are not a developer")
         }
     }
 }
