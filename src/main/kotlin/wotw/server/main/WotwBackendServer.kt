@@ -357,7 +357,7 @@ class WotwBackendServer {
             }
 
             logger.info("Initializing League service...")
-            leagueManager.cacheLeagueSeasonSchedules()
+            leagueManager.recacheLeagueSeasonSchedules()
             leagueManager.startScheduler()
 
             val udpSocketBuilder = aSocket(ActorSelectorManager(Dispatchers.IO)).udp()

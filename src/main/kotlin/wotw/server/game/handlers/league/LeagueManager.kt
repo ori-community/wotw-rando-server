@@ -1,6 +1,7 @@
 package wotw.server.game.handlers.league
 
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.server.database.model.LeagueGame
 import wotw.server.database.model.LeagueSeason
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.Every
@@ -13,7 +14,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Manages scheduling and initialization of League games
  */
-class LeagueManager(server: WotwBackendServer) {
+class LeagueManager(val server: WotwBackendServer) {
     /**
      * Times when Seasons need to be processed.
      * Processing = finishing current game and eventually creating next game.
@@ -31,44 +32,30 @@ class LeagueManager(server: WotwBackendServer) {
 
             newSuspendedTransaction {
                 upcomingSeasonProcessingTimes[time]?.let { seasonIds ->
-                    val successfullyScheduledSeasons = mutableListOf<LeagueSeason>()
+                    val successfullyContinuedSeasons = mutableListOf<LeagueSeason>()
 
                     seasonIds.forEach { seasonId ->
                         val season = LeagueSeason.findById(seasonId)
 
                         if (season == null) {
-                            logger().error("LeagueManager: Tried to schedule season that does not exist: $seasonId")
+                            logger().error("LeagueManager: Tried to continue season that does not exist: $seasonId")
                             return@forEach
                         }
 
                         try {
-                            newSuspendedTransaction {
-                                if (season.currentGame != null) {
-                                    season.finishCurrentGame()
-                                    logger().info("LeagueManager: Finished current game for season $seasonId")
-                                }
-
-                                // Don't create more games if we reached this season's end.
-                                // If we don't create a new game, this season won't be scheduled
-                                // here anymore.
-                                if (!season.hasReachedGameCountLimit) {
-                                    val game = season.createScheduledGame(server.seedGeneratorService)
-                                    logger().info("LeagueManager: Scheduled game ${game.id} (Multiverse ${game.multiverse.id.value}) for season $seasonId")
-                                }
-
-                                successfullyScheduledSeasons.add(season)
-                            }
+                            continueSeason(season)
+                            successfullyContinuedSeasons.add(season)
                         } catch (e: Exception) {
-                            logger().error("LeagueManager: Failed to create scheduled game for season $seasonId. Will retry next time...")
+                            logger().error("LeagueManager: Failed to create next game for season $seasonId. Will retry next time...")
                             e.printStackTrace()
                         }
                     }
 
-                    // Remove all successfully scheduled seasons...
-                    seasonIds.removeAll(successfullyScheduledSeasons.map { it.id.value })
+                    // Remove all successfully continued seasons...
+                    seasonIds.removeAll(successfullyContinuedSeasons.map { it.id.value })
 
                     // ...and cache upcoming schedules for these seasons
-                    successfullyScheduledSeasons.forEach { season ->
+                    successfullyContinuedSeasons.forEach { season ->
                         cacheLeagueSeasonSchedule(season)
                     }
                 }
@@ -81,6 +68,26 @@ class LeagueManager(server: WotwBackendServer) {
 
     fun startScheduler() {
         scheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
+    }
+
+    suspend fun continueSeason(season: LeagueSeason): LeagueGame? {
+        return newSuspendedTransaction {
+            if (season.currentGame != null) {
+                season.finishCurrentGame()
+                logger().info("LeagueManager: Finished current game for season ${season.id.value}")
+            }
+
+            // Don't create more games if we reached this season's end.
+            // If we don't create a new game, this season won't be scheduled
+            // here anymore.
+            if (!season.hasReachedGameCountLimit) {
+                val game = season.createScheduledGame(server.seedGeneratorService)
+                logger().info("LeagueManager: Created game ${game.id} (Multiverse ${game.multiverse.id.value}) for season ${season.id.value}")
+                return@newSuspendedTransaction game
+            }
+
+            return@newSuspendedTransaction null
+        }
     }
 
     private fun cacheLeagueSeasonSchedule(season: LeagueSeason) {
@@ -100,7 +107,7 @@ class LeagueManager(server: WotwBackendServer) {
         }
     }
 
-    suspend fun cacheLeagueSeasonSchedules() {
+    suspend fun recacheLeagueSeasonSchedules() {
         upcomingSeasonProcessingTimes.clear()
         newSuspendedTransaction {
             LeagueSeason.all().forEach(::cacheLeagueSeasonSchedule)

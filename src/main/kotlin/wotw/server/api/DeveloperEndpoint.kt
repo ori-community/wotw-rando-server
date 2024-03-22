@@ -117,9 +117,24 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }.id.value
                     }
 
-                    server.leagueManager.cacheLeagueSeasonSchedules()
+                    server.leagueManager.recacheLeagueSeasonSchedules()
 
                     call.respondText(seasonId.toString(), status = HttpStatusCode.Created)
+                }
+
+                post("/league/season/{season_id}/continue") {
+                    requireDeveloper()
+
+                    val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Invalid season ID")
+
+                    newSuspendedTransaction {
+                        val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season $seasonId not found")
+                        server.leagueManager.continueSeason(season)
+                    }
+
+                    server.leagueManager.recacheLeagueSeasonSchedules()
+
+                    call.respond(HttpStatusCode.Created)
                 }
             }
         }
