@@ -5,6 +5,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
+import dev.kord.core.Kord
 import io.ktor.client.*
 import io.ktor.client.engine.java.*
 import io.ktor.http.*
@@ -31,6 +32,7 @@ import io.ktor.util.network.*
 import io.ktor.utils.io.core.*
 import io.sentry.Sentry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.Database
@@ -160,6 +162,7 @@ class WotwBackendServer {
     val leagueEndpoint = LeagueEndpoint(this)
     val infoMessagesService = InfoMessagesService(this)
     val multiverseUtil = MultiverseUtil(this)
+    private var kord: Kord? = null  // Use tryKord if you want to use it
 
     val connections = ConnectionRegistry(this)
     val sync = StateSynchronization(this)
@@ -226,6 +229,19 @@ class WotwBackendServer {
     val gameHandlerRegistry = GameHandlerRegistry(this)
 
     val leagueManager = LeagueManager(this)
+
+    suspend fun ifKord(block: suspend (Kord) -> Unit) {
+        kord?.let {
+            if (it.isActive) {
+                block(it)
+            }
+        }
+    }
+
+    fun getUiUrl(path: String): String {
+        val baseUrl = System.getenv("UI_BASE_URL") ?: throw RuntimeException("UI_BASE_URL not set")
+        return "$baseUrl$path"
+    }
 
     private fun startServer(args: Array<String>) {
         val cmd = commandLineEnvironment(args)
@@ -358,7 +374,7 @@ class WotwBackendServer {
 
             logger.info("Initializing League service...")
             leagueManager.recacheLeagueSeasonSchedules()
-            leagueManager.startScheduler()
+            leagueManager.setup()
 
             val udpSocketBuilder = aSocket(ActorSelectorManager(Dispatchers.IO)).udp()
 
@@ -374,6 +390,19 @@ class WotwBackendServer {
 
             launch {
                 embeddedServer(Netty, env).start(wait = true)
+            }
+
+            launch(Dispatchers.Default) {
+                val token = System.getenv("DISCORD_BOT_TOKEN")
+
+                if (token.isNullOrBlank()) {
+                    logger.warn("DISCORD_BOT_TOKEN not set, continuing without Discord Bot integration")
+                    return@launch
+                }
+
+                logger.info("Setting up Discord Bot...")
+                kord = Kord(token)
+                kord?.login()
             }
         }
     }

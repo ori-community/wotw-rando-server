@@ -13,6 +13,7 @@ val exposedVersion = "0.48.0"
 val serializationVersion = "1.6.3"
 val cronutilsVersion = "9.2.0"
 val semverVersion = "1.4.2"
+val kordVersion = "0.13.1"
 
 plugins {
     kotlin("jvm") version "1.9.23"
@@ -67,6 +68,8 @@ dependencies {
     implementation("io.ktor:ktor-client-core-jvm:$ktorVersion")
     implementation("io.ktor:ktor-network-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-java:$ktorVersion")
+
+    implementation("dev.kord:kord-core:$kordVersion")
 }
 
 
