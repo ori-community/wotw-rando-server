@@ -61,6 +61,9 @@ object LeagueSeasons : LongIdTable("league_seasons") {
      * Number of worst scores to discard when calculating total points
      */
     val discardWorstGamesCount = integer("discard_worst_games_count").default(2)
+
+    val shortDescription = text("short_description").default("")
+    val longDescriptionMarkdown = text("long_description_markdown").default("")
 }
 
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
@@ -76,6 +79,8 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     var speedPoints by LeagueSeasons.speedPoints
     var speedPointsRangeFactor by LeagueSeasons.speedPointsRangeFactor
     var discardWorstGamesCount by LeagueSeasons.discardWorstGamesCount
+    var shortDescription by LeagueSeasons.shortDescription
+    var longDescriptionMarkdown by LeagueSeasons.longDescriptionMarkdown
     var currentGame by LeagueGame optionalReferencedOn LeagueSeasons.currentGameId
     val games by LeagueGame referrersOn LeagueGames.seasonId
     val memberships by LeagueSeasonMembership referrersOn LeagueSeasonMemberships.seasonId

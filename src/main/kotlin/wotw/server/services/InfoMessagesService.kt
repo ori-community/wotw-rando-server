@@ -109,6 +109,8 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         season.games.map { generateLeagueGameInfo(it) },
         season.canJoin,
         season.currentGame?.id?.value,
+        season.shortDescription,
+        season.longDescriptionMarkdown,
     )
 
     fun generateLeagueGameSubmissionInfo(submission: LeagueGameSubmission) = LeagueGameSubmissionInfo(

@@ -513,6 +513,8 @@ data class LeagueSeasonInfo(
     @ProtoNumber(4) val games: List<LeagueGameInfo>,
     @ProtoNumber(5) val canJoin: Boolean,
     @ProtoNumber(6) @Required val currentGameId: Long? = null,
+    @ProtoNumber(7) val shortDescription: String,
+    @ProtoNumber(8) val longDescriptionMarkdown: String,
 )
 
 @Serializable
