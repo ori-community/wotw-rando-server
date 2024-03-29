@@ -64,6 +64,7 @@ object LeagueSeasons : LongIdTable("league_seasons") {
 
     val shortDescription = text("short_description").default("")
     val longDescriptionMarkdown = text("long_description_markdown").default("")
+    val rulesMarkdown = text("rules_markdown").default("")
 }
 
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
@@ -81,6 +82,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     var discardWorstGamesCount by LeagueSeasons.discardWorstGamesCount
     var shortDescription by LeagueSeasons.shortDescription
     var longDescriptionMarkdown by LeagueSeasons.longDescriptionMarkdown
+    var rulesMarkdown by LeagueSeasons.rulesMarkdown
     var currentGame by LeagueGame optionalReferencedOn LeagueSeasons.currentGameId
     val games by LeagueGame referrersOn LeagueGames.seasonId
     val memberships by LeagueSeasonMembership referrersOn LeagueSeasonMemberships.seasonId
