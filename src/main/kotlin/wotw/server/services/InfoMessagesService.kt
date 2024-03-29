@@ -90,6 +90,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
     suspend fun generateLeagueGameInfo(game: LeagueGame, userForPermissions: User? = null) = LeagueGameInfo(
         game.id.value,
         game.multiverse.id.value,
+        game.season.id.value,
         game.submissions.count(),
         game.gameNumber,
         game.isCurrent,

@@ -494,10 +494,11 @@ data class LeagueSeasonMembershipInfo(
 data class LeagueGameInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val multiverseId: Long,
-    @ProtoNumber(3) val submissionCount: Long,
-    @ProtoNumber(4) val gameNumber: Int,
-    @ProtoNumber(5) val isCurrent: Boolean,
-    @ProtoNumber(6) @Required val permissions: LeagueGamePermissionsInfo? = null,
+    @ProtoNumber(3) val seasonId: Long,
+    @ProtoNumber(4) val submissionCount: Long,
+    @ProtoNumber(5) val gameNumber: Int,
+    @ProtoNumber(6) val isCurrent: Boolean,
+    @ProtoNumber(7) @Required val permissions: LeagueGamePermissionsInfo? = null,
 )
 
 @Serializable
