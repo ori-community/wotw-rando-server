@@ -7,11 +7,9 @@ import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.EntityChangeType
 import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.server.database.model.*
-import wotw.server.game.WorldCreatedEvent
-import wotw.server.game.WorldDeletedEvent
+import wotw.server.database.model.LeagueGame
+import wotw.server.database.model.LeagueSeason
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
@@ -33,6 +31,16 @@ class LeagueManager(val server: WotwBackendServer) {
      */
     private var upcomingSeasonProcessingTimes = sortedMapOf<ZonedDateTime, MutableList<Long>>()
     private var upcomingSeasonReminderTimes = sortedMapOf<ZonedDateTime, MutableList<Long>>()
+
+    fun getDiscordChannel(): Snowflake {
+        val channelId = System.getenv("LEAGUE_DISCORD_CHANNEL_ID")
+
+        if (channelId.isNullOrBlank()) {
+            throw RuntimeException("LEAGUE_DISCORD_CHANNEL_ID is not set")
+        }
+
+        return Snowflake(channelId)
+    }
 
     private val scheduler = Scheduler {
         val now = ZonedDateTime.now()
@@ -103,7 +111,7 @@ class LeagueManager(val server: WotwBackendServer) {
                             }
 
                             server.ifKord { kord ->
-                                kord.rest.channel.createMessage(Snowflake(1223009403347669042)) {
+                                kord.rest.channel.createMessage(getDiscordChannel()) {
                                     val memberSnowflakes = missingMemberships.map { Snowflake(it.user.id.value) }
                                     val submittableUntilTimestamp = season.getNextScheduledGameTime().toEpochSecond()
 
@@ -145,11 +153,11 @@ class LeagueManager(val server: WotwBackendServer) {
                 it.toEntity(LeagueSeason.Companion)?.let { season ->
                     if (it.changeType == EntityChangeType.Created) {
                         server.ifKord { kord ->
-                            kord.rest.channel.createMessage(Snowflake(1223009403347669042)) {
+                            kord.rest.channel.createMessage(getDiscordChannel()) {
                                 val joinableUntilTimestamp = season.getNextScheduledGameTime().toEpochSecond()
 
                                 this.content = """
-                                    # ${season.name}: Season signups opened! <:orilurk:883216525140574218>
+                                    # ${season.name}: Season signups opened! ${server.discordService.getEmojiMarkdown("orilurk")}
                                     
                                     A new season of the Ori and the Will of the Wisps Randomizer League is coming up!
                                     
@@ -189,13 +197,13 @@ class LeagueManager(val server: WotwBackendServer) {
             // here anymore.
             if (season.hasReachedGameCountLimit) {
                 server.ifKord { kord ->
-                    kord.rest.channel.createMessage(Snowflake(1223009403347669042)) {
+                    kord.rest.channel.createMessage(getDiscordChannel()) {
                         val memberSnowflakes = season.memberships
                             .filter { it.points > 0 }
                             .map { Snowflake(it.user.id.value) }
 
                         this.content = """
-                            ## Season '${season.name}' has ended <:orihype:895977640131964928>
+                            ## ${season.name}: Season has ended ${server.discordService.getEmojiMarkdown("orihype")}
                             
                             Season players: ${memberSnowflakes.joinToString(", ") { "<@${it.value}>" }}
                             
@@ -214,7 +222,7 @@ class LeagueManager(val server: WotwBackendServer) {
                 logger().info("LeagueManager: Created game ${game.id} (Multiverse ${game.multiverse.id.value}) for season ${season.id.value}")
 
                 server.ifKord { kord ->
-                    kord.rest.channel.createMessage(Snowflake(1223009403347669042)) {
+                    kord.rest.channel.createMessage(getDiscordChannel()) {
                         val memberSnowflakes = season.memberships.map { Snowflake(it.user.id.value) }
 
                         val gameNumberOrdinal = when (game.gameNumber.toString().last()) {

@@ -51,6 +51,7 @@ import wotw.server.game.GameHandlerRegistry
 import wotw.server.game.handlers.league.LeagueManager
 import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.seedgen.SeedGeneratorService
+import wotw.server.services.DiscordService
 import wotw.server.services.InfoMessagesService
 import wotw.server.sync.StateSynchronization
 import wotw.server.util.*
@@ -162,6 +163,7 @@ class WotwBackendServer {
     val leagueEndpoint = LeagueEndpoint(this)
     val infoMessagesService = InfoMessagesService(this)
     val multiverseUtil = MultiverseUtil(this)
+    val discordService = DiscordService(this)
     private var kord: Kord? = null  // Use tryKord if you want to use it
 
     val connections = ConnectionRegistry(this)
