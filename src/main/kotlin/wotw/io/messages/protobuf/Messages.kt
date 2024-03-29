@@ -519,8 +519,9 @@ data class LeagueSeasonInfo(
 data class LeagueGameSubmissionInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val membership: LeagueSeasonMembershipInfo,
-    @ProtoNumber(3) @Required val time: Float? = null,
-    @ProtoNumber(4) val points: Int,
-    @ProtoNumber(5) @Required val rank: Int? = null,
-    @ProtoNumber(6) val discarded: Boolean,
+    @ProtoNumber(3) val submittedAt: Long,
+    @ProtoNumber(4) @Required val time: Float? = null,
+    @ProtoNumber(5) val points: Int,
+    @ProtoNumber(6) @Required val rank: Int? = null,
+    @ProtoNumber(7) val discarded: Boolean,
 )

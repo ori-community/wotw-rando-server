@@ -114,6 +114,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
     fun generateLeagueGameSubmissionInfo(submission: LeagueGameSubmission) = LeagueGameSubmissionInfo(
         submission.id.value,
         generateLeagueSeasonMembershipInfo(submission.membership),
+        submission.submittedAt.toEpochMilli(),
         submission.time,
         submission.points,
         submission.rank,
