@@ -3,13 +3,13 @@ package wotw.server.api
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTCreator
 import com.auth0.jwt.algorithms.Algorithm
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.client.*
-import io.ktor.client.call.body
-import io.ktor.client.request.*
 import io.ktor.server.plugins.*
-import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.date.*
@@ -62,7 +62,7 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
                     }
 
-                    call.response.cookies.appendExpired("redirect-after-auth")
+                    call.response.cookies.append("redirect-after-auth", "", expires = GMTDate.START)
 
                     if (redir == null) call.respondText("Hi ${user.name}! Your ID is ${user.id.value}")
                     else {

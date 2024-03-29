@@ -1,9 +1,7 @@
 package wotw.server.game.inventory
 
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.ResourceRequestMessage
 import wotw.io.messages.protobuf.SpendResourceTarget
-import wotw.io.messages.protobuf.UberId
 import wotw.io.messages.protobuf.UberStateUpdateMessage
 import wotw.server.database.model.GameState
 import wotw.server.util.assertTransaction

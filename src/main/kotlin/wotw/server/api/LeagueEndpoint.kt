@@ -15,7 +15,6 @@ import wotw.server.exception.ForbiddenException
 import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
-import wotw.server.util.logger
 
 class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {

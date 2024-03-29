@@ -3,7 +3,6 @@ package wotw.server.bingo
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 import wotw.io.messages.protobuf.UberId
-import wotw.server.database.model.BingoCardClaim
 import kotlin.math.max
 import kotlin.math.min
 

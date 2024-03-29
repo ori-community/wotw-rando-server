@@ -5,13 +5,8 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
-import org.jetbrains.exposed.sql.javatime.datetime
 import org.jetbrains.exposed.sql.javatime.timestamp
-import wotw.server.database.model.BingothonTokens.defaultExpression
-import wotw.server.database.model.LeagueGame.Companion.referrersOn
-import wotw.server.database.model.RaceTeamMembers.nullable
 
 object LeagueSeasonMemberships : LongIdTable("league_season_memberships") {
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)

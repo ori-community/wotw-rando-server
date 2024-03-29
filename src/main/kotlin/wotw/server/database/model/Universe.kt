@@ -8,7 +8,6 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.server.bingo.UberStateMap
-import wotw.server.database.model.LeagueGames.defaultExpression
 
 object Universes : LongIdTable("universes") {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)

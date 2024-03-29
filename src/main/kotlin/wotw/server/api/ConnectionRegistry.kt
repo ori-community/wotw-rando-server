@@ -234,7 +234,6 @@ class ConnectionRegistry(val server: WotwBackendServer) {
     ) {
         val targets: Iterable<Long> = newSuspendedTransaction {
             val worldMembership = WorldMembership.findById(worldMembershipId) ?: return@newSuspendedTransaction mutableSetOf()
-            val player = worldMembership.user
             val multiverse = worldMembership.multiverse
 
             val affectedPlayers: Iterable<WorldMembership> = when (scope) {

@@ -1,7 +1,5 @@
 package wotw.server.io
 
-import io.ktor.server.application.*
-import io.ktor.server.websocket.*
 import io.ktor.server.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import wotw.server.api.WotwUserPrincipal
@@ -46,7 +44,7 @@ suspend fun WebSocketServerSession.handleClientSocket(block: suspend ClientSocke
     block(builder)
 
     try {
-        builder.socketConnection.listen(builder.errorHandler, builder.afterAuthenticatedHandler)
+        builder.socketConnection.listen(builder.afterAuthenticatedHandler)
     } catch (e: ClosedReceiveChannelException) {
         builder.closeHandler?.invoke(e)
     } catch (e: Throwable) {

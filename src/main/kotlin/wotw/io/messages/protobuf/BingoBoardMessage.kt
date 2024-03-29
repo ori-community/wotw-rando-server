@@ -1,10 +1,10 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package wotw.io.messages.protobuf
 
-import kotlinx.serialization.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import java.util.HashSet
-import java.util.SortedSet
-import java.util.TreeSet
 import kotlin.math.max
 
 // All fields have default values ^= protobuf optional

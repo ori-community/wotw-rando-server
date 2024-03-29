@@ -13,8 +13,8 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
-import wotw.server.constants.SUPPORTED_CLIENT_VERSIONS
 import wotw.server.api.WotwUserPrincipal
+import wotw.server.constants.SUPPORTED_CLIENT_VERSIONS
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -73,7 +73,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
         eventBus.send(message)
     }
 
-    suspend fun listen(errorHandler: (suspend (Throwable) -> Unit)?, afterAuthenticatedHandler: (suspend () -> Unit)?) {
+    suspend fun listen(afterAuthenticatedHandler: (suspend () -> Unit)?) {
         try {
             for (frame in webSocket.incoming) {
                 if (frame is Frame.Binary) {

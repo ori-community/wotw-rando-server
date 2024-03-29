@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package wotw.server.game.handlers
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
@@ -15,7 +18,9 @@ import wotw.server.exception.ConflictException
 import wotw.server.game.*
 import wotw.server.game.inventory.WorldInventory
 import wotw.server.main.WotwBackendServer
-import wotw.server.sync.*
+import wotw.server.sync.ShareScope
+import wotw.server.sync.multiStates
+import wotw.server.sync.normalWorldSyncAggregationStrategy
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.assertTransaction
@@ -397,7 +402,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
         val results = newSuspendedTransaction {
             val worldMembership = WorldMembership.findById(worldMembershipId) ?: error("Error: Requested uber state update on unknown world membership")
-            val player = worldMembership.user
             val world = worldMembership.world
 
             val results = server.sync.aggregateStates(worldMembership, uberStates)

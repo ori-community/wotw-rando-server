@@ -7,7 +7,10 @@ class EventBus {
     private val registrations: MutableMap<Any, MutableList<Pair<KClass<*>, suspend (Any) -> Unit>>> = hashMapOf()
 
     fun <T : Any> register(receiver: Any, messageType: KClass<T>, block: suspend (T) -> Unit) {
-        val typeErasedBlock: suspend (Any) -> Unit = { block(it as T) }
+        val typeErasedBlock: suspend (Any) -> Unit = {
+            @Suppress("UNCHECKED_CAST")
+            block(it as T)
+        }
         registrations.getOrPut(receiver) { mutableListOf() }.add(messageType to typeErasedBlock)
         messages.getOrPut(messageType) { mutableListOf() }.add(typeErasedBlock)
     }
@@ -35,6 +38,7 @@ class EventBusWithMetadata<META_TYPE> {
 
     fun <T : Any> register(receiver: Any, messageType: KClass<T>, block: suspend (T, META_TYPE) -> Unit) {
         val typeErasedBlock: suspend (Any, META_TYPE) -> Unit = { message, meta ->
+            @Suppress("UNCHECKED_CAST")
             block(message as T, meta)
         }
         registrations.getOrPut(receiver) { mutableListOf() }.add(messageType to typeErasedBlock)

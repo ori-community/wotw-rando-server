@@ -15,7 +15,6 @@ import wotw.server.game.handlers.NormalGameHandlerState
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import wotw.server.util.logger
-import wotw.server.util.makeServerTextMessage
 
 
 @Serializable

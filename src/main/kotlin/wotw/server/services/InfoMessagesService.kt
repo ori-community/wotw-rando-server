@@ -4,7 +4,6 @@ import wotw.io.messages.protobuf.*
 import wotw.server.database.model.*
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
-import java.time.ZoneOffset
 
 class InfoMessagesService(private val server: WotwBackendServer) {
     val COLORS = arrayOf(

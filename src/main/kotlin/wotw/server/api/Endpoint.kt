@@ -7,7 +7,6 @@ import io.ktor.util.pipeline.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.User
 import wotw.server.exception.ForbiddenException
-import wotw.server.exception.MissingScopeException
 import wotw.server.exception.UnauthorizedException
 import wotw.server.main.WotwBackendServer
 

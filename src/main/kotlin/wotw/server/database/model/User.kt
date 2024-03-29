@@ -1,12 +1,10 @@
 package wotw.server.database.model
 
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.SortOrder
 import wotw.server.database.StringEntity
 import wotw.server.database.StringEntityClass
 import wotw.server.database.StringIdTable
-import wotw.server.database.model.World.Companion.optionalReferrersOn
 
 object Users : StringIdTable("users") {
     val name = text("nickname")

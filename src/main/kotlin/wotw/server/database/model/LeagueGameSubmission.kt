@@ -7,7 +7,6 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.timestamp
-import wotw.server.database.model.LeagueSeasonMemberships.defaultExpression
 
 object LeagueGameSubmissions : LongIdTable("league_game_submissions") {
     val gameId = reference("game_id", LeagueGames, ReferenceOption.CASCADE)

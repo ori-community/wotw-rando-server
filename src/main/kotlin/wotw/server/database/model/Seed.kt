@@ -1,7 +1,6 @@
 package wotw.server.database.model
 
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.serializer
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID

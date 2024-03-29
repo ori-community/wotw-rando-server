@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package wotw.io.messages.protobuf
 
 import kotlinx.serialization.*

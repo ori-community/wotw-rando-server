@@ -5,12 +5,14 @@ import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.BingothonTokenRequest
-import wotw.io.messages.protobuf.*
+import wotw.io.messages.protobuf.BingoData
+import wotw.io.messages.protobuf.BingothonBingoBoard
+import wotw.io.messages.protobuf.BingothonBingoSquare
+import wotw.io.messages.protobuf.BingothonBingoUniverseInfo
 import wotw.server.database.model.*
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -92,10 +94,10 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         (BingothonTokens.owner eq user.id.value) and (BingothonTokens.multiverseId eq request.multiverseId)
                     }.firstOrNull()?.delete()
 
-                    var tokenId = ""
+                    var tokenId: String
                     do {
                         tokenId = randomString(16)
-                    } while (BingothonTokens.select { BingothonTokens.id eq tokenId }.count() > 0)
+                    } while (BingothonTokens.selectAll().where { BingothonTokens.id eq tokenId }.count() > 0)
 
                     BingothonToken.new(tokenId) {
                         this.owner = user

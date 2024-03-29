@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package wotw.server.game.handlers
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protoBuf
@@ -120,7 +123,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
 
     fun getSerializedClientInfo(): ByteArray {
         return getClientInfo()?.let {
-            serializeClientInfo(it as CLIENT_INFO_TYPE)
+            serializeClientInfo(it)
         } ?: ByteArray(0)
     }
 

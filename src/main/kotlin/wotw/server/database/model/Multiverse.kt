@@ -16,7 +16,6 @@ import wotw.server.sync.UniverseStateCache
 import wotw.server.util.assertTransaction
 import java.util.*
 import kotlin.math.ceil
-import kotlin.to
 
 object Multiverses : LongIdTable("multiverses") {
     val seedId = reference("seed_id", Seeds).nullable()

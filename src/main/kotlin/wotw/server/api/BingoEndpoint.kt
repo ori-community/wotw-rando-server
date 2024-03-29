@@ -3,9 +3,9 @@ package wotw.server.api
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
-import io.ktor.server.websocket.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -13,8 +13,6 @@ import wotw.io.messages.protobuf.BingoData
 import wotw.server.database.model.*
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
-import wotw.server.util.logger
-import java.util.concurrent.CancellationException
 
 class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {

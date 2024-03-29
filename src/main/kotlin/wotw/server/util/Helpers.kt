@@ -1,7 +1,7 @@
 package wotw.server.util
 
-import io.ktor.server.application.*
 import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
@@ -45,7 +45,7 @@ fun randomString(length: Int): String {
         .joinToString("")
 }
 
-fun makeServerTextMessage(text: String, time: Float = 3.0f, replace: Boolean = false): PrintTextMessage =
+fun makeServerTextMessage(text: String, time: Float = 3.0f): PrintTextMessage =
     PrintTextMessage(
         time = time,
         text = text,

@@ -74,7 +74,7 @@ fun sync(ids: Collection<UberId>, strategy: UberStateSyncStrategy? = null): Uber
     UberStateRegistration(ids.toSet(), strategy)
 
 fun UberStateRegistration.with(strategy: UberStateSyncStrategy) = first to strategy
-fun UberStateRegistration.on(threshold: Float) = first to (second ?: UberStateSyncStrategy.MAX).copy(trigger = { o, n -> n >= threshold })
-fun UberStateRegistration.on(threshold: Int) = first to (second ?: UberStateSyncStrategy.MAX).copy(trigger = { o, n -> n >= threshold })
+fun UberStateRegistration.on(threshold: Float) = first to (second ?: UberStateSyncStrategy.MAX).copy(trigger = { _, n -> n >= threshold })
+fun UberStateRegistration.on(threshold: Int) = first to (second ?: UberStateSyncStrategy.MAX).copy(trigger = { _, n -> n >= threshold })
 fun UberStateRegistration.across(scope: ShareScope) = first to (second ?: UberStateSyncStrategy.MAX).copy(scope = scope)
 fun UberStateRegistration.notify(group: UberStateSyncStrategy.NotificationGroup) = first to (second ?: UberStateSyncStrategy.MAX).copy(group = group)

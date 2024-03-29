@@ -7,12 +7,10 @@ import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.Multiverse
-import wotw.server.database.model.User
 import wotw.server.database.model.World
 import wotw.server.game.handlers.GameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
-import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.full.primaryConstructor
 
