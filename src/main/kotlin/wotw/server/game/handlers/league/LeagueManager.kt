@@ -173,7 +173,7 @@ class LeagueManager(val server: WotwBackendServer) {
                                 this.components = mutableListOf(
                                     ActionRowBuilder().also {
                                         it.linkButton(server.getUiUrl("/league/seasons/${season.id.value}")) {
-                                            this.label = "Open Season"
+                                            this.label = "Join Season"
                                         }
                                     }
                                 )
