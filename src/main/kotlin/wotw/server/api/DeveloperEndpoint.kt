@@ -114,6 +114,9 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             scheduleCron = request.cron
                             scheduleStartAt = Instant.now()
                             gameCount = request.gameCount
+                            shortDescription = request.shortDescription
+                            longDescriptionMarkdown = request.longDescriptionMarkdown
+                            rulesMarkdown = request.rulesMarkdown
                         }.id.value
                     }
 

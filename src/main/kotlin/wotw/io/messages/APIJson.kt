@@ -154,7 +154,14 @@ data class ImpersonateRequest(val userId: String)
 data class ClaimBingoCardRequest(val x: Int, val y: Int)
 
 @Serializable
-data class CreateLeagueSeasonRequest(val name: String, val cron: String, val gameCount: Int)
+data class CreateLeagueSeasonRequest(
+    val name: String,
+    val cron: String,
+    val gameCount: Int,
+    val shortDescription: String,
+    val longDescriptionMarkdown: String,
+    val rulesMarkdown: String,
+)
 
 @Serializable
 data class BingothonTokenRequest(val multiverseId: Long)
