@@ -84,7 +84,7 @@ data class UniversePreset(
     val worldSettings: List<WorldPreset>,
     val disableLogicFilter: Boolean = false,
     val seed: String? = null,
-    val online: Boolean = false,
+    @Deprecated("The online flag is deprecated since 4.0") val online: Boolean = false,
 )
 
 @Serializable

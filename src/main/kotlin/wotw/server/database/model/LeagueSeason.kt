@@ -161,7 +161,6 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                     goals = setOf("Trees"),
                 )
             ),
-            online = true
         ))
 
         if (seedGeneratorResult.seed == null) {
