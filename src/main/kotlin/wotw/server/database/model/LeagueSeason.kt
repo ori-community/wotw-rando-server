@@ -4,6 +4,7 @@ import com.cronutils.model.CronType
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.model.time.ExecutionTime
 import com.cronutils.parser.CronParser
+import kotlinx.serialization.serializer
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -12,6 +13,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.WorldPreset
+import wotw.server.database.jsonb
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
@@ -65,6 +67,17 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     val shortDescription = text("short_description").default("")
     val longDescriptionMarkdown = text("long_description_markdown").default("")
     val rulesMarkdown = text("rules_markdown").default("")
+    val universePreset = jsonb("universe_preset", serializer<UniversePreset>()).default(
+        UniversePreset(
+            worldSettings = listOf(
+                WorldPreset(
+                    includes = setOf("gorlek"),
+                    spawn = "Random",
+                    goals = setOf("Trees"),
+                )
+            ),
+        )
+    )
 }
 
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
@@ -83,6 +96,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     var shortDescription by LeagueSeasons.shortDescription
     var longDescriptionMarkdown by LeagueSeasons.longDescriptionMarkdown
     var rulesMarkdown by LeagueSeasons.rulesMarkdown
+    var universePreset by LeagueSeasons.universePreset
     var currentGame by LeagueGame optionalReferencedOn LeagueSeasons.currentGameId
     val games by LeagueGame referrersOn LeagueGames.seasonId
     val memberships by LeagueSeasonMembership referrersOn LeagueSeasonMemberships.seasonId
@@ -159,16 +173,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             throw RuntimeException("Cannot create scheduled game. Please finish the current game first.")
         }
 
-        // TODO: Allow customizing seedgen config
-        val seedGeneratorResult = seedGeneratorService.generateSeed(UniversePreset(
-            worldSettings = listOf(
-                WorldPreset(
-                    includes = setOf("gorlek"),
-                    spawn = "Random",
-                    goals = setOf("Trees"),
-                )
-            ),
-        ))
+        val seedGeneratorResult = seedGeneratorService.generateSeed(this.universePreset)
 
         if (seedGeneratorResult.seed == null) {
             throw RuntimeException("Failed to generate seed for League game")
