@@ -42,7 +42,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
             .mapIndexed { index, universe -> generateUniverseInfo(universe, COLORS[index % COLORS.size]) },
         multiverse.board != null,
         multiverse.spectators.map(::generateUserInfo),
-        multiverse.seed?.id?.value.takeIf { multiverse.seed?.allowDownload == true },
+        multiverse.seed?.takeIf { it.allowDownload }?.id?.value,
         multiverse.gameHandlerType,
         server.gameHandlerRegistry.getHandler(multiverse).getSerializedClientInfo(),
         multiverse.locked,
