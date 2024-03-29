@@ -63,13 +63,12 @@ data class MultiverseInfoMessage(
     @ProtoNumber(5) val seedId: Long?,
     @ProtoNumber(6) val gameHandlerType: Int,
     @ProtoNumber(7) @Contextual val gameHandlerClientInfo: ByteArray,
-    // @ProtoNumber(8) @Required val playerVisibilities: SetVisibilityMessage? = null,
-    @ProtoNumber(9) val locked: Boolean = false,
-    @ProtoNumber(10) val isLockable: Boolean = true,
-    @ProtoNumber(11) @Required val race: RaceInfo? = null,
-    @ProtoNumber(12) val seedSpoilerDownloadedBy: List<UserInfo>,
-    @ProtoNumber(13) val connectedUserIds: List<String>,
-    @ProtoNumber(14) val raceReadyUserIds: List<String>,
+    @ProtoNumber(8) val locked: Boolean = false,
+    @ProtoNumber(9) val isLockable: Boolean = true,
+    @ProtoNumber(10) @Required val race: RaceInfo? = null,
+    @ProtoNumber(11) val seedSpoilerDownloadedBy: List<UserInfo>,
+    @ProtoNumber(12) val connectedUserIds: List<String>,
+    @ProtoNumber(13) val raceReadyUserIds: List<String>,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
