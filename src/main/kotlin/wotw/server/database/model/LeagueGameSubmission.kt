@@ -13,7 +13,7 @@ object LeagueGameSubmissions : LongIdTable("league_game_submissions") {
     val gameId = reference("game_id", LeagueGames, ReferenceOption.CASCADE)
     val membershipId = reference("membership_id", LeagueSeasonMemberships, ReferenceOption.CASCADE)
     val submittedAt = timestamp("submitted_at").defaultExpression(CurrentTimestamp())
-    val saveFile = binary("save_file", 512 * 1024)
+    val saveFile = binary("save_file", 512 * 1024).nullable()
     val time = float("time").nullable()
     val points = integer("points").default(0)
     val rank = integer("rank").nullable()

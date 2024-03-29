@@ -125,11 +125,22 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     fun finishCurrentGame() {
         assertTransaction()
 
-        if (this.currentGame == null) {
-            throw RuntimeException("Cannot finish current game because there is no current game")
-        }
+        this.currentGame?.let { currentGame ->
+            // Create DNF submissions for players who didn't submit yet
+            this.memberships.forEach { membership ->
+                if (currentGame.submissions.none { it.membership.id == membership.id }) {
+                    LeagueGameSubmission.new {
+                        this.game = currentGame
+                        this.membership = membership
+                        this.time = null
+                        this.saveFile = null
+                    }.flush()
+                }
+            }
 
-        this.currentGame?.recalculateSubmissionPointsAndRanks()
+            currentGame.recalculateSubmissionPointsAndRanks()
+        } ?: throw RuntimeException("Cannot finish current game because there is no current game")
+
         this.recalculateMembershipPointsAndRanks()
         this.currentGame = null
     }
