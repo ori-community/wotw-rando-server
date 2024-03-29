@@ -4,16 +4,16 @@ import com.cronutils.model.CronType
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.model.time.ExecutionTime
 import com.cronutils.parser.CronParser
-import kotlinx.serialization.serializer
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.timestamp
+import org.jetbrains.exposed.sql.json.jsonb
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.WorldPreset
-import wotw.server.database.jsonb
+import wotw.io.messages.json
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
@@ -67,7 +67,7 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     val shortDescription = text("short_description").default("")
     val longDescriptionMarkdown = text("long_description_markdown").default("")
     val rulesMarkdown = text("rules_markdown").default("")
-    val universePreset = jsonb("universe_preset", serializer<UniversePreset>()).default(
+    val universePreset = jsonb<UniversePreset>("universe_preset", json).default(
         UniversePreset(
             worldSettings = listOf(
                 WorldPreset(

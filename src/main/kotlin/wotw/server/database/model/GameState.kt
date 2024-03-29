@@ -1,25 +1,21 @@
 package wotw.server.database.model
 
-import kotlinx.serialization.InternalSerializationApi
-import kotlinx.serialization.serializer
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.json.jsonb
+import wotw.io.messages.json
 import wotw.server.bingo.UberStateMap
-import wotw.server.database.jsonb
-import kotlin.reflect.typeOf
 
 object GameStates : LongIdTable("game_states") {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val universeId = optReference("universe_id", Universes, ReferenceOption.CASCADE)
     val worldId = optReference("world_id", Worlds, ReferenceOption.CASCADE)
     val playerId = optReference("player_id", Users, ReferenceOption.CASCADE)
-
-    @OptIn(InternalSerializationApi::class)
-    val uberStateData = jsonb("uber_state_data", UberStateMap::class.serializer())
+    val uberStateData = jsonb<UberStateMap>("uber_state_data", json)
 
     init {
         uniqueIndex(multiverseId, universeId, worldId, playerId)

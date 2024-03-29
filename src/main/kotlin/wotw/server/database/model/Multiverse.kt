@@ -4,12 +4,13 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.json.jsonb
+import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoard
 import wotw.server.bingo.Point
 import wotw.server.bingo.UberStateMap
 import wotw.server.bingo.plus
-import wotw.server.database.jsonb
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.sync.UniverseStateCache
 import wotw.server.util.assertTransaction
@@ -20,7 +21,7 @@ import kotlin.to
 object Multiverses : LongIdTable("multiverses") {
     val seedId = reference("seed_id", Seeds).nullable()
     val raceId = reference("race_id", Races).nullable()
-    val board = jsonb("board", BingoBoard.serializer()).nullable()
+    val board = jsonb<BingoBoard>("board", json).nullable()
 
     val gameHandlerActive = bool("game_handler_active").default(false)
     val gameHandlerType = integer("game_handler_type").default(GameHandlerType.NORMAL)
