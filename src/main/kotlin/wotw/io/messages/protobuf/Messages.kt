@@ -486,7 +486,8 @@ data class ReportPlayerRaceReadyMessage(
 data class LeagueSeasonMembershipInfo(
     @ProtoNumber(1) val user: UserInfo,
     @ProtoNumber(2) val points: Int,
-    @ProtoNumber(3) val joinedAt: Long,
+    @ProtoNumber(3) @Required val rank: Int? = null,
+    @ProtoNumber(4) val joinedAt: Long,
 )
 
 @Serializable

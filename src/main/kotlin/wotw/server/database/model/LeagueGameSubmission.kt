@@ -12,6 +12,7 @@ object LeagueGameSubmissions : LongIdTable("league_game_submissions") {
     val saveFile = binary("save_file", 512 * 1024)
     val time = float("time").nullable()
     val points = integer("points").default(0)
+    val rank = integer("rank").nullable()
     val videoUrl = varchar("video_url", 128).nullable()
     val discarded = bool("discarded").default(false)
 }
@@ -24,6 +25,7 @@ class LeagueGameSubmission(id: EntityID<Long>) : LongEntity(id) {
     var saveFile by LeagueGameSubmissions.saveFile
     var time by LeagueGameSubmissions.time
     var points by LeagueGameSubmissions.points
+    var rank by LeagueGameSubmissions.rank
     var videoUrl by LeagueGameSubmissions.videoUrl
     var discarded by LeagueGameSubmissions.discarded
 }

@@ -5,12 +5,8 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
-import org.jetbrains.exposed.sql.javatime.datetime
 import org.jetbrains.exposed.sql.javatime.timestamp
-import wotw.server.database.model.LeagueSeasonMemberships.defaultExpression
-import wotw.server.database.model.LeagueSeasons.default
 import wotw.server.util.assertTransaction
 import kotlin.math.ceil
 import kotlin.math.max
@@ -39,7 +35,7 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
 
     val isCurrent get() = season.currentGame?.id?.value == this.id.value
 
-    fun recalculateSubmissionPoints() {
+    fun recalculateSubmissionPointsAndRanks() {
         assertTransaction()
 
         val cachedSubmissions = submissions.toList()
@@ -67,5 +63,14 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
 
             submission.points = points
         }
+
+        cachedSubmissions
+            .groupBy { it.points }
+            .toSortedMap()
+            .values
+            .reversed()
+            .forEachIndexed { index, submissionsWithSamePoints ->
+                submissionsWithSamePoints.forEach { it.rank = index + 1 }
+            }
     }
 }

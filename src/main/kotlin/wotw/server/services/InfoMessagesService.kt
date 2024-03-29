@@ -83,6 +83,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
     fun generateLeagueSeasonMembershipInfo(membership: LeagueSeasonMembership) = LeagueSeasonMembershipInfo(
         generateUserInfo(membership.user),
         membership.points,
+        membership.rank,
         membership.joinedAt.toEpochMilli(),
     )
 

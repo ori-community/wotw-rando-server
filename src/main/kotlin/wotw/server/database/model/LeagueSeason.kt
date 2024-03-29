@@ -9,14 +9,12 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.javatime.datetime
 import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.WorldPreset
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
-import wotw.server.util.logger
 import java.time.*
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.max
@@ -87,7 +85,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
     val hasReachedGameCountLimit get() = games.count() >= gameCount
 
-    fun recalculateMembershipPoints() {
+    fun recalculateMembershipPointsAndRanks() {
         assertTransaction()
 
         val gamesCount = games.count().toInt()
@@ -113,6 +111,15 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
             membership.points = countingSubmissions.sumOf { it.points }
         }
+
+        memberships
+            .groupBy { it.points }
+            .toSortedMap()
+            .values
+            .reversed()
+            .forEachIndexed { index, membershipsWithSamePoints ->
+                membershipsWithSamePoints.forEach { it.rank = index + 1 }
+            }
     }
 
     fun finishCurrentGame() {
@@ -122,8 +129,8 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             throw RuntimeException("Cannot finish current game because there is no current game")
         }
 
-        this.currentGame?.recalculateSubmissionPoints()
-        this.recalculateMembershipPoints()
+        this.currentGame?.recalculateSubmissionPointsAndRanks()
+        this.recalculateMembershipPointsAndRanks()
         this.currentGame = null
     }
 

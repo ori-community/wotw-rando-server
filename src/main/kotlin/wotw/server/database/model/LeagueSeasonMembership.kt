@@ -18,6 +18,7 @@ object LeagueSeasonMemberships : LongIdTable("league_season_memberships") {
     val userId = reference("user_id", Users, ReferenceOption.CASCADE)
     val joinedAt = timestamp("joined_at").defaultExpression(CurrentTimestamp())
     val points = integer("points").default(0)
+    val rank = integer("rank").nullable()
 }
 
 class LeagueSeasonMembership(id: EntityID<Long>) : LongEntity(id) {
@@ -27,5 +28,6 @@ class LeagueSeasonMembership(id: EntityID<Long>) : LongEntity(id) {
     var user by User referencedOn LeagueSeasonMemberships.userId
     var joinedAt by LeagueSeasonMemberships.joinedAt
     var points by LeagueSeasonMemberships.points
+    var rank by LeagueSeasonMemberships.rank
     val submissions by LeagueGameSubmission referrersOn LeagueGameSubmissions.membershipId
 }
