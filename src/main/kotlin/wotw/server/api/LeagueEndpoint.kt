@@ -11,6 +11,7 @@ import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.*
+import wotw.server.exception.ForbiddenException
 import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
@@ -40,6 +41,23 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(newSuspendedTransaction {
                     val game = LeagueGame.findById(gameId) ?: throw NotFoundException("Game not found")
                     server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUser())
+                })
+            }
+
+            get("league/games/{game_id}/submissions") {
+                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable game_id")
+
+                call.respond(newSuspendedTransaction {
+                    val game = LeagueGame.findById(gameId) ?: throw NotFoundException("Game not found")
+
+                    val user = authenticatedUser()
+                    val handler = server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler ?: throw BadRequestException("This is not a league game")
+
+                    if (!handler.didSubmitForThisGame(user)) {
+                        throw ForbiddenException("You cannot view submissions for this game unless you submit a run yourself")
+                    }
+
+                    game.submissions.map(server.infoMessagesService::generateLeagueGameSubmissionInfo)
                 })
             }
 

@@ -95,7 +95,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return getLeagueGame().season.memberships.any { it.user.id == user.id }
     }
 
-    private fun didSubmitForThisGame(user: User): Boolean {
+    fun didSubmitForThisGame(user: User): Boolean {
         return getLeagueGame().submissions.any { it.membership.user.id == user.id }
     }
 

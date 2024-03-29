@@ -110,4 +110,13 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         season.canJoin,
         season.currentGame?.id?.value,
     )
+
+    fun generateLeagueGameSubmissionInfo(submission: LeagueGameSubmission) = LeagueGameSubmissionInfo(
+        submission.id.value,
+        generateLeagueSeasonMembershipInfo(submission.membership),
+        submission.time,
+        submission.points,
+        submission.rank,
+        submission.discarded,
+    )
 }
