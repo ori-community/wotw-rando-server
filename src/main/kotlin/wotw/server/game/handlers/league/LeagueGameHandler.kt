@@ -150,7 +150,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
 
         val universe = Universe.new {
-            name = ""
+            name = "League Game ${getLeagueGame().gameNumber}"
             this.multiverse = multiverse
         }
 
