@@ -95,8 +95,9 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         game.isCurrent,
         userForPermissions?.let { user ->
             (server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler)?.let { leagueHandler ->
-                LeagueGamePermissionsInfo(
-                    leagueHandler.canSubmit(user)
+                LeagueGameUserMetadata(
+                    leagueHandler.canSubmit(user),
+                    leagueHandler.didSubmitForThisGame(user),
                 )
             }
         },
@@ -122,5 +123,15 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         submission.points,
         submission.rank,
         submission.discarded,
+    )
+
+    fun generateReducedLeagueGameSubmissionInfo(submission: LeagueGameSubmission) = LeagueGameSubmissionInfo(
+        submission.id.value,
+        generateLeagueSeasonMembershipInfo(submission.membership),
+        submission.submittedAt.toEpochMilli(),
+        null,
+        null,
+        null,
+        null,
     )
 }

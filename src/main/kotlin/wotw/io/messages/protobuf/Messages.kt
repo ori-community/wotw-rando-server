@@ -500,12 +500,13 @@ data class LeagueGameInfo(
     @ProtoNumber(4) val submissionCount: Long,
     @ProtoNumber(5) val gameNumber: Int,
     @ProtoNumber(6) val isCurrent: Boolean,
-    @ProtoNumber(7) @Required val permissions: LeagueGamePermissionsInfo? = null,
+    @ProtoNumber(7) @Required val userMetadata: LeagueGameUserMetadata? = null,
 )
 
 @Serializable
-data class LeagueGamePermissionsInfo(
+data class LeagueGameUserMetadata(
     @ProtoNumber(1) val canSubmit: Boolean,
+    @ProtoNumber(2) val didSubmit: Boolean,
 )
 
 @Serializable
@@ -527,7 +528,7 @@ data class LeagueGameSubmissionInfo(
     @ProtoNumber(2) val membership: LeagueSeasonMembershipInfo,
     @ProtoNumber(3) val submittedAt: Long,
     @ProtoNumber(4) @Required val time: Float? = null,
-    @ProtoNumber(5) val points: Int,
+    @ProtoNumber(5) @Required val points: Int? = null,
     @ProtoNumber(6) @Required val rank: Int? = null,
-    @ProtoNumber(7) val discarded: Boolean,
+    @ProtoNumber(7) @Required val discarded: Boolean? = null,
 )
