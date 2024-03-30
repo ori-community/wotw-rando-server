@@ -527,8 +527,13 @@ data class LeagueGameSubmissionInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val membership: LeagueSeasonMembershipInfo,
     @ProtoNumber(3) val submittedAt: Long,
-    @ProtoNumber(4) @Required val time: Float? = null,
-    @ProtoNumber(5) @Required val points: Int? = null,
-    @ProtoNumber(6) @Required val rank: Int? = null,
-    @ProtoNumber(7) @Required val discarded: Boolean? = null,
+    @ProtoNumber(4) @Required val rankingData: LeagueGameSubmissionRankingData? = null
+)
+
+@Serializable
+data class LeagueGameSubmissionRankingData(
+    @ProtoNumber(1) @Required val time: Float? = null,
+    @ProtoNumber(2) val points: Int,
+    @ProtoNumber(3) @Required val rank: Int? = null,
+    @ProtoNumber(4) val discarded: Boolean,
 )

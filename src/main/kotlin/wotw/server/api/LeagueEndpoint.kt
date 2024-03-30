@@ -52,7 +52,9 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val user = authenticatedUser()
                     val handler = server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler ?: throw BadRequestException("This is not a league game")
 
-                    if (handler.didSubmitForThisGame(user)) {
+                    // Return full submissions if the game is over or the user submitted for this game,
+                    // otherwise return reduced information
+                    if (handler.didSubmitForThisGame(user) || !handler.getLeagueGame().isCurrent) {
                         game.submissions.map(server.infoMessagesService::generateLeagueGameSubmissionInfo)
                     } else {
                         game.submissions.map(server.infoMessagesService::generateReducedLeagueGameSubmissionInfo)
