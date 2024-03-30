@@ -179,9 +179,13 @@ class LeagueManager(val server: WotwBackendServer) {
                     # ${season.name}: Season signups opened! ${server.discordService.getEmojiMarkdown("orilurk")}
                     
                     A new season of the Ori and the Will of the Wisps Randomizer League is coming up!
-                    
-                    ${season.longDescriptionMarkdown.lines().joinToString("\n") { "> $it" }}
-                    
+                """.trimIndent()
+
+                this.content += "\n\n"
+                this.content += season.longDescriptionMarkdown.lines().joinToString("\n") { "> $it" }
+                this.content += "\n\n"
+
+                this.content += """
                     **You can join until <t:${joinableUntilTimestamp}:f> (<t:${joinableUntilTimestamp}:R>)**
                     
                     Read more about the seed settings and rules on the season page.
