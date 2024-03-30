@@ -62,23 +62,17 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     abstract suspend fun generateStateAggregationRegistry(world: World): AggregationStrategyRegistry
 
     /**
-     * @param playerId PlayerId
+     * @param worldMembership WorldMembership
      * @return Return the save GUID for a player, or null if the client should force creating a new save file
      */
-    open suspend fun getPlayerSaveGuid(worldMembership: WorldMembership): MoodGuid? {
-        return null
-    }
+    open suspend fun getPlayerSaveGuid(worldMembership: WorldMembership): MoodGuid? = null
 
-    open suspend fun shouldPreventCheats(worldMembership: WorldMembership): Boolean {
-        return false
-    }
+    open suspend fun shouldPreventCheats(worldMembership: WorldMembership): Boolean = false
 
     /**
      * Whether clients should block starting a new game
      */
-    open suspend fun shouldBlockStartingNewGame(): Boolean {
-        return false
-    }
+    open suspend fun shouldBlockStartingNewGame(): Boolean = false
 
     /**
      * Called after this game handler has been unfrozen and loaded from the database
@@ -98,9 +92,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
      * If you return false here, the state of the handler can be serialized
      * and the handler will be stopped and destroyed.
      */
-    open fun isDisposable(): Boolean {
-        return true
-    }
+    open fun isDisposable(): Boolean = true
 
     suspend fun persistState() {
         newSuspendedTransaction {
@@ -112,9 +104,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     /**
      * Return serializable data that is sent to game clients
      */
-    open fun getClientInfo(): CLIENT_INFO_TYPE? {
-        return null
-    }
+    open fun getClientInfo(): CLIENT_INFO_TYPE? = null
 
     private fun serializeClientInfo(clientInfo: CLIENT_INFO_TYPE): ByteArray {
         val serializer = serializer(clientInfo::class.createType())
@@ -191,7 +181,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     /**
      * Return true if [user] is allowed to become a spectator of this game
      */
-    open fun canSpectate(user: User): Boolean {
-        return true
-    }
+    open fun canSpectateMultiverse(user: User): Boolean = true
+
+    open fun canDuplicateMultiverse(): Boolean = true
 }

@@ -70,6 +70,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
             })
         }
+
         authenticate(JWT_AUTH) {
             post("multiverses") {
                 wotwPrincipal().require(Scope.MULTIVERSE_CREATE)
@@ -162,7 +163,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse does not exist!")
 
-                    if (!server.gameHandlerRegistry.getHandler(multiverse).canSpectate(player)) {
+                    if (!server.gameHandlerRegistry.getHandler(multiverse).canSpectateMultiverse(player)) {
                         throw ForbiddenException("You cannot spectate this game because the game handler does not allow it")
                     }
 
@@ -260,6 +261,30 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     call.respond(HttpStatusCode.Created)
                 } ?: throw BadRequestException("No event given")
+            }
+
+            post("multiverses/{multiverse_id}/duplicate") {
+                wotwPrincipal().require(Scope.MULTIVERSE_CREATE)
+
+                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+
+                val newMultiverse = newSuspendedTransaction {
+                    val existingMultiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException("Multiverse not found")
+
+                    val handler = server.gameHandlerRegistry.getHandler(existingMultiverse)
+
+                    if (!handler.canDuplicateMultiverse()) {
+                        throw ForbiddenException("You cannot duplicate this Multiverse")
+                    }
+
+                    Multiverse.new {
+                        this.gameHandlerType = existingMultiverse.gameHandlerType
+                        this.seed = existingMultiverse.seed
+                        this.board = existingMultiverse.board
+                    }
+                }
+
+                call.respondText("${newMultiverse.id.value}", status = HttpStatusCode.Created)
             }
         }
 

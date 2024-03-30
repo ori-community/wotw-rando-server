@@ -135,10 +135,6 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return System.getenv("LEAGUE_ALLOW_CHEATS") != "true"
     }
 
-    override fun canSpectate(user: User): Boolean {
-        return false
-    }
-
     // We only support creating new universes. Every other join operation
     // does nothing by design since league games don't support multiple
     // worlds anyway and players don't interact with it like normal games
@@ -185,4 +181,8 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
             }
         }
     }
+
+    override fun canSpectateMultiverse(user: User): Boolean = false
+
+    override fun canDuplicateMultiverse(): Boolean = false
 }
