@@ -291,7 +291,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     if (setupResult == null) {
                         socketConnection.sendMessage(
                             makeServerTextMessage(
-                                "You are not part of an active multiverse.\nPlease join or create one.",
+                                "You are not part of multiverse $multiverseId.",
                             )
                         )
 
