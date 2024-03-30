@@ -1,6 +1,10 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package wotw.server.game.handlers.league
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
@@ -12,6 +16,7 @@ import wotw.server.game.GameConnectionHandlerSyncResult
 import wotw.server.game.MultiverseEvent
 import wotw.server.game.handlers.GameHandler
 import wotw.server.game.handlers.NormalGameHandlerState
+import wotw.server.game.handlers.WorldMembershipId
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import wotw.server.util.logger
@@ -19,19 +24,15 @@ import wotw.server.util.logger
 
 @Serializable
 data class LeagueGameHandlerState(
-    var playerInGameTimes: MutableMap<String, Float> = mutableMapOf(),
-    var playerSaveGuids: MutableMap<String, MoodGuid> = mutableMapOf(),
+    @ProtoNumber(1) var playerInGameTimes: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
+    @ProtoNumber(2) var playerSaveGuids: MutableMap<WorldMembershipId, MoodGuid> = mutableMapOf(),
 )
-
-
-@Serializable
-class LeagueGameHandlerClientState
 
 
 class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
     GameHandler<Nothing>(multiverseId, server) {
 
-    private var state = NormalGameHandlerState()
+    private var state = LeagueGameHandlerState()
 
     fun getLeagueGame(): LeagueGame {
         assertTransaction()
