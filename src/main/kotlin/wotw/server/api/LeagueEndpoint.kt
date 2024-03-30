@@ -90,6 +90,15 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(HttpStatusCode.Created, seasonInfo)
             }
 
+            get("league/{multiverse_id}/game") {
+                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+
+                call.respond(newSuspendedTransaction {
+                    val game = LeagueGame.find { LeagueGames.multiverseId eq multiverseId }.firstOrNull() ?: throw NotFoundException("Game not found")
+                    server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUser())
+                })
+            }
+
             post("league/{multiverse_id}/submission") {
                 val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 
