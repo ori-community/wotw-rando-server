@@ -223,7 +223,7 @@ class LeagueManager(val server: WotwBackendServer) {
                 """.trimIndent()
 
                 if (season.canJoin) {
-                    this.content = """
+                    this.content += """
                         
                         If you did not join this season yet, you can **still join until this game ended**!
                     """.trimIndent()
