@@ -289,14 +289,11 @@ class WotwBackendServer {
                         exception.printStackTrace()
                         call.respond(HttpStatusCode.InternalServerError)
                     }
-                    exception<AlreadyExistsException> { call, _ ->
-                        call.respond(HttpStatusCode.Conflict)
+                    exception<ConflictException> { call, exception ->
+                        call.respond(HttpStatusCode.Conflict, exception.message ?: "")
                     }
-                    exception<ConflictException> { call, _ ->
-                        call.respond(HttpStatusCode.Conflict)
-                    }
-                    exception<UnauthorizedException> { call, _ ->
-                        call.respond(HttpStatusCode.Unauthorized)
+                    exception<UnauthorizedException> { call, exception ->
+                        call.respond(HttpStatusCode.Unauthorized, exception.message ?: "")
                     }
                     exception<BadRequestException> { call, exception ->
                         call.respond(HttpStatusCode.BadRequest, exception.message ?: "")
