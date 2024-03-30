@@ -150,8 +150,10 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
             throw ConflictException("You cannot create a new universe in this league game because you are already part of it")
         }
 
+        val leagueGame = getLeagueGame()
+
         val universe = Universe.new {
-            name = "League Game ${getLeagueGame().gameNumber}"
+            name = "League Game ${leagueGame.gameNumber}"
             this.multiverse = multiverse
         }
 
@@ -163,7 +165,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         val worldSeed = multiverse.seed?.worldSeeds?.firstOrNull() ?: throw RuntimeException("World seed not found")
 
-        val world = World.new(universe, "${user.name}'s World", worldSeed)
+        val world = World.new(universe, "League Game ${leagueGame.gameNumber}", worldSeed)
         server.multiverseUtil.movePlayerToWorld(user, world)
     }
 
