@@ -20,7 +20,9 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
         authenticate(JWT_AUTH) {
             get("league/seasons") {
                 call.respond(newSuspendedTransaction {
-                    LeagueSeason.all().map { server.infoMessagesService.generateLeagueSeasonInfo(it) }
+                    LeagueSeason.all()
+                        .sortedByDescending { it.scheduleStartAt }
+                        .map { server.infoMessagesService.generateLeagueSeasonInfo(it) }
                 })
             }
 
