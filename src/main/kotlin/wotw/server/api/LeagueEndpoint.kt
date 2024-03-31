@@ -113,7 +113,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 if (!canSubmit) {
-                    call.respond(HttpStatusCode.UnprocessableEntity, "You cannot submit a run at this time")
+                    call.respond(HttpStatusCode.UnprocessableEntity, "The League game expired or you did submit already")
                     return@post
                 }
 
