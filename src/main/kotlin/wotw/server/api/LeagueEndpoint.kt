@@ -30,7 +30,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 call.respond(newSuspendedTransaction {
                     val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
-                    server.infoMessagesService.generateLeagueSeasonInfo(season)
+                    server.infoMessagesService.generateLeagueSeasonInfo(season, authenticatedUserOrNull())
                 })
             }
 
@@ -84,7 +84,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     season.refresh()
 
-                    server.infoMessagesService.generateLeagueSeasonInfo(season)
+                    server.infoMessagesService.generateLeagueSeasonInfo(season, user)
                 }
 
                 call.respond(HttpStatusCode.Created, seasonInfo)
