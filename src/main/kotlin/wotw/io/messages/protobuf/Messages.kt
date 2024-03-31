@@ -520,6 +520,7 @@ data class LeagueSeasonInfo(
     @ProtoNumber(7) val shortDescription: String,
     @ProtoNumber(8) val longDescriptionMarkdown: String,
     @ProtoNumber(9) val rulesMarkdown: String,
+    @ProtoNumber(10) val scheduleStartAt: Long,
 )
 
 @Serializable
