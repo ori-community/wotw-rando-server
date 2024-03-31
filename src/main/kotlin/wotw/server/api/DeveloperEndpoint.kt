@@ -117,6 +117,7 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             shortDescription = request.shortDescription
                             longDescriptionMarkdown = request.longDescriptionMarkdown
                             rulesMarkdown = request.rulesMarkdown
+                            backgroundImageUrl = request.backgroundImageUrl?.ifBlank { null }
                         }.id.value
                     }
 

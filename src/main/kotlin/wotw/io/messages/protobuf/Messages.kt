@@ -521,6 +521,7 @@ data class LeagueSeasonInfo(
     @ProtoNumber(8) val longDescriptionMarkdown: String,
     @ProtoNumber(9) val rulesMarkdown: String,
     @ProtoNumber(10) val nextContinuationAt: Long,
+    @ProtoNumber(11) @Required val backgroundImageUrl: String? = null,
 )
 
 @Serializable

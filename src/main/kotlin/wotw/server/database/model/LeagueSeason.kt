@@ -82,6 +82,7 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     )
 
     val nextContinuationAtCache = timestamp("next_continuation_at_cache").nullable()
+    val backgroundImageUrl = varchar("background_image_url", 256).nullable()
 }
 
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
@@ -105,8 +106,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     val games by LeagueGame referrersOn LeagueGames.seasonId
     val memberships by LeagueSeasonMembership referrersOn LeagueSeasonMemberships.seasonId
     private var nextContinuationAtCache by LeagueSeasons.nextContinuationAtCache
-    val nextContinuationAt: Instant get() = this.nextContinuationAtCache ?: this.updateNextContinuationAtTimestamp()
+    var backgroundImageUrl by LeagueSeasons.backgroundImageUrl
 
+    val nextContinuationAt: Instant get() = this.nextContinuationAtCache ?: this.updateNextContinuationAtTimestamp()
 
     // Allow joining before the first game has ended
     val canJoin get() = games.count() <= 1L && currentGame == games.firstOrNull()

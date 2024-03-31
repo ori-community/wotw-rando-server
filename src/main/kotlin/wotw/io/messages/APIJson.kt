@@ -149,6 +149,7 @@ data class CreateLeagueSeasonRequest(
     val shortDescription: String,
     val longDescriptionMarkdown: String,
     val rulesMarkdown: String,
+    val backgroundImageUrl: String?,
 )
 
 @Serializable
