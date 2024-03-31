@@ -19,10 +19,8 @@ import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
 import java.time.Instant
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.max
-import kotlin.math.min
 
 object LeagueSeasons : LongIdTable("league_seasons") {
     val name = varchar("name", 64)
@@ -120,13 +118,11 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     fun recalculateMembershipPointsAndRanks() {
         assertTransaction()
 
-        val gamesCount = games.count().toInt()
-
         memberships.forEach { membership ->
             val submissions = membership.submissions.sortedBy { it.points }
             val worstSubmissionsToDiscardCount = max(
                 0,
-                gamesCount - max(0, submissions.count() - discardWorstGamesCount)
+                discardWorstGamesCount - (this.gameCount - submissions.count())
             )
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
