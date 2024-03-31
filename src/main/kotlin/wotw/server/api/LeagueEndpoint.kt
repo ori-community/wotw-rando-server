@@ -11,7 +11,6 @@ import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.*
-import wotw.server.exception.ForbiddenException
 import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer

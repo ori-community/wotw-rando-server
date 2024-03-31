@@ -7,6 +7,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.timestamp
+import kotlin.time.Duration.Companion.milliseconds
 
 object LeagueGameSubmissions : LongIdTable("league_game_submissions") {
     val gameId = reference("game_id", LeagueGames, ReferenceOption.CASCADE)
@@ -32,4 +33,22 @@ class LeagueGameSubmission(id: EntityID<Long>) : LongEntity(id) {
     var rank by LeagueGameSubmissions.rank
     var videoUrl by LeagueGameSubmissions.videoUrl
     var discarded by LeagueGameSubmissions.discarded
+
+    val formattedTime: String get() {
+        return this.time?.let { time ->
+            (time * 1000f).toLong().milliseconds.toComponents { hours, minutes, seconds, nanoseconds ->
+                var result = ""
+
+                if (hours > 0) {
+                    result += "$hours:"
+                }
+
+                result += "${minutes.toString().padStart(2, '0')}:"
+                result += "${seconds.toString().padStart(2, '0')}."
+                result += (nanoseconds / 100_000).toString().padStart(3, '0')
+
+                result
+            }
+        } ?: "-"
+    }
 }

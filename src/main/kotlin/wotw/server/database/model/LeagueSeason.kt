@@ -83,6 +83,7 @@ object LeagueSeasons : LongIdTable("league_seasons") {
 
     val nextContinuationAtCache = timestamp("next_continuation_at_cache").nullable()
     val backgroundImageUrl = varchar("background_image_url", 256).nullable()
+    val announcementSent = bool("announcement_sent").default(false)
 }
 
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
@@ -107,6 +108,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     val memberships by LeagueSeasonMembership referrersOn LeagueSeasonMemberships.seasonId
     private var nextContinuationAtCache by LeagueSeasons.nextContinuationAtCache
     var backgroundImageUrl by LeagueSeasons.backgroundImageUrl
+    var announcementSent by LeagueSeasons.announcementSent
 
     val nextContinuationAt: Instant get() = this.nextContinuationAtCache ?: this.updateNextContinuationAtTimestamp()
 

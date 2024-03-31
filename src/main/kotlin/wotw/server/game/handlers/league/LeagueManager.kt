@@ -1,25 +1,27 @@
 package wotw.server.game.handlers.league
 
-import dev.kord.common.entity.InteractionType
+import dev.kord.common.entity.ArchiveDuration
+import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.optional.Optional
+import dev.kord.common.entity.optional.OptionalBoolean
+import dev.kord.core.Kord
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.allowedMentions
+import dev.kord.rest.json.request.ChannelModifyPatchRequest
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.EntityChangeType
 import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import wotw.server.database.model.LeagueGame
-import wotw.server.database.model.LeagueSeason
-import wotw.server.database.model.LeagueSeasonMembership
+import wotw.server.database.model.*
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
+import wotw.server.util.assertTransaction
 import wotw.server.util.logger
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 
@@ -47,6 +49,21 @@ class LeagueManager(val server: WotwBackendServer) {
 
     private val scheduler = Scheduler {
         val now = Instant.now()
+
+        val foundNewSeasons = newSuspendedTransaction {
+            val newSeasons = LeagueSeason.find { LeagueSeasons.announcementSent eq false }
+
+            newSeasons.forEach { season ->
+                season.announcementSent = true
+                trySendSeasonCreatedDiscordMessage(season)
+            }
+
+            !newSeasons.empty()
+        }
+
+        if (foundNewSeasons) {
+            recacheLeagueSeasonSchedules()
+        }
 
         for (time in upcomingSeasonProcessingTimes.keys) {
             if (now < time) {  // We can break here because the keys are sorted in ascending order
@@ -136,7 +153,19 @@ class LeagueManager(val server: WotwBackendServer) {
             runBlocking {
                 it.toEntity(LeagueSeason.Companion)?.let { season ->
                     if (it.changeType == EntityChangeType.Created) {
-                        trySendSeasonCreatedDiscordMessage(season)
+                        if (!season.announcementSent) {
+                            newSuspendedTransaction {
+                                season.announcementSent = true
+                            }
+
+                            trySendSeasonCreatedDiscordMessage(season)
+                        }
+                    }
+                } ?: it.toEntity(LeagueGameSubmission.Companion)?.let { submission ->
+                    if (it.changeType == EntityChangeType.Created) {
+                        newSuspendedTransaction {
+                            trySendRunSubmittedDiscordMessageIntoSpoilerThreadAndAddUser(submission)
+                        }
                     }
                 }
             }
@@ -147,8 +176,10 @@ class LeagueManager(val server: WotwBackendServer) {
         return newSuspendedTransaction {
             val previousGame = season.currentGame
 
-            if (season.currentGame != null) {
+            season.currentGame?.let { currentGame ->
                 season.finishCurrentGame()
+                tryUnlockDiscordSpoilerThreadInvitations(currentGame)
+
                 logger().info("LeagueManager: Finished current game for season ${season.id.value}")
             }
 
@@ -169,6 +200,17 @@ class LeagueManager(val server: WotwBackendServer) {
             }
 
             return@newSuspendedTransaction null
+        }
+    }
+
+    private suspend fun tryUnlockDiscordSpoilerThreadInvitations(currentGame: LeagueGame) {
+        server.ifKord { kord ->
+            kord.rest.channel.patchThread(
+                getSpoilerDiscordThreadId(currentGame, kord), ChannelModifyPatchRequest(
+                    invitable = OptionalBoolean.Value(true),
+                    autoArchiveDuration = Optional.Value(ArchiveDuration.Day),
+                ), "League Game finished, invites are now allowed"
+            )
         }
     }
 
@@ -208,6 +250,8 @@ class LeagueManager(val server: WotwBackendServer) {
 
     private suspend fun trySendNewGameCreatedDiscordMessage(season: LeagueSeason, game: LeagueGame, previousGame: LeagueGame?) {
         server.ifKord { kord ->
+            assertTransaction()
+
             kord.rest.channel.createMessage(getDiscordChannel()) {
                 val memberSnowflakes = season.memberships.map { Snowflake(it.user.id.value) }
 
@@ -342,6 +386,51 @@ class LeagueManager(val server: WotwBackendServer) {
 
                 this.allowedMentions {
                     this.users.addAll(memberSnowflakes)
+                }
+            }
+        }
+    }
+
+    private suspend fun getSpoilerDiscordThreadId(game: LeagueGame, kord: Kord): Snowflake {
+        assertTransaction()
+
+        return Snowflake(
+            game.discordSpoilerThreadId
+                ?: kord.rest.channel.startThread(
+                    getDiscordChannel(),
+                    "Game ${game.gameNumber} | ${game.season.name}",
+                    ArchiveDuration.Week,
+                    ChannelType.PrivateThread,
+                ) {
+                    this.invitable = false
+                }.id.value.also { game.discordSpoilerThreadId = it }
+        )
+    }
+
+    private suspend fun trySendRunSubmittedDiscordMessageIntoSpoilerThreadAndAddUser(submission: LeagueGameSubmission) {
+        server.ifKord { kord ->
+            assertTransaction()
+
+            val game = submission.game
+            val threadId = getSpoilerDiscordThreadId(game, kord)
+
+            kord.rest.channel.addUserToThread(threadId, Snowflake(submission.membership.user.id.value))
+
+            kord.rest.channel.createMessage(threadId) {
+                if (submission.time != null) {
+                    this.content = """
+                        <@${submission.membership.user.id.value}> finished with a time of **${submission.formattedTime}**.
+                    """.trimIndent()
+                } else {
+                    this.content = """
+                        <@${submission.membership.user.id.value}> DNF'd.
+                    """.trimIndent()
+                }
+
+                this.suppressEmbeds = true
+
+                this.allowedMentions {
+                    this.users.add(Snowflake(submission.membership.user.id.value))
                 }
             }
         }

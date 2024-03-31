@@ -16,6 +16,7 @@ object LeagueGames : LongIdTable("league_games") {
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE).uniqueIndex()
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
+    val discordSpoilerThreadId = ulong("discord_thread_id").nullable()
     val reminderSent = bool("reminder_sent").default(false)
 
     init {
@@ -31,6 +32,7 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
     var multiverse by Multiverse referencedOn LeagueGames.multiverseId
     var createdAt by LeagueGames.createdAt
     val submissions by LeagueGameSubmission referrersOn LeagueGameSubmissions.gameId
+    var discordSpoilerThreadId by LeagueGames.discordSpoilerThreadId
     var reminderSent by LeagueGames.reminderSent
 
     val isCurrent get() = season.currentGame?.id?.value == this.id.value
