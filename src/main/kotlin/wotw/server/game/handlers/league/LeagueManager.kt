@@ -346,7 +346,8 @@ class LeagueManager(val server: WotwBackendServer) {
 
                     this.content += """
                         
-                        **Thanks for playing!**
+                        
+                        Thanks for playing!
                     """.trimIndent()
                 }
 
