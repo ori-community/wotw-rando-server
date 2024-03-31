@@ -118,15 +118,20 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }.body<String>()
         val json = json.parseToJsonElement(jsonResponse).jsonObject
         val userId = json["id"]?.jsonPrimitive?.contentOrNull ?: ""
-        val discordUserName = json["username"]?.jsonPrimitive?.contentOrNull
+
+        val discordDisplayName =
+            json["global_name"]?.jsonPrimitive?.contentOrNull
+                ?: json["username"]?.jsonPrimitive?.content
+                ?: throw RuntimeException("Discord API did neither deliver global_name nor username. That's weird...")
+
         val avatarId = json["avatar"]?.jsonPrimitive?.contentOrNull
 
         return newSuspendedTransaction {
             User.findById(userId)?.also {
-                if (!it.isCustomName && discordUserName != null && it.name != discordUserName) it.name = discordUserName
+                if (!it.isCustomName && discordDisplayName != null && it.name != discordDisplayName) it.name = discordDisplayName
                 it.avatarId = avatarId
             } ?: User.new(userId) {
-                this.name = discordUserName ?: "unknown"
+                this.name = discordDisplayName
                 this.avatarId = avatarId
             }
         }
