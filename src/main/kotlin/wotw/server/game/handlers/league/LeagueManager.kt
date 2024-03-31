@@ -335,7 +335,7 @@ class LeagueManager(val server: WotwBackendServer) {
                     
                     Remaining players: ${memberSnowflakes.joinToString(", ") { "<@${it.value}>" }}
                     
-                    **You have time to play this game until <t:${submittableUntilTimestamp}:f> (<t:${submittableUntilTimestamp}:R>)!**
+                    **You have time to finish this game until <t:${submittableUntilTimestamp}:f> (<t:${submittableUntilTimestamp}:R>)!**
                 """.trimIndent()
 
                 this.suppressEmbeds = true
