@@ -86,14 +86,14 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         membership.joinedAt.toEpochMilli(),
     )
 
-    suspend fun generateLeagueGameInfo(game: LeagueGame, userForPermissions: User? = null) = LeagueGameInfo(
+    suspend fun generateLeagueGameInfo(game: LeagueGame, selfUser: User? = null) = LeagueGameInfo(
         game.id.value,
         game.multiverse.id.value,
         game.season.id.value,
         game.submissions.count(),
         game.gameNumber,
         game.isCurrent,
-        userForPermissions?.let { user ->
+        selfUser?.let { user ->
             (server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler)?.let { leagueHandler ->
                 LeagueGameUserMetadata(
                     leagueHandler.canSubmit(user),
@@ -103,11 +103,11 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         },
     )
 
-    suspend fun generateLeagueSeasonInfo(season: LeagueSeason) = LeagueSeasonInfo(
+    suspend fun generateLeagueSeasonInfo(season: LeagueSeason, selfUser: User? = null) = LeagueSeasonInfo(
         season.id.value,
         season.name,
         season.memberships.map(::generateLeagueSeasonMembershipInfo),
-        season.games.map { generateLeagueGameInfo(it) },
+        season.games.map { generateLeagueGameInfo(it, selfUser) },
         season.canJoin,
         season.currentGame?.id?.value,
         season.shortDescription,
