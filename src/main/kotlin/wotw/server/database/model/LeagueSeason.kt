@@ -124,12 +124,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
         memberships.forEach { membership ->
             val submissions = membership.submissions.sortedBy { it.points }
-            val worstSubmissionsToDiscardCount = min(
-                max(
-                    0,
-                    discardWorstGamesCount - (gamesCount - submissions.count())
-                ),
-                submissions.count(),
+            val worstSubmissionsToDiscardCount = max(
+                0,
+                gamesCount - (submissions.count() - discardWorstGamesCount)
             )
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
