@@ -1,5 +1,6 @@
 package wotw.server.game.handlers.league
 
+import dev.kord.common.entity.InteractionType
 import dev.kord.common.entity.Snowflake
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.allowedMentions
@@ -15,6 +16,7 @@ import wotw.server.main.WotwBackendServer
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.logger
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -30,8 +32,8 @@ class LeagueManager(val server: WotwBackendServer) {
      * Processing = finishing current game and eventually creating next game.
      * {time -> [LeagueSeason IDs]
      */
-    private var upcomingSeasonProcessingTimes = sortedMapOf<ZonedDateTime, MutableList<Long>>()
-    private var upcomingSeasonReminderTimes = sortedMapOf<ZonedDateTime, MutableList<Long>>()
+    private var upcomingSeasonProcessingTimes = sortedMapOf<Instant, MutableList<Long>>()
+    private var upcomingSeasonReminderTimes = sortedMapOf<Instant, MutableList<Long>>()
 
     fun getDiscordChannel(): Snowflake {
         val channelId = System.getenv("LEAGUE_DISCORD_CHANNEL_ID")
@@ -44,7 +46,7 @@ class LeagueManager(val server: WotwBackendServer) {
     }
 
     private val scheduler = Scheduler {
-        val now = ZonedDateTime.now()
+        val now = Instant.now()
 
         for (time in upcomingSeasonProcessingTimes.keys) {
             if (now < time) {  // We can break here because the keys are sorted in ascending order
@@ -173,7 +175,7 @@ class LeagueManager(val server: WotwBackendServer) {
     private suspend fun trySendSeasonCreatedDiscordMessage(season: LeagueSeason) {
         server.ifKord { kord ->
             kord.rest.channel.createMessage(getDiscordChannel()) {
-                val joinableUntilTimestamp = season.getNextScheduledGameTime().toEpochSecond()
+                val joinableUntilTimestamp = season.nextContinuationAt.epochSecond
 
                 this.content = """
                     # ${season.name}: Season signups opened! ${server.discordService.getEmojiMarkdown("orilurk")}
@@ -326,7 +328,7 @@ class LeagueManager(val server: WotwBackendServer) {
         server.ifKord { kord ->
             kord.rest.channel.createMessage(getDiscordChannel()) {
                 val memberSnowflakes = missingMemberships.map { Snowflake(it.user.id.value) }
-                val submittableUntilTimestamp = season.getNextScheduledGameTime().toEpochSecond()
+                val submittableUntilTimestamp = season.nextContinuationAt.epochSecond
 
                 this.content = """
                     ## ${season.name}: Reminder for Game ${currentGame.gameNumber}
@@ -350,7 +352,8 @@ class LeagueManager(val server: WotwBackendServer) {
         // If there's no current game, we only need to schedule if more games are supposed to be
         // created for that season.
         if (season.currentGame != null || !season.hasReachedGameCountLimit) {
-            val time = season.getNextScheduledGameTime()
+            season.updateNextContinuationAtTimestamp()
+            val time = season.nextContinuationAt
 
             logger().debug("LeagueManager: Scheduled season for processing {} at {}", season.id.value, time)
 
@@ -362,11 +365,9 @@ class LeagueManager(val server: WotwBackendServer) {
 
             season.currentGame?.let { currentGame ->
                 // Remind at 80% of the time, but at most 24 hours before submission ends
-                val oneDayBeforeEnd = time.minusHours(24)
-                val eightyPercentBeforeEnd = ZonedDateTime.ofInstant(
-                    Instant.ofEpochSecond(
-                        (currentGame.createdAt.epochSecond + (time.toEpochSecond() - currentGame.createdAt.epochSecond) * 0.8).toLong()
-                    ), ZoneId.systemDefault(),
+                val oneDayBeforeEnd = time.minus(Duration.ofHours(24))
+                val eightyPercentBeforeEnd = Instant.ofEpochSecond(
+                    (currentGame.createdAt.epochSecond + (time.epochSecond - currentGame.createdAt.epochSecond) * 0.8).toLong()
                 )
 
                 val reminderTime = if (eightyPercentBeforeEnd.isAfter(oneDayBeforeEnd)) {

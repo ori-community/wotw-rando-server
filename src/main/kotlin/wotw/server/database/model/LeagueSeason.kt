@@ -80,6 +80,8 @@ object LeagueSeasons : LongIdTable("league_seasons") {
             ),
         )
     )
+
+    val nextContinuationAtCache = timestamp("next_continuation_at_cache").nullable()
 }
 
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
@@ -102,6 +104,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     var currentGame by LeagueGame optionalReferencedOn LeagueSeasons.currentGameId
     val games by LeagueGame referrersOn LeagueGames.seasonId
     val memberships by LeagueSeasonMembership referrersOn LeagueSeasonMemberships.seasonId
+    private var nextContinuationAtCache by LeagueSeasons.nextContinuationAtCache
+    val nextContinuationAt: Instant get() = this.nextContinuationAtCache ?: this.updateNextContinuationAtTimestamp()
+
 
     // Allow joining before the first game has ended
     val canJoin get() = games.count() <= 1L && currentGame == games.firstOrNull()
@@ -202,18 +207,23 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         return game
     }
 
-    fun getNextScheduledGameTime(): ZonedDateTime {
+    fun updateNextContinuationAtTimestamp(): Instant {
         val cron = cronParser.parse(this.scheduleCron)
 
         // Find the next schedule time that is after the most recent game, or now
         // if no games have been created yet
-        val nextScheduledGameTime = ExecutionTime
-            .forCron(cron)
-            .nextExecution(this.games.maxOfOrNull { it.createdAt }?.atZone(ZoneId.systemDefault()) ?: ZonedDateTime.now())
-            .getOrNull() ?: throw RuntimeException("Cron expression '$scheduleCron' does not seem to repeat infinitely")
 
         val scheduleStartAtZoned = this.scheduleStartAt.atZone(ZoneId.systemDefault())
 
-        return maxOf(scheduleStartAtZoned, nextScheduledGameTime)
+        val time = ExecutionTime
+            .forCron(cron)
+            .nextExecution(this.games.maxOfOrNull { it.createdAt }?.atZone(ZoneId.systemDefault()) ?: scheduleStartAtZoned)
+            .getOrNull()
+            ?.toInstant()
+            ?: throw RuntimeException("Cron expression '$scheduleCron' does not seem to repeat infinitely")
+
+        this.nextContinuationAtCache = time
+
+        return time
     }
 }
