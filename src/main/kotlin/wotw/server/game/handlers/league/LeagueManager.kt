@@ -154,18 +154,13 @@ class LeagueManager(val server: WotwBackendServer) {
                 it.toEntity(LeagueSeason.Companion)?.let { season ->
                     if (it.changeType == EntityChangeType.Created) {
                         if (!season.announcementSent) {
-                            newSuspendedTransaction {
-                                season.announcementSent = true
-                            }
-
+                            season.announcementSent = true
                             trySendSeasonCreatedDiscordMessage(season)
                         }
                     }
                 } ?: it.toEntity(LeagueGameSubmission.Companion)?.let { submission ->
                     if (it.changeType == EntityChangeType.Created) {
-                        newSuspendedTransaction {
-                            trySendRunSubmittedDiscordMessageIntoSpoilerThreadAndAddUser(submission)
-                        }
+                        trySendRunSubmittedDiscordMessageIntoSpoilerThreadAndAddUser(submission)
                     }
                 }
             }
