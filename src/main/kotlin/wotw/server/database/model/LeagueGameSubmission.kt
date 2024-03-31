@@ -45,7 +45,7 @@ class LeagueGameSubmission(id: EntityID<Long>) : LongEntity(id) {
 
                 result += "${minutes.toString().padStart(2, '0')}:"
                 result += "${seconds.toString().padStart(2, '0')}."
-                result += (nanoseconds / 100_000).toString().padStart(3, '0')
+                result += (nanoseconds / 1_000_000).toString().padStart(3, '0')
 
                 result
             }
