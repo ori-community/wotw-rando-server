@@ -182,6 +182,7 @@ class WotwBackendServer {
                     cacheEntry.handler.let { handler ->
                         logger.info("Disposed handler for multiverse ${handler.multiverseId}")
                         handler.stop()
+                        handler.persistState()
                     }
                 }
             }
