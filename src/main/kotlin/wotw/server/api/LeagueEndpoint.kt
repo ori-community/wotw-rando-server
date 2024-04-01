@@ -17,7 +17,7 @@ import wotw.server.main.WotwBackendServer
 
 class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
-        authenticate(JWT_AUTH) {
+        authenticate(JWT_AUTH, optional = true) {
             get("league/seasons") {
                 call.respond(newSuspendedTransaction {
                     LeagueSeason.all()
@@ -40,7 +40,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 call.respond(newSuspendedTransaction {
                     val game = LeagueGame.findById(gameId) ?: throw NotFoundException("Game not found")
-                    server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUser())
+                    server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUserOrNull())
                 })
             }
 
@@ -50,12 +50,12 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(newSuspendedTransaction {
                     val game = LeagueGame.findById(gameId) ?: throw NotFoundException("Game not found")
 
-                    val user = authenticatedUser()
+                    val user = authenticatedUserOrNull()
                     val handler = server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler ?: throw BadRequestException("This is not a league game")
 
                     // Return full submissions if the game is over or the user submitted for this game,
                     // otherwise return reduced information
-                    if (handler.didSubmitForThisGame(user) || !handler.getLeagueGame().isCurrent) {
+                    if ((user != null && handler.didSubmitForThisGame(user)) || !handler.getLeagueGame().isCurrent) {
                         game.submissions.map(server.infoMessagesService::generateLeagueGameSubmissionInfo)
                     } else {
                         game.submissions.map(server.infoMessagesService::generateReducedLeagueGameSubmissionInfo)
@@ -63,6 +63,17 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 })
             }
 
+            get("league/{multiverse_id}/game") {
+                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+
+                call.respond(newSuspendedTransaction {
+                    val game = LeagueGame.find { LeagueGames.multiverseId eq multiverseId }.firstOrNull() ?: throw NotFoundException("Game not found")
+                    server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUserOrNull())
+                })
+            }
+        }
+
+        authenticate(JWT_AUTH) {
             post("league/seasons/{season_id}/membership") {
                 val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 
@@ -89,15 +100,6 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 call.respond(HttpStatusCode.Created, seasonInfo)
-            }
-
-            get("league/{multiverse_id}/game") {
-                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
-
-                call.respond(newSuspendedTransaction {
-                    val game = LeagueGame.find { LeagueGames.multiverseId eq multiverseId }.firstOrNull() ?: throw NotFoundException("Game not found")
-                    server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUser())
-                })
             }
 
             post("league/{multiverse_id}/submission") {
