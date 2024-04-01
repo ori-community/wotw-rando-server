@@ -23,8 +23,14 @@ data class WorldInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val color: String,
-    @ProtoNumber(4) val members: List<UserInfo>,
+    @ProtoNumber(4) val memberships: List<WorldMembershipInfo>,
     @ProtoNumber(5) val seedId: Long?,
+)
+
+@Serializable
+data class WorldMembershipInfo(
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val user: UserInfo,
 )
 
 @Serializable

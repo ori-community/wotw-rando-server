@@ -62,12 +62,18 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         }
     )
 
+    fun generateWorldMembershipInfo(worldMemberhip: WorldMembership) =
+        WorldMembershipInfo(
+            worldMemberhip.id.value,
+            generateUserInfo(worldMemberhip.user),
+        )
+
     fun generateWorldInfo(world: World, color: String? = null) =
         WorldInfo(
             world.id.value,
             world.name,
             color ?: COLORS[world.universe.worlds.sortedBy { it.id }.indexOf(world) % COLORS.size],
-            world.members.map(::generateUserInfo),
+            world.memberships.map(::generateWorldMembershipInfo),
             world.seed?.id?.value,
         )
 
