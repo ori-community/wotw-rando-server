@@ -19,7 +19,7 @@ data class GameHandlerCacheEntry(
     var expires: Long = System.currentTimeMillis() + 1000L * 60L * 30L, // 30 min
 ) {
     fun isExpired() = expires < System.currentTimeMillis()
-    fun isDisposable() = isExpired() && (handler.isDisposable())
+    suspend fun isDisposable() = isExpired() && (handler.isDisposable())
     fun refresh() {
         expires = System.currentTimeMillis() + 1000L * 60L * 30L // 30 min
     }

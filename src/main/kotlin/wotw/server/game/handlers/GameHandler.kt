@@ -92,7 +92,7 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
      * If you return false here, the state of the handler can be serialized
      * and the handler will be stopped and destroyed.
      */
-    open fun isDisposable(): Boolean = true
+    open suspend fun isDisposable(): Boolean = true
 
     suspend fun persistState() {
         newSuspendedTransaction {

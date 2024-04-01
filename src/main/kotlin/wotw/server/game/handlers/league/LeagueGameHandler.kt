@@ -6,6 +6,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.AggregationStrategyRegistry
 import wotw.server.bingo.UberStateMap
@@ -15,7 +16,6 @@ import wotw.server.game.GameConnectionHandler
 import wotw.server.game.GameConnectionHandlerSyncResult
 import wotw.server.game.MultiverseEvent
 import wotw.server.game.handlers.GameHandler
-import wotw.server.game.handlers.NormalGameHandlerState
 import wotw.server.game.handlers.WorldMembershipId
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
@@ -188,4 +188,20 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
     override fun canSpectateMultiverse(user: User): Boolean = false
 
     override fun canDuplicateMultiverse(): Boolean = false
+
+    override suspend fun isDisposable(): Boolean {
+        return newSuspendedTransaction {
+            !getLeagueGame().isCurrent
+        }
+    }
+
+    override fun serializeState(): String {
+        return json.encodeToString(LeagueGameHandlerState.serializer(), state)
+    }
+
+    override suspend fun restoreState(serializedState: String?) {
+        serializedState?.let {
+            state = json.decodeFromString(LeagueGameHandlerState.serializer(), it)
+        }
+    }
 }
