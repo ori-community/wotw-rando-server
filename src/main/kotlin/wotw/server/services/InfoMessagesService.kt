@@ -41,6 +41,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         multiverse.board != null,
         multiverse.seed != null,
         multiverse.memberships.map { generateUserInfo(it.user) },
+        multiverse.createdAt.toEpochMilli(),
     )
 
     suspend fun generateMultiverseInfoMessage(multiverse: Multiverse) = MultiverseInfoMessage(

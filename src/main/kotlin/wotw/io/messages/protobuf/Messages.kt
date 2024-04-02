@@ -69,6 +69,7 @@ data class MultiverseMetadataInfoMessage(
     @ProtoNumber(2) val hasBingoBoard: Boolean,
     @ProtoNumber(3) val hasSeed: Boolean,
     @ProtoNumber(4) val members: List<UserInfo>,
+    @ProtoNumber(5) val createdAt: Long,
 )
 
 @Serializable
