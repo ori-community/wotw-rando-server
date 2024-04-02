@@ -72,7 +72,13 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
             .values
             .reversed()
             .forEachIndexed { index, submissionsWithSamePoints ->
-                submissionsWithSamePoints.forEach { it.rank = index + 1 }
+                submissionsWithSamePoints.forEach {
+                    it.rank = if (it.time == null) {
+                        null
+                    } else {
+                        index + 1
+                    }
+                }
             }
     }
 }
