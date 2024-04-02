@@ -512,7 +512,7 @@ data class LeagueGameInfo(
 @Serializable
 data class LeagueGameUserMetadata(
     @ProtoNumber(1) val canSubmit: Boolean,
-    @ProtoNumber(2) val didSubmit: Boolean,
+    @ProtoNumber(2) @Required val ownSubmission: LeagueGameSubmissionInfo? = null,
 )
 
 @Serializable

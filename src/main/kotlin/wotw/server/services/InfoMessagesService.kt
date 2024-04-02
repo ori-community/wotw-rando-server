@@ -103,7 +103,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
             (server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler)?.let { leagueHandler ->
                 LeagueGameUserMetadata(
                     leagueHandler.canSubmit(user),
-                    leagueHandler.didSubmitForThisGame(user),
+                    leagueHandler.getSubmissionForThisGame(user)?.let { generateLeagueGameSubmissionInfo(it) },
                 )
             }
         },
