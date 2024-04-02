@@ -9,6 +9,8 @@ import dev.kord.core.Kord
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.allowedMentions
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
+import dev.kord.rest.request.KtorRequestException
+import io.ktor.util.logging.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.EntityChangeType
 import org.jetbrains.exposed.dao.EntityHook
@@ -210,153 +212,168 @@ class LeagueManager(val server: WotwBackendServer) {
     }
 
     private suspend fun trySendSeasonCreatedDiscordMessage(season: LeagueSeason) {
-        server.ifKord { kord ->
-            kord.rest.channel.createMessage(getDiscordChannel()) {
-                val joinableUntilTimestamp = season.nextContinuationAt.epochSecond
+        try {
+            server.ifKord { kord ->
+                kord.rest.channel.createMessage(getDiscordChannel()) {
+                    val joinableUntilTimestamp = season.nextContinuationAt.epochSecond
 
-                this.content = """
-                    # ${season.name}: Season signups opened! ${server.discordService.getEmojiMarkdown("orilurk")}
-                    
-                    A new season of the Ori and the Will of the Wisps Randomizer League is coming up!
-                """.trimIndent()
+                    this.content = """
+                        # ${season.name}: Season signups opened! ${server.discordService.getEmojiMarkdown("orilurk")}
+                        
+                        A new season of the Ori and the Will of the Wisps Randomizer League is coming up!
+                    """.trimIndent()
 
-                this.content += "\n\n"
-                this.content += season.longDescriptionMarkdown.lines().joinToString("\n") { "> $it" }
-                this.content += "\n\n"
+                    this.content += "\n\n"
+                    this.content += season.longDescriptionMarkdown.lines().joinToString("\n") { "> $it" }
+                    this.content += "\n\n"
 
-                this.content += """
-                    **You can join until <t:${joinableUntilTimestamp}:f> (<t:${joinableUntilTimestamp}:R>)**
-                    
-                    Read more about the seed settings and rules on the season page.
-                """.trimIndent()
+                    this.content += """
+                        **You can join until <t:${joinableUntilTimestamp}:f> (<t:${joinableUntilTimestamp}:R>)**
+                        
+                        Read more about the seed settings and rules on the season page.
+                    """.trimIndent()
 
-                this.suppressEmbeds = true
+                    this.suppressEmbeds = true
 
-                this.components = mutableListOf(
-                    ActionRowBuilder().also {
-                        it.linkButton(server.getUiUrl("/league/seasons/${season.id.value}")) {
-                            this.label = "Join Season"
+                    this.components = mutableListOf(
+                        ActionRowBuilder().also {
+                            it.linkButton(server.getUiUrl("/league/seasons/${season.id.value}")) {
+                                this.label = "Join Season"
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
+        } catch (e: Exception) {
+            logger().error("Could not send season created Discord message")
+            logger().error(e)
         }
     }
 
     private suspend fun trySendNewGameCreatedDiscordMessage(season: LeagueSeason, game: LeagueGame, previousGame: LeagueGame?) {
-        server.ifKord { kord ->
-            assertTransaction()
+        try {
+            server.ifKord { kord ->
+                assertTransaction()
 
-            kord.rest.channel.createMessage(getDiscordChannel()) {
-                val memberSnowflakes = season.memberships.map { Snowflake(it.user.id.value) }
+                kord.rest.channel.createMessage(getDiscordChannel()) {
+                    val memberSnowflakes = season.memberships.map { Snowflake(it.user.id.value) }
 
-                val gameNumberOrdinal = when (game.gameNumber.toString().last()) {
-                    '1' -> "${game.gameNumber}st"
-                    '2' -> "${game.gameNumber}nd"
-                    '3' -> "${game.gameNumber}rd"
-                    else -> "${game.gameNumber}th"
-                }
+                    val gameNumberOrdinal = when (game.gameNumber.toString().last()) {
+                        '1' -> "${game.gameNumber}st"
+                        '2' -> "${game.gameNumber}nd"
+                        '3' -> "${game.gameNumber}rd"
+                        else -> "${game.gameNumber}th"
+                    }
 
-                this.content = """
-                    ## ${season.name}: Game ${game.gameNumber}
-                    
-                    The $gameNumberOrdinal of ${season.gameCount} games is now available to play. Have fun!
-                """.trimIndent()
+                    this.content = """
+                        ## ${season.name}: Game ${game.gameNumber}
+                        
+                        The $gameNumberOrdinal of ${season.gameCount} games is now available to play. Have fun!
+                    """.trimIndent()
 
-                if (season.canJoin) {
+                    if (season.canJoin) {
+                        this.content += """
+                            
+                            If you did not join this season yet, you can **still join until this game ended**!
+                        """.trimIndent()
+                    }
+
                     this.content += """
                         
-                        If you did not join this season yet, you can **still join until this game ended**!
+                        Season players: ${memberSnowflakes.joinToString(", ") { "<@${it.value}>" }}
                     """.trimIndent()
-                }
 
-                this.content += """
-                    
-                    Season players: ${memberSnowflakes.joinToString(", ") { "<@${it.value}>" }}
-                """.trimIndent()
-
-                this.allowedMentions {
-                    this.users.addAll(memberSnowflakes)
-                }
-
-                this.suppressEmbeds = true
-
-                this.components = mutableListOf(
-                    ActionRowBuilder().also {
-                        it.linkButton(server.getUiUrl("/league/game/${game.id.value}")) {
-                            this.label = "Open Game"
-                        }
-
-                        if (previousGame != null) {
-                            it.linkButton(server.getUiUrl("/league/game/${previousGame.id.value}")) {
-                                this.label = "Previous Game"
-                            }
-                        }
-
-                        it.linkButton(server.getUiUrl("/league/seasons/${season.id.value}")) {
-                            this.label = if (season.canJoin) {
-                                "Join Season"
-                            } else {
-                                "Season Leaderboard"
-                            }
-                        }
+                    this.allowedMentions {
+                        this.users.addAll(memberSnowflakes)
                     }
-                )
+
+                    this.suppressEmbeds = true
+
+                    this.components = mutableListOf(
+                        ActionRowBuilder().also {
+                            it.linkButton(server.getUiUrl("/league/game/${game.id.value}")) {
+                                this.label = "Open Game"
+                            }
+
+                            if (previousGame != null) {
+                                it.linkButton(server.getUiUrl("/league/game/${previousGame.id.value}")) {
+                                    this.label = "Previous Game"
+                                }
+                            }
+
+                            it.linkButton(server.getUiUrl("/league/seasons/${season.id.value}")) {
+                                this.label = if (season.canJoin) {
+                                    "Join Season"
+                                } else {
+                                    "Season Leaderboard"
+                                }
+                            }
+                        }
+                    )
+                }
             }
+        } catch (e: Exception) {
+            logger().error("Could not send game created Discord message")
+            logger().error(e)
         }
     }
 
     private suspend fun trySendSeasonFinishedDiscordMessage(season: LeagueSeason) {
-        server.ifKord { kord ->
-            kord.rest.channel.createMessage(getDiscordChannel()) {
-                val sortedMemberships = season.memberships
-                    .filter { it.rank != null && it.points > 0 }
-                    .groupBy { it.rank ?: throw RuntimeException("Never happens") }
-                    .toSortedMap()
+        try {
+            server.ifKord { kord ->
+                kord.rest.channel.createMessage(getDiscordChannel()) {
+                    val sortedMemberships = season.memberships
+                        .filter { it.rank != null && it.points > 0 }
+                        .groupBy { it.rank ?: throw RuntimeException("Never happens") }
+                        .toSortedMap()
 
-                val allVisibleMemberships = sortedMemberships.values.flatten()
-                val maxPoints = allVisibleMemberships.maxOfOrNull { it.points } ?: 0
-                val maxPointsDigits = maxPoints.toString().length
+                    val allVisibleMemberships = sortedMemberships.values.flatten()
+                    val maxPoints = allVisibleMemberships.maxOfOrNull { it.points } ?: 0
+                    val maxPointsDigits = maxPoints.toString().length
 
-                this.content = "## ${season.name}: Season has ended ${server.discordService.getEmojiMarkdown("orihype")}"
+                    this.content = "## ${season.name}: Season has ended ${server.discordService.getEmojiMarkdown("orihype")}"
 
-                if (allVisibleMemberships.isEmpty()) {
-                    this.content += """
-                        
-                        There have not been any active players in this season.
-                    """.trimIndent()
-                } else {
-                    this.content += """
-                        
-                        ### Season Leaderboard:
-                    """.trimIndent()
+                    if (allVisibleMemberships.isEmpty()) {
+                        this.content += """
+                            
+                            There have not been any active players in this season.
+                        """.trimIndent()
+                    } else {
+                        this.content += """
+                            
+                            ### Season Leaderboard:
+                        """.trimIndent()
 
-                    sortedMemberships.forEach { (rank, memberships) ->
-                        val rankMedal = when (rank) {
-                            1 -> "\uD83E\uDD47"     // 🥇
-                            2 -> "\uD83E\uDD48"     // 🥈
-                            3 -> "\uD83E\uDD49"     // 🥉
-                            else -> "\uD83C\uDFC5"  // 🏅
+                        sortedMemberships.forEach { (rank, memberships) ->
+                            val rankMedal = when (rank) {
+                                1 -> "\uD83E\uDD47"     // 🥇
+                                2 -> "\uD83E\uDD48"     // 🥈
+                                3 -> "\uD83E\uDD49"     // 🥉
+                                else -> "\uD83C\uDFC5"  // 🏅
+                            }
+
+                            this.content += "\n$rankMedal `${
+                                memberships[0].points.toString().padStart(maxPointsDigits)
+                            }` ${memberships.joinToString(", ") { "<@${it.user.id.value}>" }}"
                         }
 
-                        this.content += "\n$rankMedal `${
-                            memberships[0].points.toString().padStart(maxPointsDigits)
-                        }` ${memberships.joinToString(", ") { "<@${it.user.id.value}>" }}"
+                        this.content += """
+                            
+                            
+                            Thanks for playing!
+                        """.trimIndent()
                     }
 
-                    this.content += """
-                        
-                        
-                        Thanks for playing!
-                    """.trimIndent()
-                }
+                    this.suppressEmbeds = true
 
-                this.suppressEmbeds = true
-
-                this.allowedMentions {
-                    this.users.addAll(allVisibleMemberships.map { Snowflake(it.user.id.value) })
+                    this.allowedMentions {
+                        this.users.addAll(allVisibleMemberships.map { Snowflake(it.user.id.value) })
+                    }
                 }
             }
+        } catch (e: Exception) {
+            logger().error("Could not send season finished Discord message")
+            logger().error(e)
         }
     }
 
@@ -404,31 +421,40 @@ class LeagueManager(val server: WotwBackendServer) {
     }
 
     private suspend fun trySendRunSubmittedDiscordMessageIntoSpoilerThreadAndAddUser(submission: LeagueGameSubmission) {
-        server.ifKord { kord ->
-            assertTransaction()
+        try {
+            server.ifKord { kord ->
+                assertTransaction()
 
-            val game = submission.game
-            val threadId = getSpoilerDiscordThreadId(game, kord)
+                val game = submission.game
+                val threadId = getSpoilerDiscordThreadId(game, kord)
 
-            kord.rest.channel.addUserToThread(threadId, Snowflake(submission.membership.user.id.value))
-
-            kord.rest.channel.createMessage(threadId) {
-                if (submission.time != null) {
-                    this.content = """
-                        <@${submission.membership.user.id.value}> finished with a time of **${submission.formattedTime}**.
-                    """.trimIndent()
-                } else {
-                    this.content = """
-                        <@${submission.membership.user.id.value}> DNF'd.
-                    """.trimIndent()
+                try {
+                    kord.rest.channel.addUserToThread(threadId, Snowflake(submission.membership.user.id.value))
+                } catch (e: KtorRequestException) {
+                    logger().error("Could not add user ${submission.membership.user.id.value} to thread $threadId")
                 }
 
-                this.suppressEmbeds = true
+                kord.rest.channel.createMessage(threadId) {
+                    if (submission.time != null) {
+                        this.content = """
+                            <@${submission.membership.user.id.value}> finished with a time of **${submission.formattedTime}**.
+                        """.trimIndent()
+                    } else {
+                        this.content = """
+                            <@${submission.membership.user.id.value}> DNF'd.
+                        """.trimIndent()
+                    }
 
-                this.allowedMentions {
-                    this.users.add(Snowflake(submission.membership.user.id.value))
+                    this.suppressEmbeds = true
+
+                    this.allowedMentions {
+                        this.users.add(Snowflake(submission.membership.user.id.value))
+                    }
                 }
             }
+        } catch (e: Exception) {
+            logger().error("Could not send run submitted Discord message into the spoiler thread")
+            logger().error(e)
         }
     }
 
