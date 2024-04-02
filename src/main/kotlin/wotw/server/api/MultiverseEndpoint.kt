@@ -11,7 +11,10 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.MultiverseCreationConfig
 import wotw.io.messages.protobuf.*
@@ -291,11 +294,16 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     newSuspendedTransaction {
                         val user = authenticatedUser()
 
-                        val recentMultiverses = Multiverse.find {
-                            (WorldMemberships.multiverseId eq Multiverses.id) and
-                                    (Multiverses.gameHandlerType eq GameHandlerType.NORMAL) and
-                                    (WorldMemberships.userId eq user.id)
-                        }
+                        val recentMultiverses = Multiverse.wrapRows(
+                            Multiverses
+                                .innerJoin(WorldMemberships)
+                                .selectAll()
+                                .where {
+                                    (WorldMemberships.multiverseId eq Multiverses.id) and
+                                            (Multiverses.gameHandlerType eq GameHandlerType.NORMAL) and
+                                            (WorldMemberships.userId eq user.id)
+                                }
+                        )
 
                         recentMultiverses
                             .orderBy(Multiverses.id to SortOrder.DESC)
