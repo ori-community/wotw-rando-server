@@ -35,12 +35,20 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     throw BadRequestException("Bingothon does not support boards sized other than 5x5 yet")
                 }
 
-                val currentPlayerUniverseInThisMultiverse = Universe.find {
-                    (Universes.id eq Worlds.universeId) and
-                            (Worlds.id eq WorldMemberships.worldId) and
-                            (WorldMemberships.userId eq player.id.value) and
-                            (Universes.multiverseId eq multiverse.id)
-                }.firstOrNull()
+                val currentPlayerUniverseInThisMultiverse = Universe.wrapRows(
+                    Universes
+                        .innerJoin(Worlds)
+                        .innerJoin(WorldMemberships)
+                        .selectAll()
+                        .where {
+                            (Universes.id eq Worlds.universeId) and
+                                    (Worlds.id eq WorldMemberships.worldId) and
+                                    (WorldMemberships.userId eq player.id.value) and
+                                    (Universes.multiverseId eq multiverse.id)
+                        }
+                ).firstOrNull()
+
+
 
                 val bingoInfo = multiverse.bingoUniverseInfo()
                 val bingoData = BingoData(multiverse.createBingoBoardMessage(currentPlayerUniverseInThisMultiverse, playerIsSpectator), bingoInfo)

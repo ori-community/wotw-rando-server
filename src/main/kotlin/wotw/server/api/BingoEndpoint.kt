@@ -8,6 +8,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.BingoData
 import wotw.server.database.model.*
@@ -38,12 +39,18 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         val info = multiverse.bingoUniverseInfo()
 
                         val currentPlayerUniverseInThisMultiverse = player?.id?.value?.let { playerId ->
-                            Universe.find {
-                                (Universes.id eq Worlds.universeId) and
-                                        (Worlds.id eq WorldMemberships.worldId) and
-                                        (WorldMemberships.userId eq playerId) and
-                                        (Universes.multiverseId eq multiverseId)
-                            }.firstOrNull()
+                            Universe.wrapRows(
+                                Universes
+                                    .innerJoin(Worlds)
+                                    .innerJoin(WorldMemberships)
+                                    .selectAll()
+                                    .where {
+                                        (Universes.id eq Worlds.universeId) and
+                                                (Worlds.id eq WorldMemberships.worldId) and
+                                                (WorldMemberships.userId eq playerId) and
+                                                (Universes.multiverseId eq multiverseId)
+                                    }
+                            ).firstOrNull()
                         }
 
                         BingoData(multiverse.createBingoBoardMessage(currentPlayerUniverseInThisMultiverse, playerIsSpectator), info)
