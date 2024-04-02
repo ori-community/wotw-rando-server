@@ -306,7 +306,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
 
                         recentMultiverses
-                            .orderBy(Multiverses.id to SortOrder.DESC)
+                            .orderBy(Multiverses.createdAt to SortOrder.DESC)
                             .limit(16)
                             .map(server.infoMessagesService::generateMultiverseMetadataInfoMessage)
                     }
