@@ -520,14 +520,15 @@ data class LeagueSeasonInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val memberships: List<LeagueSeasonMembershipInfo>,
-    @ProtoNumber(4) val games: List<LeagueGameInfo>,
-    @ProtoNumber(5) val canJoin: Boolean,
-    @ProtoNumber(6) @Required val currentGameId: Long? = null,
-    @ProtoNumber(7) val shortDescription: String,
-    @ProtoNumber(8) val longDescriptionMarkdown: String,
-    @ProtoNumber(9) val rulesMarkdown: String,
-    @ProtoNumber(10) val nextContinuationAt: Long,
-    @ProtoNumber(11) @Required val backgroundImageUrl: String? = null,
+    @ProtoNumber(4) val gameCount: Int,
+    @ProtoNumber(5) val games: List<LeagueGameInfo>,
+    @ProtoNumber(6) val canJoin: Boolean,
+    @ProtoNumber(7) @Required val currentGameId: Long? = null,
+    @ProtoNumber(8) val shortDescription: String,
+    @ProtoNumber(9) val longDescriptionMarkdown: String,
+    @ProtoNumber(10) val rulesMarkdown: String,
+    @ProtoNumber(11) val nextContinuationAt: Long,
+    @ProtoNumber(12) @Required val backgroundImageUrl: String? = null,
 )
 
 @Serializable
