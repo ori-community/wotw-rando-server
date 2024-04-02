@@ -36,6 +36,13 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         race.finishedTime,
     )
 
+    fun generateMultiverseMetadataInfoMessage(multiverse: Multiverse) = MultiverseMetadataInfoMessage(
+        multiverse.id.value,
+        multiverse.board != null,
+        multiverse.seed != null,
+        multiverse.memberships.map { generateUserInfo(it.user) },
+    )
+
     suspend fun generateMultiverseInfoMessage(multiverse: Multiverse) = MultiverseInfoMessage(
         multiverse.id.value,
         multiverse.universes.sortedBy { it.id }

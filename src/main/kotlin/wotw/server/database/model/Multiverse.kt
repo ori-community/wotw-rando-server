@@ -4,6 +4,8 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
+import org.jetbrains.exposed.sql.javatime.timestamp
 import org.jetbrains.exposed.sql.json.jsonb
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
@@ -11,6 +13,7 @@ import wotw.server.bingo.BingoBoard
 import wotw.server.bingo.Point
 import wotw.server.bingo.UberStateMap
 import wotw.server.bingo.plus
+import wotw.server.database.model.LeagueGames.defaultExpression
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.sync.UniverseStateCache
 import wotw.server.util.assertTransaction
@@ -27,6 +30,7 @@ object Multiverses : LongIdTable("multiverses") {
     val gameHandlerStateJson = jsonb("game_handler_state", { s -> s }, { s -> s }).nullable()
     val locked = bool("locked").default(false)
     val isLockable = bool("is_lockable").default(true)
+    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
 }
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {
@@ -40,6 +44,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val bingoCardClaims by BingoCardClaim referrersOn BingoCardClaims.multiverseId
     var spectators by User via Spectators
     val memberships by WorldMembership referrersOn WorldMemberships.multiverseId
+    val createdAt by Multiverses.createdAt
 
     var gameHandlerType by Multiverses.gameHandlerType
     var gameHandlerActive by Multiverses.gameHandlerActive

@@ -64,6 +64,14 @@ data class RaceInfo(
 )
 
 @Serializable
+data class MultiverseMetadataInfoMessage(
+    @ProtoNumber(1) val id: Long,
+    @ProtoNumber(2) val hasBingoBoard: Boolean,
+    @ProtoNumber(3) val hasSeed: Boolean,
+    @ProtoNumber(4) val members: List<UserInfo>,
+)
+
+@Serializable
 data class MultiverseInfoMessage(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val universes: List<UniverseInfo>,

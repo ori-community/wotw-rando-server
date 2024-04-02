@@ -10,20 +10,19 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.SizedCollection
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.MultiverseCreationConfig
 import wotw.io.messages.protobuf.*
 import wotw.server.bingo.BingoBoardGenerator
-import wotw.server.database.model.Multiverse
-import wotw.server.database.model.Seed
-import wotw.server.database.model.WorldMembership
-import wotw.server.database.model.WorldMemberships
+import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
 import wotw.server.exception.ForbiddenException
 import wotw.server.game.DebugEvent
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.MultiverseEvent
+import wotw.server.game.handlers.GameHandlerType
 import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
@@ -285,6 +284,25 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 call.respondText("${newMultiverse.id.value}", status = HttpStatusCode.Created)
+            }
+
+            get("multiverses/own") {
+                call.respond(
+                    newSuspendedTransaction {
+                        val user = authenticatedUser()
+
+                        val recentMultiverses = Multiverse.find {
+                            (WorldMemberships.multiverseId eq Multiverses.id) and
+                                    (Multiverses.gameHandlerType eq GameHandlerType.NORMAL) and
+                                    (WorldMemberships.userId eq user.id)
+                        }
+
+                        recentMultiverses
+                            .orderBy(Multiverses.id to SortOrder.DESC)
+                            .limit(16)
+                            .map(server.infoMessagesService::generateMultiverseMetadataInfoMessage)
+                    }
+                )
             }
         }
 
