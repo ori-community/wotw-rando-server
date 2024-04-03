@@ -130,6 +130,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         season.rulesMarkdown,
         season.nextContinuationAt.toEpochMilli(),
         season.backgroundImageUrl,
+        season.discardWorstGamesCount,
     )
 
     fun generateLeagueGameSubmissionInfo(submission: LeagueGameSubmission) = LeagueGameSubmissionInfo(
