@@ -165,7 +165,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             Regex("""^(https?://)?(www\.)?twitch\.tv/videos"""),
                         )
 
-                        if (allowedRegexes.none { it.matches(url) }) {
+                        if (allowedRegexes.none { it.containsMatchIn(url) }) {
                             throw BadRequestException("URL is not allowed")
                         }
                     }
