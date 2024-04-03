@@ -159,6 +159,17 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         throw ForbiddenException("You can only set the video URL of your own submissions")
                     }
 
+                    request.videoUrl?.let { url ->
+                        val allowedRegexes = listOf(
+                            Regex("""^(https?://)?(www\.)?(youtube\.com/watch|youtu\.be/)"""),
+                            Regex("""^(https?://)?(www\.)?twitch\.tv/videos"""),
+                        )
+
+                        if (allowedRegexes.none { it.matches(url) }) {
+                            throw BadRequestException("URL is not allowed")
+                        }
+                    }
+
                     submission.videoUrl = request.videoUrl
                 }
 
