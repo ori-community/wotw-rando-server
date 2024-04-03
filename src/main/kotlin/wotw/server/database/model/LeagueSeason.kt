@@ -144,11 +144,21 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             .reversed()
             .forEachIndexed { index, membershipsWithSamePoints ->
                 membershipsWithSamePoints.forEach {
-                    it.rank = if (it.points == 0) {
+                    val newRank = if (it.points == 0) {
                         null
                     } else {
                         index + 1
                     }
+
+                    val currentRank = it.rank
+
+                    if (newRank != null && currentRank != null) {
+                        it.lastRankDelta = newRank - currentRank
+                    } else {
+                        it.lastRankDelta = null
+                    }
+
+                    it.rank = newRank
                 }
             }
     }

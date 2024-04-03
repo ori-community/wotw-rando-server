@@ -15,6 +15,7 @@ object LeagueSeasonMemberships : LongIdTable("league_season_memberships") {
     val points = integer("points").default(0)
     val pointsWithoutDiscarded = integer("points_without_discarded").default(0)
     val rank = integer("rank").nullable()
+    val lastRankDelta = integer("last_rank_delta").nullable()
 }
 
 class LeagueSeasonMembership(id: EntityID<Long>) : LongEntity(id) {
@@ -26,5 +27,6 @@ class LeagueSeasonMembership(id: EntityID<Long>) : LongEntity(id) {
     var points by LeagueSeasonMemberships.points
     var pointsWithoutDiscarded by LeagueSeasonMemberships.pointsWithoutDiscarded
     var rank by LeagueSeasonMemberships.rank
+    var lastRankDelta by LeagueSeasonMemberships.lastRankDelta
     val submissions by LeagueGameSubmission referrersOn LeagueGameSubmissions.membershipId
 }

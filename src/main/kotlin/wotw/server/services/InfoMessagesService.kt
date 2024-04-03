@@ -95,6 +95,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         generateUserInfo(membership.user),
         membership.points,
         membership.rank,
+        membership.lastRankDelta,
         membership.joinedAt.toEpochMilli(),
     )
 
