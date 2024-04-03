@@ -208,4 +208,6 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
             state = json.decodeFromString(LeagueGameHandlerState.serializer(), it)
         }
     }
+
+    override fun shouldEnforceSeedDifficulty(): Boolean = true
 }

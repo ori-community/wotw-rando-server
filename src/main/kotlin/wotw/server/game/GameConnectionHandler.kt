@@ -3,6 +3,7 @@ package wotw.server.game
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.InitGameSyncMessage
+import wotw.io.messages.protobuf.SetEnforceSeedDifficultyMessage
 import wotw.io.messages.protobuf.SetSaveGuidRestrictionsMessage
 import wotw.server.database.model.User
 import wotw.server.database.model.WorldMembership
@@ -66,6 +67,7 @@ class GameConnectionHandler(
                         true,
                     ),
                     handler.shouldPreventCheats(worldMembership),
+                    SetEnforceSeedDifficultyMessage(handler.shouldEnforceSeedDifficulty())
                 )
             )
 

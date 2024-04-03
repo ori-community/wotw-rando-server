@@ -194,6 +194,14 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             when (message.event) {
                 "enableRaceMode" -> {
                     state.raceModeEnabled = true
+
+                    server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
+                        server.connections.toPlayers(
+                            worldMembershipIds,
+                            SetEnforceSeedDifficultyMessage(true),
+                        )
+                    }
+
                     notifyMultiverseOrClientInfoChanged()
                     checkRaceStartCondition()
                     notifyShouldBlockStartingGameChanged()
@@ -609,4 +617,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             )
         }
     }
+
+    override fun shouldEnforceSeedDifficulty(): Boolean = state.raceModeEnabled
 }

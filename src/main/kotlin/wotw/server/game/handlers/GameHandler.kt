@@ -184,4 +184,6 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     open fun canSpectateMultiverse(user: User): Boolean = true
 
     open fun canDuplicateMultiverse(): Boolean = true
+
+    open fun shouldEnforceSeedDifficulty(): Boolean = false
 }
