@@ -153,6 +153,11 @@ data class CreateLeagueSeasonRequest(
 )
 
 @Serializable
+data class SetSubmissionVideoUrlRequest(
+    val videoUrl: String?,
+)
+
+@Serializable
 data class BingothonTokenRequest(val multiverseId: Long)
 
 @Serializable

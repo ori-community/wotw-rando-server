@@ -560,4 +560,5 @@ data class LeagueGameSubmissionRankingData(
     @ProtoNumber(2) val points: Int,
     @ProtoNumber(3) @Required val rank: Int? = null,
     @ProtoNumber(4) val discarded: Boolean,
+    @ProtoNumber(5) @Required val videoUrl: String? = null,
 )

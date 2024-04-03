@@ -141,6 +141,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
             submission.points,
             submission.rank,
             submission.discarded,
+            submission.videoUrl,
         )
     )
 

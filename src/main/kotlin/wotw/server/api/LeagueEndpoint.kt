@@ -10,7 +10,9 @@ import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.SetSubmissionVideoUrlRequest
 import wotw.server.database.model.*
+import wotw.server.exception.ForbiddenException
 import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
@@ -145,6 +147,22 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 call.respond(HttpStatusCode.Created)
+            }
+
+            post<SetSubmissionVideoUrlRequest>("league/submissions/{submission_id}/video-url") { request ->
+                val submissionId = call.parameters["submission_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable Submission ID")
+
+                newSuspendedTransaction {
+                    val submission = LeagueGameSubmission.findById(submissionId) ?: throw NotFoundException("Submission not found")
+
+                    if (submission.membership.user.id != authenticatedUser().id) {
+                        throw ForbiddenException("You can only set the video URL of your own submissions")
+                    }
+
+                    submission.videoUrl = request.videoUrl
+                }
+
+                call.respond(HttpStatusCode.OK)
             }
         }
     }
