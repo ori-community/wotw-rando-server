@@ -26,7 +26,6 @@ class InfoMessagesService(private val server: WotwBackendServer) {
     fun generateRaceTeamInfo(raceTeam: RaceTeam) = RaceTeamInfo(
         raceTeam.id.value,
         raceTeam.members.map(::generateRaceTeamMemberInfo),
-        raceTeam.points,
         raceTeam.finishedTime,
     )
 

@@ -20,7 +20,6 @@ class Race(id: EntityID<Long>): LongEntity(id){
 object RaceTeams : LongIdTable("race_teams") {
     val raceId = reference("race_id", Races, ReferenceOption.CASCADE)
     val finishedTime = float("finished_time").nullable()
-    val points = integer("points").default(0)
 }
 
 class RaceTeam(id: EntityID<Long>): LongEntity(id){
@@ -29,7 +28,6 @@ class RaceTeam(id: EntityID<Long>): LongEntity(id){
     var race by Race referencedOn RaceTeams.raceId
     val members by RaceTeamMember referrersOn RaceTeamMembers.raceTeamId
     var finishedTime by RaceTeams.finishedTime
-    var points by RaceTeams.points
 }
 
 object RaceTeamMembers : LongIdTable("race_team_members") {

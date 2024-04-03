@@ -315,20 +315,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                 this.finishedTime = finishedTime
             }
 
-            val universeRanks = state.universeFinishedTimes.toList().filter { (universeId, finishedTime) -> finishedTime != 0f && Universe.findById(universeId) != null }
-                .sortedBy { (_, finishedTime) -> finishedTime }.mapIndexed { index, (universeId, _) -> Pair(universeId, index) }.toMap()
-
             multiverse.universes.forEach() { universe ->
                 val team = RaceTeam.new {
                     this.race = race
                     this.finishedTime = state.universeFinishedTimes[universe.id.value]
-
-                    // Only distribute points if there are 2+ entrants
-                    if (state.universeFinishedTimes.size >= 2) {
-                        this.points = universeRanks[universe.id.value]?.let { rank ->
-                            universeRanks.size - rank
-                        } ?: 0
-                    }
                 }
 
                 universe.memberships.forEach() { worldMembership ->

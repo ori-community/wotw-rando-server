@@ -51,7 +51,6 @@ data class RaceTeamMemberInfo(
 data class RaceTeamInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val members: List<RaceTeamMemberInfo>,
-    @ProtoNumber(3) val points: Int,
     @ProtoNumber(4) @Required val finishedTime: Float? = null,
 )
 
