@@ -337,8 +337,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                         this.user = worldMembership.user
                         this.finishedTime = state.playerFinishedTimes[worldMembership.id.value]
                     }
-
-                    worldMembership.user.points += team.points
                 }
             }
 

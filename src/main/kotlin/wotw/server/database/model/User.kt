@@ -11,7 +11,6 @@ object Users : StringIdTable("users") {
     val isCustomName = bool("is_custom_name").default(false)
     val avatarId = text("avatar_id").nullable()
     val isDeveloper = bool("is_developer").default(false)
-    val points = integer("points").default(0)
 
     override val primaryKey = PrimaryKey(id)
 }
@@ -23,7 +22,6 @@ class User(id: EntityID<String>) : StringEntity(id) {
     var isCustomName by Users.isCustomName
     var avatarId by Users.avatarId
     var isDeveloper by Users.isDeveloper
-    var points by Users.points
     val worlds by World via WorldMemberships
     val multiverses by Multiverse via WorldMemberships
     val worldMemberships by WorldMembership referrersOn WorldMemberships.userId

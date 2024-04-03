@@ -15,7 +15,6 @@ data class UserInfo(
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val avatarId: String?,
     @ProtoNumber(6) val isDeveloper: Boolean,
-    @ProtoNumber(7) val points: Int,
 )
 
 @Serializable

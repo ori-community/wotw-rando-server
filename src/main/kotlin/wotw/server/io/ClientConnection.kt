@@ -112,7 +112,6 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                                         user.name,
                                         user.avatarId,
                                         user.isDeveloper,
-                                        user.points,
                                     )
                                 }
 
