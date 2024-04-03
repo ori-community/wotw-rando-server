@@ -416,6 +416,20 @@ class LeagueManager(val server: WotwBackendServer) {
                     ChannelType.PrivateThread,
                 ) {
                     this.invitable = false
+                }.also { channel ->
+                    val message = kord.rest.channel.createMessage(channel.id) {
+                        this.content = "# Game ${game.gameNumber} | ${game.season.name}"
+
+                        this.components = mutableListOf(
+                            ActionRowBuilder().also {
+                                it.linkButton(server.getUiUrl("/league/game/${game.id.value}")) {
+                                    this.label = "Open Game"
+                                }
+                            }
+                        )
+                    }
+
+                    kord.rest.channel.addPinnedMessage(channel.id, message.id)
                 }.id.value.also { game.discordSpoilerThreadId = it }
         )
     }
