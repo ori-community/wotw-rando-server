@@ -166,7 +166,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         )
 
                         if (allowedRegexes.none { it.containsMatchIn(url) }) {
-                            throw BadRequestException("URL is not allowed")
+                            throw BadRequestException("Currently, only videos on YouTube and Twitch are supported.\nIf you want to use another video platform, let us know!")
                         }
                     }
 
