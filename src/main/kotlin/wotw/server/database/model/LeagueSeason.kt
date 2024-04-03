@@ -143,7 +143,13 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             .values
             .reversed()
             .forEachIndexed { index, membershipsWithSamePoints ->
-                membershipsWithSamePoints.forEach { it.rank = index + 1 }
+                membershipsWithSamePoints.forEach {
+                    it.rank = if (it.points == 0) {
+                        null
+                    } else {
+                        index + 1
+                    }
+                }
             }
     }
 
