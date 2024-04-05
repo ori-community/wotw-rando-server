@@ -451,7 +451,7 @@ class LeagueManager(val server: WotwBackendServer) {
                         """.trimIndent()
                     } else {
                         this.content = """
-                            <@${submission.membership.user.id.value}> DNF'd.
+                            <@${submission.membership.user.id.value}> did not finish.
                         """.trimIndent()
                     }
 
