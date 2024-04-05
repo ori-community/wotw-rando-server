@@ -423,6 +423,8 @@ class LeagueManager(val server: WotwBackendServer) {
                             
                             [Open Game](${server.getUiUrl("/league/game/${game.id.value}")})
                         """.trimIndent()
+
+                        this.suppressEmbeds = true
                     }
 
                     kord.rest.channel.addPinnedMessage(channel.id, message.id)
