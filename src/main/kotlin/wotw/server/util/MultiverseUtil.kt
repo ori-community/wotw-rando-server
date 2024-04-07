@@ -18,19 +18,13 @@ import wotw.server.sync.WorldStateCache
 
 class MultiverseUtil(val server: WotwBackendServer) {
     suspend fun leaveMultiverse(worldMembership: WorldMembership) {
-        val multiverse = worldMembership.multiverse
-
-        doAfterTransaction {
-            server.multiverseMemberCache.invalidate(worldMembership.multiverse.id.value)
-        }
-
         worldMembership.world.universe.memberships.forEach {
             doAfterTransaction {
                 server.worldMembershipEnvironmentCache.invalidate(it.id.value)
             }
         }
 
-        worldMembership.world.universe.multiverse.let {
+        worldMembership.multiverse.let {
             it.cleanup()
             it.updateAutomaticWorldNames()
 
@@ -41,7 +35,7 @@ class MultiverseUtil(val server: WotwBackendServer) {
 
         worldMembership.delete()
 
-        server.connections.broadcastMultiverseInfoMessage(multiverse)
+        server.connections.broadcastMultiverseInfoMessage(worldMembership.multiverse)
     }
 
     suspend fun movePlayerToWorld(player: User, world: World): WorldMembership {
@@ -77,6 +71,8 @@ class MultiverseUtil(val server: WotwBackendServer) {
             universeWorldMembershipIds.forEach { worldMembershipId ->
                 server.worldMembershipEnvironmentCache.invalidate(worldMembershipId)
             }
+
+            server.multiverseMemberCache.invalidate(newMultiverseId)
 
             server.connections.broadcastMultiverseInfoMessage(worldMembershipId)
             server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(worldMembershipId)
