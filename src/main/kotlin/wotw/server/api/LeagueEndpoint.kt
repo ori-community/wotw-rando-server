@@ -184,7 +184,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 if (autoValidationErrors.isEmpty()) {
                     call.respond(HttpStatusCode.Created)
                 } else {
-                    call.respond(HttpStatusCode(420, "Auto Validation failed"), autoValidationErrors.joinToString("\n"))
+                    call.respond(HttpStatusCode(298, "Auto Validation failed"), autoValidationErrors.joinToString("\n"))
                 }
             }
 
