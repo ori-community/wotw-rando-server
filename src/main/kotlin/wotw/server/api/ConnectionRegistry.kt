@@ -92,7 +92,7 @@ class ConnectionRegistry(val server: WotwBackendServer) {
         toObservers(multiverse.id.value, spectatorsOnly = false, message)
     }
 
-    suspend fun registerMultiverseConnection2(socket: ClientConnection, worldMembershipId: Long, oriType: OriType) =
+    suspend fun registerMultiverseConnection(socket: ClientConnection, worldMembershipId: Long, oriType: OriType) =
         run {
             unregisterMultiverseConnection(worldMembershipId)
 

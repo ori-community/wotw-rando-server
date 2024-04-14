@@ -24,6 +24,10 @@ data class PlayerLeftEvent(
     val player: User,
 )
 
+data class GameDisconnectedEvent(
+    val worldMembershipId: Long,
+)
+
 data class MultiverseEvent(
     val event: String,
     val sender: WorldMembership,

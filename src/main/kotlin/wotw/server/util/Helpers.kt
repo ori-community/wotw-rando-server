@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.statements.StatementInterceptor
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -74,3 +75,5 @@ fun doAfterTransaction(action: suspend () -> Unit) {
         }
     })
 }
+
+fun nowEpoch() = Clock.System.now().toEpochMilliseconds().toFloat() / 1000f

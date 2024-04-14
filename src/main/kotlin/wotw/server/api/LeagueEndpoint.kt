@@ -11,15 +11,13 @@ import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.SetSubmissionVideoUrlRequest
-import wotw.server.constants.LEAGUE_MAX_IGT_RTA_DIFFERENCE
+import wotw.server.constants.LEAGUE_MAX_DISCONNECTED_TIME
 import wotw.server.database.model.*
 import wotw.server.exception.ForbiddenException
 import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
-import wotw.server.util.NTuple4
 import wotw.server.util.NTuple5
-import kotlin.math.abs
 import kotlin.math.floor
 
 class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -112,7 +110,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             post("league/{multiverse_id}/submission") {
                 val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 
-                val (handler, canSubmit, expectedSaveGuid, playerRealTime, minimumInGameTimeToAllowBreaks) = newSuspendedTransaction {
+                val (handler, canSubmit, expectedSaveGuid, playerDisconnectedTime, minimumInGameTimeToAllowBreaks) = newSuspendedTransaction {
                     val user = authenticatedUser()
                     val worldMembership = WorldMembership
                         .find { (WorldMemberships.userId eq user.id.value) and (WorldMemberships.multiverseId eq multiverseId) }
@@ -124,7 +122,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         handler,
                         handler.canSubmit(user),
                         handler.getPlayerSaveGuid(worldMembership),
-                        handler.getPlayerRealTime(worldMembership) ?: throw BadRequestException("RTA time missing"),
+                        handler.getPlayerDisconnectedTime(worldMembership),
                         handler.getLeagueGame().season.minimumInGameTimeToAllowBreaks,
                     )
                 }
@@ -155,15 +153,14 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 saveFileBuffer.get(saveFileArray)
 
                 val autoValidationErrors = mutableListOf<String>()
-                val igtRtaDifference = abs(playerRealTime - saveData.inGameTime - saveData.asyncLoadingTime)
 
                 if (
                     saveData.inGameTime < minimumInGameTimeToAllowBreaks &&
-                    igtRtaDifference > LEAGUE_MAX_IGT_RTA_DIFFERENCE
+                    playerDisconnectedTime > LEAGUE_MAX_DISCONNECTED_TIME
                 ) {
                     autoValidationErrors += """
                         Taking breaks during the run is only allowed after ${floor(minimumInGameTimeToAllowBreaks / 60f)} minutes of in-game time.
-                        The difference between RTA and IGT was $igtRtaDifference seconds.
+                        You were disconnected for $playerDisconnectedTime seconds.
                     """.trimIndent()
                 }
 

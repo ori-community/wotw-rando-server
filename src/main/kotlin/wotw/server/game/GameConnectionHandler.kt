@@ -37,6 +37,10 @@ class GameConnectionHandler(
         }
     }
 
+    suspend fun onMultiverseEvent(message: Any) {
+        server.gameHandlerRegistry.getHandler(multiverseId).onMultiverseEvent(message)
+    }
+
     suspend fun setup(): GameConnectionHandlerSyncResult? {
         return newSuspendedTransaction {
             val worldMembership = WorldMembership.find {

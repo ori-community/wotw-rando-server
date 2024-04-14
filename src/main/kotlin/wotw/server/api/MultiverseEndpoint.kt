@@ -11,8 +11,6 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -24,6 +22,7 @@ import wotw.server.exception.ConflictException
 import wotw.server.exception.ForbiddenException
 import wotw.server.game.DebugEvent
 import wotw.server.game.GameConnectionHandler
+import wotw.server.game.GameDisconnectedEvent
 import wotw.server.game.MultiverseEvent
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.io.handleClientSocket
@@ -357,7 +356,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     worldMembershipId = setupResult.worldMembershipId
 
-                    server.connections.registerMultiverseConnection2(
+                    server.connections.registerMultiverseConnection(
                         socketConnection,
                         setupResult.worldMembershipId,
                         oriType,
@@ -379,6 +378,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     logger.info("WebSocket for World Membership $worldMembershipId disconnected (close, ${closeReason.await()})")
 
                     worldMembershipId?.let {
+                        connectionHandler?.onMultiverseEvent(GameDisconnectedEvent(it))
                         server.connections.unregisterMultiverseConnection(it)
                     }
                 }
@@ -387,6 +387,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     logger.info("WebSocket for World Membership $worldMembershipId disconnected (error, ${closeReason.await()}, $it)")
 
                     worldMembershipId?.let {
+                        connectionHandler?.onMultiverseEvent(GameDisconnectedEvent(it))
                         server.connections.unregisterMultiverseConnection(it)
                     }
                 }

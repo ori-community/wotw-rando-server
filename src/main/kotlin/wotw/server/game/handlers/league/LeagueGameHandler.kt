@@ -1,9 +1,5 @@
-@file:OptIn(ExperimentalSerializationApi::class)
-
 package wotw.server.game.handlers.league
 
-import kotlinx.datetime.Clock
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.json
@@ -14,18 +10,24 @@ import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
 import wotw.server.game.GameConnectionHandler
 import wotw.server.game.GameConnectionHandlerSyncResult
+import wotw.server.game.GameDisconnectedEvent
 import wotw.server.game.MultiverseEvent
 import wotw.server.game.handlers.GameHandler
 import wotw.server.game.handlers.WorldMembershipId
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 import wotw.server.util.logger
+import wotw.server.util.makeServerTextMessage
+import wotw.server.util.nowEpoch
 
 
 @Serializable
 data class LeagueGameHandlerState(
     var playerInGameTimes: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
     var playerStartedAtTimestamps: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
+    var playerFinishedAtTimestamps: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
+    var playerDisconnectedTimes: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
+    var playerDisconnectedAtTimestamps: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
     var playerSaveGuids: MutableMap<WorldMembershipId, MoodGuid> = mutableMapOf(),
 )
 
@@ -42,26 +44,22 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
     init {
         // Prevent going backwards in time
-        messageEventBus.register(this, ReportInGameTimeMessage::class) { message, playerId ->
-            state.playerInGameTimes[playerId] = message.inGameTime
+        messageEventBus.register(this, ReportInGameTimeMessage::class) { message, worldMembershipId ->
+            state.playerInGameTimes[worldMembershipId] = message.inGameTime
 
-            val currentInGameTime = state.playerInGameTimes[playerId] ?: 0f
+            val currentInGameTime = state.playerInGameTimes[worldMembershipId] ?: 0f
 
             if (currentInGameTime > message.inGameTime) {
-                server.connections.toPlayers(listOf(playerId), OverrideInGameTimeMessage(currentInGameTime))
+                server.connections.toPlayers(listOf(worldMembershipId), OverrideInGameTimeMessage(currentInGameTime))
                 return@register
             } else {
-                state.playerInGameTimes[playerId] = message.inGameTime
+                state.playerInGameTimes[worldMembershipId] = message.inGameTime
+
+                if (message.isFinished && !state.playerFinishedAtTimestamps.containsKey(worldMembershipId)) {
+                    state.playerFinishedAtTimestamps[worldMembershipId] = nowEpoch()
+                }
             }
         }
-
-        // Mark user as DNF if they aborted a game with a >0 time
-        // multiverseEventBus.register(this, PlayerLeftEvent::class) { event ->
-        //     val currentInGameTime = state.playerInGameTimes[event.player.id.value] ?: 0f
-        //     if (currentInGameTime > 0f && canSubmit(event.player)) {
-        //         createSubmission(event.player, null)
-        //     }
-        // }
 
         multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
@@ -75,22 +73,45 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
             }
         }
 
-        messageEventBus.register(this, SetPlayerSaveGuidMessage::class) { message, playerId ->
+        messageEventBus.register(this, SetPlayerSaveGuidMessage::class) { message, worldMembershipId ->
             // Don't override existing GUID if there's already one.
             // Resetting and starting a new save file is not allowed
-            val guid = state.playerSaveGuids.getOrPut(playerId) {
-                state.playerStartedAtTimestamps[playerId] = Clock.System.now().toEpochMilliseconds() / 1000f
-                return@getOrPut message.playerSaveGuid
+            val guid = if (!state.playerSaveGuids.containsKey(worldMembershipId)) {
+                state.playerStartedAtTimestamps[worldMembershipId] = nowEpoch()
+                state.playerSaveGuids[worldMembershipId] = message.playerSaveGuid
+                message.playerSaveGuid
+            } else {
+                state.playerSaveGuids[worldMembershipId]!!
+            }
+
+            if (guid != message.playerSaveGuid) {
+                server.connections.toPlayers(
+                    listOf(worldMembershipId),
+                    makeServerTextMessage("""
+                        In League games you can only start and
+                        finish on #one single Save File#.
+                    """.trimIndent())
+                )
             }
 
             server.connections.toPlayers(
-                listOf(playerId),
+                listOf(worldMembershipId),
                 SetSaveGuidRestrictionsMessage(
                     guid,
                     true,
                 )
             )
         }
+
+        multiverseEventBus.register(this, GameDisconnectedEvent::class) { event ->
+            if (didStartPlaying(event.worldMembershipId)) {
+                state.playerDisconnectedAtTimestamps[event.worldMembershipId] = nowEpoch()
+            }
+        }
+    }
+
+    private fun didStartPlaying(worldMembershipId: WorldMembershipId): Boolean {
+        return state.playerStartedAtTimestamps.containsKey(worldMembershipId)
     }
 
     private fun getLeagueSeasonMembership(user: User): LeagueSeasonMembership? {
@@ -109,7 +130,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return getLeagueGame().submissions.any { it.membership.user.id == user.id }
     }
 
-    suspend fun canSubmit(user: User): Boolean {
+    fun canSubmit(user: User): Boolean {
         return !didSubmitForThisGame(user) && isLeagueSeasonMember(user) && getLeagueGame().isCurrent
     }
 
@@ -191,6 +212,13 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
                     SetSeedMessage(seedContent),
                 )
             }
+
+            // Add disconnected time if we reconnected
+            state.playerDisconnectedAtTimestamps[worldMembershipId]?.let {
+                val disconnectedFor = nowEpoch() - it
+                state.playerDisconnectedTimes[worldMembershipId] = (state.playerDisconnectedTimes[worldMembershipId] ?: 0f) + disconnectedFor
+                state.playerDisconnectedAtTimestamps.remove(worldMembershipId)
+            }
         }
     }
 
@@ -216,10 +244,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
     override fun shouldEnforceSeedDifficulty(): Boolean = true
 
-
-    fun getPlayerRealTime(worldMembership: WorldMembership): Float? {
-        return state.playerStartedAtTimestamps[worldMembership.id.value]?.let {
-            return@let (Clock.System.now().toEpochMilliseconds() / 1000f) - it
-        }
+    fun getPlayerDisconnectedTime(worldMembership: WorldMembership): Float {
+        return state.playerDisconnectedTimes[worldMembership.id.value] ?: 0f
     }
 }
