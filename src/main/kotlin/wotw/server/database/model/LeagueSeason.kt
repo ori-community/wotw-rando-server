@@ -82,6 +82,8 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     val nextContinuationAtCache = timestamp("next_continuation_at_cache").nullable()
     val backgroundImageUrl = varchar("background_image_url", 256).nullable()
     val announcementSent = bool("announcement_sent").default(false)
+
+    val minimumInGameTimeToAllowBreaks = float("minimum_in_game_time_to_allow_breaks").default(60f * 60f * 2f)
 }
 
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
@@ -107,6 +109,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     private var nextContinuationAtCache by LeagueSeasons.nextContinuationAtCache
     var backgroundImageUrl by LeagueSeasons.backgroundImageUrl
     var announcementSent by LeagueSeasons.announcementSent
+    var minimumInGameTimeToAllowBreaks by LeagueSeasons.minimumInGameTimeToAllowBreaks
 
     val nextContinuationAt: Instant get() = this.nextContinuationAtCache ?: this.updateNextContinuationAtTimestamp()
 
@@ -175,6 +178,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                         this.membership = membership
                         this.time = null
                         this.saveFile = null
+                        this.validated = true
                     }.flush()
                 }
             }

@@ -103,7 +103,7 @@ class WotwBackendServer {
         var udpSocket: BoundDatagramSocket? = null
     }
 
-    val logger = logger()
+    val logger: org.slf4j.Logger = logger()
 
     fun start(args: Array<String>) {
         initDatabase()

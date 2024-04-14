@@ -1,9 +1,6 @@
 package wotw.server.game
 
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import wotw.io.messages.protobuf.MoodGuid
 import wotw.io.messages.relaxedJson
 import wotw.server.util.logger
@@ -16,6 +13,7 @@ class WotwSaveFileReader(
     data class SaveFileData(
         val version: Int,
         val inGameTime: Float,
+        val asyncLoadingTime: Float,
         val saveFileGuid: MoodGuid,
     )
 
@@ -79,6 +77,7 @@ class WotwSaveFileReader(
             val json = relaxedJson.parseToJsonElement(jsonString)
 
             val inGameTimeElement = json.jsonObject["in_game_time"]
+            val asyncLoadingTimesElement = json.jsonObject["async_loading_times"]
 
             if (inGameTimeElement == null || inGameTimeElement !is JsonPrimitive) {
                 logger().error("WotwSaveFileReader: Tried to read in-game-time but element was null or not a primitive")
@@ -87,9 +86,31 @@ class WotwSaveFileReader(
 
             val inGameTime = inGameTimeElement.jsonPrimitive.floatOrNull ?: return null
 
+            if (asyncLoadingTimesElement == null || asyncLoadingTimesElement !is JsonArray) {
+                logger().error("WotwSaveFileReader: Tried to read async loading times but element was null or not an array")
+                return null
+            }
+
+            var totalAsyncLoadingTime = 0f
+
+            asyncLoadingTimesElement.jsonArray.forEach { element ->
+                if (element !is JsonArray) {
+                    logger().error("WotwSaveFileReader: Tried to read async loading time element but element was not an array")
+                    return null
+                }
+
+                val asyncLoadingTime = element[1].jsonPrimitive.floatOrNull ?: run {
+                    logger().error("WotwSaveFileReader: Tried to read async loading time element but 2nd item in array was not a float")
+                    return null
+                }
+                
+                totalAsyncLoadingTime += asyncLoadingTime
+            }
+
             return SaveFileData(
                 saveFileVersion,
                 inGameTime,
+                totalAsyncLoadingTime,
                 saveGuid,
             )
         }

@@ -2,9 +2,9 @@
 
 package wotw.server.game.handlers.league
 
+import kotlinx.datetime.Clock
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.protobuf.ProtoNumber
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
@@ -24,8 +24,9 @@ import wotw.server.util.logger
 
 @Serializable
 data class LeagueGameHandlerState(
-    @ProtoNumber(1) var playerInGameTimes: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
-    @ProtoNumber(2) var playerSaveGuids: MutableMap<WorldMembershipId, MoodGuid> = mutableMapOf(),
+    var playerInGameTimes: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
+    var playerStartedAtTimestamps: MutableMap<WorldMembershipId, Float> = mutableMapOf(),
+    var playerSaveGuids: MutableMap<WorldMembershipId, MoodGuid> = mutableMapOf(),
 )
 
 
@@ -66,7 +67,9 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
             when (message.event) {
                 "forfeit" -> {
                     if (canSubmit(message.sender.user)) {
-                        createSubmission(message.sender.user, null)
+                        createSubmission(message.sender.user) {
+                            it.validated = true
+                        }
                     }
                 }
             }
@@ -75,7 +78,10 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         messageEventBus.register(this, SetPlayerSaveGuidMessage::class) { message, playerId ->
             // Don't override existing GUID if there's already one.
             // Resetting and starting a new save file is not allowed
-            val guid = state.playerSaveGuids.getOrPut(playerId) { return@getOrPut message.playerSaveGuid }
+            val guid = state.playerSaveGuids.getOrPut(playerId) {
+                state.playerStartedAtTimestamps[playerId] = Clock.System.now().toEpochMilliseconds() / 1000f
+                return@getOrPut message.playerSaveGuid
+            }
 
             server.connections.toPlayers(
                 listOf(playerId),
@@ -107,7 +113,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         return !didSubmitForThisGame(user) && isLeagueSeasonMember(user) && getLeagueGame().isCurrent
     }
 
-    suspend fun createSubmission(user: User, time: Float?, saveFile: ByteArray = ByteArray(0)) {
+    suspend fun createSubmission(user: User, apply: ((LeagueGameSubmission) -> Unit)? = null) {
         newSuspendedTransaction {
             val membership = getLeagueSeasonMembership(user)
 
@@ -119,8 +125,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
             val submission = LeagueGameSubmission.new {
                 this.game = getLeagueGame()
                 this.membership = membership
-                this.time = time
-                this.saveFile = saveFile
+                apply?.invoke(this)
             }
 
             submission.flush()
@@ -210,4 +215,11 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
     }
 
     override fun shouldEnforceSeedDifficulty(): Boolean = true
+
+
+    fun getPlayerRealTime(worldMembership: WorldMembership): Float? {
+        return state.playerStartedAtTimestamps[worldMembership.id.value]?.let {
+            return@let (Clock.System.now().toEpochMilliseconds() / 1000f) - it
+        }
+    }
 }

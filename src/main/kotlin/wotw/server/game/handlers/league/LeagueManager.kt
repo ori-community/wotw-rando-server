@@ -457,6 +457,10 @@ class LeagueManager(val server: WotwBackendServer) {
                         """.trimIndent()
                     }
 
+                    if (!submission.validated) {
+                        this.content += " (auto-validation failed)"
+                    }
+
                     this.suppressEmbeds = true
 
                     this.allowedMentions {

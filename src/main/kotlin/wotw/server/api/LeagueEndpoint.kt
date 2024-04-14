@@ -11,11 +11,16 @@ import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.SetSubmissionVideoUrlRequest
+import wotw.server.constants.LEAGUE_MAX_IGT_RTA_DIFFERENCE
 import wotw.server.database.model.*
 import wotw.server.exception.ForbiddenException
 import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
+import wotw.server.util.NTuple4
+import wotw.server.util.NTuple5
+import kotlin.math.abs
+import kotlin.math.floor
 
 class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {
@@ -107,14 +112,21 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             post("league/{multiverse_id}/submission") {
                 val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 
-                val (handler, canSubmit, expectedSaveGuid) = newSuspendedTransaction {
+                val (handler, canSubmit, expectedSaveGuid, playerRealTime, minimumInGameTimeToAllowBreaks) = newSuspendedTransaction {
                     val user = authenticatedUser()
                     val worldMembership = WorldMembership
                         .find { (WorldMemberships.userId eq user.id.value) and (WorldMemberships.multiverseId eq multiverseId) }
                         .firstOrNull() ?: throw BadRequestException("You are not part of that multiverse")
 
                     val handler = server.gameHandlerRegistry.getHandler(worldMembership.multiverse) as? LeagueGameHandler ?: throw BadRequestException("This is not a league game")
-                    Triple(handler, handler.canSubmit(user), handler.getPlayerSaveGuid(worldMembership))
+
+                    NTuple5(
+                        handler,
+                        handler.canSubmit(user),
+                        handler.getPlayerSaveGuid(worldMembership),
+                        handler.getPlayerRealTime(worldMembership) ?: throw BadRequestException("RTA time missing"),
+                        handler.getLeagueGame().season.minimumInGameTimeToAllowBreaks,
+                    )
                 }
 
                 if (!canSubmit) {
@@ -142,11 +154,38 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 saveFileBuffer.rewind()
                 saveFileBuffer.get(saveFileArray)
 
-                newSuspendedTransaction {
-                    handler.createSubmission(authenticatedUser(), saveData.inGameTime, saveFileArray)
+                val autoValidationErrors = mutableListOf<String>()
+                val igtRtaDifference = abs(playerRealTime - saveData.inGameTime - saveData.asyncLoadingTime)
+
+                if (
+                    saveData.inGameTime < minimumInGameTimeToAllowBreaks &&
+                    igtRtaDifference > LEAGUE_MAX_IGT_RTA_DIFFERENCE
+                ) {
+                    autoValidationErrors += """
+                        Taking breaks during the run is only allowed after ${floor(minimumInGameTimeToAllowBreaks / 60f)} minutes of in-game time.
+                        The difference between RTA and IGT was $igtRtaDifference seconds.
+                    """.trimIndent()
                 }
 
-                call.respond(HttpStatusCode.Created)
+                newSuspendedTransaction {
+                    handler.createSubmission(authenticatedUser()) {
+                        it.time = saveData.inGameTime
+                        it.saveFile = saveFileArray
+
+                        if (autoValidationErrors.isEmpty()) {
+                            it.autoValidationErrors = autoValidationErrors.joinToString("\n")
+                            it.validated = false
+                        } else {
+                            it.validated = true
+                        }
+                    }
+                }
+
+                if (autoValidationErrors.isEmpty()) {
+                    call.respond(HttpStatusCode.Created)
+                } else {
+                    call.respond(HttpStatusCode(420, "Auto Validation failed"), autoValidationErrors.joinToString("\n"))
+                }
             }
 
             post<SetSubmissionVideoUrlRequest>("league/submissions/{submission_id}/video-url") { request ->
