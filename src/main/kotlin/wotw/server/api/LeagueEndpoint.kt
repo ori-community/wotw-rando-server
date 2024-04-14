@@ -172,7 +172,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         it.time = saveData.inGameTime
                         it.saveFile = saveFileArray
 
-                        if (autoValidationErrors.isEmpty()) {
+                        if (autoValidationErrors.isNotEmpty()) {
                             it.autoValidationErrors = autoValidationErrors.joinToString("\n")
                             it.validated = false
                         } else {
@@ -181,10 +181,10 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
                 }
 
-                if (autoValidationErrors.isEmpty()) {
-                    call.respond(HttpStatusCode.Created)
-                } else {
+                if (autoValidationErrors.isNotEmpty()) {
                     call.respond(HttpStatusCode(298, "Auto Validation failed"), autoValidationErrors.joinToString("\n"))
+                } else {
+                    call.respond(HttpStatusCode.Created)
                 }
             }
 
