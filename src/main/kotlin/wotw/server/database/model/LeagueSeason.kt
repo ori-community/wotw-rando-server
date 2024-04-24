@@ -121,7 +121,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     fun recalculateMembershipPointsAndRanks() {
         assertTransaction()
 
-        memberships.forEach { membership ->
+        for (membership in memberships) {
             val submissions = membership.submissions.sortedBy { it.points }
             val worstSubmissionsToDiscardCount = max(
                 0,
@@ -140,30 +140,34 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             membership.points = countingSubmissions.sumOf { it.points }
         }
 
-        memberships
+        val membershipsGroupedByPointsInDescendingOrder = memberships
             .groupBy { it.points }
             .toSortedMap()
             .values
             .reversed()
-            .forEachIndexed { index, membershipsWithSamePoints ->
-                membershipsWithSamePoints.forEach {
-                    val newRank = if (it.points == 0) {
-                        null
-                    } else {
-                        index + 1
-                    }
 
-                    val currentRank = it.rank
-
-                    if (newRank != null && currentRank != null) {
-                        it.lastRankDelta = newRank - currentRank
-                    } else {
-                        it.lastRankDelta = null
-                    }
-
-                    it.rank = newRank
+        var nextRank = 1
+        for (membershipsWithSamePoints in membershipsGroupedByPointsInDescendingOrder) {
+            for (membership in membershipsWithSamePoints) {
+                val newRank = if (membership.points == 0) {
+                    null
+                } else {
+                    nextRank
                 }
+
+                val currentRank = membership.rank
+
+                if (newRank != null && currentRank != null) {
+                    membership.lastRankDelta = newRank - currentRank
+                } else {
+                    membership.lastRankDelta = null
+                }
+
+                membership.rank = newRank
             }
+
+            nextRank += membershipsWithSamePoints.size
+        }
     }
 
     fun finishCurrentGame() {
