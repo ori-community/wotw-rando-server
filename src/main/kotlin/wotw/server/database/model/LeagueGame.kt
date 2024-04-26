@@ -66,19 +66,25 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
             submission.points = points
         }
 
-        cachedSubmissions
+        val submissionsGroupedByPointsInDescendingOrder = cachedSubmissions
             .groupBy { it.points }
             .toSortedMap()
             .values
             .reversed()
-            .forEachIndexed { index, submissionsWithSamePoints ->
-                submissionsWithSamePoints.forEach {
-                    it.rank = if (it.time == null) {
-                        null
-                    } else {
-                        index + 1
-                    }
+
+        var nextRank = 1
+        for (submissionsWithSamePoints in submissionsGroupedByPointsInDescendingOrder) {
+            for (submission in submissionsWithSamePoints) {
+                val newRank = if (submission.time == null) {
+                    null
+                } else {
+                    nextRank
                 }
+
+                submission.rank = newRank
             }
+
+            nextRank += submissionsWithSamePoints.size
+        }
     }
 }
