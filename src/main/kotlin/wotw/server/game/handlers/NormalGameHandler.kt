@@ -486,6 +486,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
     private suspend fun movePlayerToWorld(user: User, world: World): WorldMembership {
         val worldMembership = server.multiverseUtil.movePlayerToWorld(user, world)
+        state.playerSaveGuids.remove(worldMembership.id.value)
         getMultiverse().updateAutomaticWorldNames()
         return worldMembership
     }
