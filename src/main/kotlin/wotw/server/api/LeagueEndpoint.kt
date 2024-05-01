@@ -18,6 +18,8 @@ import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.NTuple5
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import kotlin.math.floor
 
 class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -60,10 +62,15 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     // Return full submissions if the game is over or the user submitted for this game,
                     // otherwise return reduced information
-                    if ((user != null && handler.didSubmitForThisGame(user)) || !handler.getLeagueGame().isCurrent) {
+
+                    val leagueGame = handler.getLeagueGame()
+
+                    if (((user != null && handler.didSubmitForThisGame(user)) || !leagueGame.isCurrent)) {
                         game.submissions.map(server.infoMessagesService::generateLeagueGameSubmissionInfo)
-                    } else {
+                    } else if (leagueGame.createdAt.isBefore(Instant.now().minus(4, ChronoUnit.HOURS))) {
                         game.submissions.map(server.infoMessagesService::generateReducedLeagueGameSubmissionInfo)
+                    } else {
+                        emptyList()
                     }
                 })
             }
