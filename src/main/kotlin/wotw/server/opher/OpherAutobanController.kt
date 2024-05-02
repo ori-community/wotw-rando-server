@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.minutes
 typealias MessageHash = String
 typealias MemberId = Pair<Snowflake, Snowflake> // Guild ID and User ID
 
-const val AUTOBAN_BURST = 2
+const val AUTOBAN_BURST = 4
 val AUTOBAN_BURST_TIMESPAN = 3.minutes
 
 class OpherAutobanController(val server: WotwBackendServer) {
