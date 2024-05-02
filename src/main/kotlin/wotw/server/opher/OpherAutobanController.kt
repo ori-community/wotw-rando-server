@@ -144,8 +144,6 @@ class OpherAutobanController(val server: WotwBackendServer) {
         kord.login {
             @OptIn(PrivilegedIntent::class)
             intents += Intent.MessageContent
-            @OptIn(PrivilegedIntent::class)
-            intents += Intent.GuildMembers
         }
     }
 }
