@@ -14,6 +14,7 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.slf4j.LoggerFactory
 import wotw.io.messages.protobuf.PrintTextMessage
 import wotw.io.messages.protobuf.Vector2
+import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 
@@ -77,3 +78,10 @@ fun doAfterTransaction(action: suspend () -> Unit) {
 }
 
 fun nowEpoch() = Clock.System.now().toEpochMilliseconds().toFloat() / 1000f
+
+@OptIn(ExperimentalStdlibApi::class)
+fun String.md5(): String {
+    val md = MessageDigest.getInstance("MD5")
+    val digest = md.digest(this.toByteArray())
+    return digest.toHexString()
+}
