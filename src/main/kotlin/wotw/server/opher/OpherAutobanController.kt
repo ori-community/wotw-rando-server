@@ -119,7 +119,6 @@ class OpherAutobanController(val server: WotwBackendServer) {
 
             val burstInfo = recentCommunication.reportMessage(message)
 
-            logger().warn(burstInfo.channels.size.toString())
             if (burstInfo.channels.size >= AUTOBAN_BURST) {
                 try {
                     message.getAuthorAsMember().edit {
