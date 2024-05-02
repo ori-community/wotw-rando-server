@@ -129,6 +129,7 @@ class OpherAutobanController(val server: WotwBackendServer) {
                         this.content = "Auto-Timeout triggered: <@${message.author?.id}>"
                     }
                 } catch (e: Exception) {
+                    e.printStackTrace()
                     kord.rest.channel.createMessage(getLogChannel()) {
                         this.content = "Spam detected but timeout wasn't possible: <@${message.author?.id}>"
                     }
