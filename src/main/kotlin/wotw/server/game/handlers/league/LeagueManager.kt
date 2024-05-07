@@ -72,16 +72,16 @@ class LeagueManager(val server: WotwBackendServer) {
                 break
             }
 
-            newSuspendedTransaction {
-                upcomingSeasonProcessingTimes[time]?.let { seasonIds ->
-                    val successfullyContinuedSeasons = mutableListOf<LeagueSeason>()
+            upcomingSeasonProcessingTimes[time]?.let { seasonIds ->
+                val successfullyContinuedSeasons = mutableListOf<LeagueSeason>()
 
-                    seasonIds.forEach { seasonId ->
+                seasonIds.forEach { seasonId ->
+                    newSuspendedTransaction {
                         val season = LeagueSeason.findById(seasonId)
 
                         if (season == null) {
                             logger().error("LeagueManager: Tried to continue season that does not exist: $seasonId")
-                            return@forEach
+                            return@newSuspendedTransaction
                         }
 
                         try {
@@ -92,14 +92,14 @@ class LeagueManager(val server: WotwBackendServer) {
                             e.printStackTrace()
                         }
                     }
+                }
 
-                    // Remove all successfully continued seasons...
-                    seasonIds.removeAll(successfullyContinuedSeasons.map { it.id.value })
+                // Remove all successfully continued seasons...
+                seasonIds.removeAll(successfullyContinuedSeasons.map { it.id.value })
 
-                    // ...and cache upcoming schedules for these seasons
-                    successfullyContinuedSeasons.forEach { season ->
-                        cacheLeagueSeasonSchedule(season)
-                    }
+                // ...and cache upcoming schedules for these seasons
+                successfullyContinuedSeasons.forEach { season ->
+                    cacheLeagueSeasonSchedule(season)
                 }
             }
         }
@@ -109,19 +109,19 @@ class LeagueManager(val server: WotwBackendServer) {
                 break
             }
 
-            newSuspendedTransaction {
-                upcomingSeasonReminderTimes[time]?.let { seasonIds ->
-                    seasonIds.forEach { seasonId ->
+            upcomingSeasonReminderTimes[time]?.let { seasonIds ->
+                seasonIds.forEach { seasonId ->
+                    newSuspendedTransaction {
                         val season = LeagueSeason.findById(seasonId)
 
                         if (season == null) {
                             logger().error("LeagueManager: Tried to send reminder for season that does not exist: $seasonId")
-                            return@forEach
+                            return@newSuspendedTransaction
                         }
 
                         season.currentGame?.let { currentGame ->
                             if (currentGame.reminderSent) {
-                                return@forEach
+                                return@newSuspendedTransaction
                             }
 
                             val missingMemberships = season.memberships.filter { membership ->
@@ -129,7 +129,7 @@ class LeagueManager(val server: WotwBackendServer) {
                             }
 
                             if (missingMemberships.isEmpty()) {  // No reminder necessary...
-                                return@forEach
+                                return@newSuspendedTransaction
                             }
 
                             trySendGameReminderDiscordMessage(missingMemberships, season, currentGame)
@@ -137,9 +137,9 @@ class LeagueManager(val server: WotwBackendServer) {
                             currentGame.reminderSent = true
                         }
                     }
-
-                    seasonIds.removeAll(seasonIds)
                 }
+
+                seasonIds.removeAll(seasonIds)
             }
         }
 
@@ -170,15 +170,17 @@ class LeagueManager(val server: WotwBackendServer) {
     }
 
     suspend fun continueSeason(season: LeagueSeason): LeagueGame? {
-        return newSuspendedTransaction {
-            val previousGame = season.currentGame
-
+        newSuspendedTransaction {
             season.currentGame?.let { currentGame ->
                 season.finishCurrentGame()
                 tryUnlockDiscordSpoilerThreadInvitations(currentGame)
 
                 logger().info("LeagueManager: Finished current game for season ${season.id.value}")
             }
+        }
+
+        return newSuspendedTransaction {
+            val previousGame = season.currentGame
 
             // Don't create more games if we reached this season's end.
             // If we don't create a new game, this season won't be scheduled
