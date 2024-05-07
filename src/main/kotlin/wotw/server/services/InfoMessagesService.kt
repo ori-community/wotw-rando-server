@@ -99,22 +99,37 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         membership.joinedAt.toEpochMilli(),
     )
 
-    suspend fun generateLeagueGameInfo(game: LeagueGame, selfUser: User? = null) = LeagueGameInfo(
-        game.id.value,
-        game.multiverse.id.value,
-        game.season.id.value,
-        game.submissions.count(),
-        game.gameNumber,
-        game.isCurrent,
+    suspend fun generateLeagueGameInfo(game: LeagueGame, selfUser: User? = null): LeagueGameInfo {
+        var userMetadata: LeagueGameUserMetadata? = null
+        var submissionCount: Long? = null
+
         selfUser?.let { user ->
             (server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler)?.let { leagueHandler ->
-                LeagueGameUserMetadata(
+                userMetadata = LeagueGameUserMetadata(
                     leagueHandler.canSubmit(user),
                     leagueHandler.getSubmissionForThisGame(user)?.let { generateLeagueGameSubmissionInfo(it) },
                 )
+
+                if (leagueHandler.didSubmitForThisGame(user)) {
+                    submissionCount = game.submissions.count()
+                }
             }
-        },
-    )
+        }
+
+        if (submissionCount == null && !game.shouldHideSubmissionsForUnfinishedPlayers()) {
+            submissionCount = game.submissions.count()
+        }
+
+        return LeagueGameInfo(
+            game.id.value,
+            game.multiverse.id.value,
+            game.season.id.value,
+            submissionCount ?: 0L,
+            game.gameNumber,
+            game.isCurrent,
+            userMetadata,
+        )
+    }
 
     suspend fun generateLeagueSeasonInfo(season: LeagueSeason, selfUser: User? = null) = LeagueSeasonInfo(
         season.id.value,

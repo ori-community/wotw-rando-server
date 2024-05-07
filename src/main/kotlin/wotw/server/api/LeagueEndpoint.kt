@@ -67,7 +67,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     if (((user != null && handler.didSubmitForThisGame(user)) || !leagueGame.isCurrent)) {
                         game.submissions.map(server.infoMessagesService::generateLeagueGameSubmissionInfo)
-                    } else if (leagueGame.createdAt.isBefore(Instant.now().minus(4, ChronoUnit.HOURS))) {
+                    } else if (!leagueGame.shouldHideSubmissionsForUnfinishedPlayers()) {
                         game.submissions.map(server.infoMessagesService::generateReducedLeagueGameSubmissionInfo)
                     } else {
                         emptyList()

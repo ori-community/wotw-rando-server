@@ -8,6 +8,8 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.server.util.assertTransaction
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -86,5 +88,9 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
 
             nextRank += submissionsWithSamePoints.size
         }
+    }
+
+    fun shouldHideSubmissionsForUnfinishedPlayers(): Boolean {
+        return createdAt.isAfter(Instant.now().minus(4, ChronoUnit.HOURS))
     }
 }
