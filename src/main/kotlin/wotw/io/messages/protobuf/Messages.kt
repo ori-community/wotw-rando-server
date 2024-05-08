@@ -183,6 +183,11 @@ data class Vector2(
         return (x - other.x).pow(2) + (y - other.y).pow(2)
     }
 
+    fun lerp(other: Vector2, t: Float): Vector2 = Vector2(
+        wotw.server.util.lerp(x, other.x, t),
+        wotw.server.util.lerp(y, other.y, t),
+    )
+
     override fun toString(): String {
         return "($x, $y)"
     }

@@ -7,7 +7,10 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.timestamp
+import wotw.io.messages.protobuf.Vector2
 import wotw.server.util.assertTransaction
+import wotw.server.util.inverseLerp
+import wotw.server.util.lerp
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.math.ceil
@@ -39,6 +42,40 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
 
     val isCurrent get() = season.currentGame?.id?.value == this.id.value
 
+    class PointsCalculator(private val season: LeagueSeason, private val lowestTime: Float) {
+        private val highestTime = lowestTime * season.speedPointsRangeFactor
+
+        private val curveStart = Vector2(0f, 1f)
+        private val curveControlPoint1 = Vector2(season.speedPointsCurveX, season.speedPointsCurveY)
+        private val curveControlPoint2 = Vector2(1f, 0f).lerp(curveControlPoint1, season.speedPointsCurveFalloffFactor)
+        private val curveEnd = Vector2(1f, 0f)
+
+        private fun evaluateCurve(t: Float): Float {
+            val quadraticPoint1 = curveStart.lerp(curveControlPoint1, t)
+            val quadraticPoint2 = curveControlPoint1.lerp(curveControlPoint2, t)
+            val quadraticPoint3 = curveControlPoint2.lerp(curveEnd, t)
+
+            val cubicPoint1 = quadraticPoint1.lerp(quadraticPoint2, t)
+            val cubicPoint2 = quadraticPoint2.lerp(quadraticPoint3, t)
+
+            return cubicPoint1.lerp(cubicPoint2, t).y
+        }
+
+        fun calculateSpeedPoints(time: Float): Int {
+            val relativeTime = inverseLerp(lowestTime, highestTime, time)
+
+            if (relativeTime <= 0f) {
+                return season.speedPoints
+            }
+
+            if (relativeTime >= 1f) {
+                return 0
+            }
+
+            return ceil(evaluateCurve(relativeTime) * season.speedPoints).toInt()
+        }
+    }
+
     fun recalculateSubmissionPointsAndRanks() {
         assertTransaction()
 
@@ -55,14 +92,14 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
 
         val speedPointsRange = lowestTime * season.speedPointsRangeFactor - lowestTime
 
+        val pointsCalculator = PointsCalculator(season, lowestTime)
+
         cachedSubmissions.forEach { submission ->
             var points = 0
 
             submission.time?.let { time ->
                 points += season.basePoints
-
-                val speedPoints = max(0, ceil(season.speedPoints - season.speedPoints * ((time - lowestTime) / speedPointsRange)).toInt())
-                points += speedPoints
+                points += pointsCalculator.calculateSpeedPoints(time)
             }
 
             submission.points = points

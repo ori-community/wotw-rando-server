@@ -60,6 +60,35 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     val speedPointsRangeFactor = float("speed_points_range_factor").default(2.5f)
 
     /**
+     * Speed points curve X
+     * Possible values: 0.0 - 1.0
+     * X coordinate of the first curve control point
+     *
+     * To visualize the speed points curve, visit a cubic bezier calculator (e.g. https://easings.co/)
+     * and pretend it is flipped vertically.
+     * The first control point there is described by the X and Y coordinates here,
+     * the second control point always points to the first control point and can be moved
+     * along that line using [speedPointsCurveFalloffFactor].
+     */
+    val speedPointsCurveX = float("speed_points_curve_x").default(0.5f)
+
+    /**
+     * Speed points curve Y
+     * Possible values: 0.0 - 1.0
+     * Y coordinate of the first curve control point
+     */
+    val speedPointsCurveY = float("speed_points_curve_y").default(0.5f)
+
+    /**
+     * Speed points curve falloff factor
+     * Possible values: 0.0 - 1.0
+     * The second curve control point will be placed between (1, 0) and the first
+     * control point, at this relative position. (i.e. "how far the second control
+     * point gets dragged towards the first one")
+     */
+    val speedPointsCurveFalloffFactor = float("speed_points_curve_falloff_factor").default(0.5f)
+
+    /**
      * Number of worst scores to discard when calculating total points
      */
     val discardWorstGamesCount = integer("discard_worst_games_count").default(2)
@@ -98,6 +127,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     var basePoints by LeagueSeasons.basePoints
     var speedPoints by LeagueSeasons.speedPoints
     var speedPointsRangeFactor by LeagueSeasons.speedPointsRangeFactor
+    var speedPointsCurveX by LeagueSeasons.speedPointsCurveX
+    var speedPointsCurveY by LeagueSeasons.speedPointsCurveY
+    var speedPointsCurveFalloffFactor by LeagueSeasons.speedPointsCurveFalloffFactor
     var discardWorstGamesCount by LeagueSeasons.discardWorstGamesCount
     var shortDescription by LeagueSeasons.shortDescription
     var longDescriptionMarkdown by LeagueSeasons.longDescriptionMarkdown
