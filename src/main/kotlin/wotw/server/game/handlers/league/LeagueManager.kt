@@ -73,7 +73,7 @@ class LeagueManager(val server: WotwBackendServer) {
             }
 
             upcomingSeasonProcessingTimes[time]?.let { seasonIds ->
-                val successfullyContinuedSeasons = mutableListOf<LeagueSeason>()
+                val successfullyContinuedSeasonIds = mutableListOf<Long>()
 
                 seasonIds.forEach { seasonId ->
                     newSuspendedTransaction {
@@ -86,7 +86,7 @@ class LeagueManager(val server: WotwBackendServer) {
 
                         try {
                             continueSeason(season)
-                            successfullyContinuedSeasons.add(season)
+                            successfullyContinuedSeasonIds.add(season.id.value)
                         } catch (e: Exception) {
                             logger().error("LeagueManager: Failed to create next game for season $seasonId. Will retry next time...")
                             e.printStackTrace()
@@ -95,11 +95,14 @@ class LeagueManager(val server: WotwBackendServer) {
                 }
 
                 // Remove all successfully continued seasons...
-                seasonIds.removeAll(successfullyContinuedSeasons.map { it.id.value })
+                seasonIds.removeAll(successfullyContinuedSeasonIds)
 
                 // ...and cache upcoming schedules for these seasons
-                successfullyContinuedSeasons.forEach { season ->
-                    cacheLeagueSeasonSchedule(season)
+                successfullyContinuedSeasonIds.forEach { seasonId ->
+                    newSuspendedTransaction {
+                        val season = LeagueSeason.findById(seasonId) ?: return@newSuspendedTransaction
+                        cacheLeagueSeasonSchedule(season)
+                    }
                 }
             }
         }
@@ -477,6 +480,8 @@ class LeagueManager(val server: WotwBackendServer) {
     }
 
     private fun cacheLeagueSeasonSchedule(season: LeagueSeason) {
+        assertTransaction()
+
         // If we have a current game, we need to schedule to clean up the potentially last game.
         // If there's no current game, we only need to schedule if more games are supposed to be
         // created for that season.
