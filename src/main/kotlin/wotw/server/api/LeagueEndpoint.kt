@@ -10,6 +10,8 @@ import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.SeedGenResponse
+import wotw.io.messages.SeedGenResult
 import wotw.io.messages.SetSubmissionVideoUrlRequest
 import wotw.server.constants.LEAGUE_MAX_DISCONNECTED_TIME
 import wotw.server.database.model.*
@@ -18,6 +20,7 @@ import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.NTuple5
+import wotw.server.util.then
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.math.floor
@@ -82,6 +85,38 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val game = LeagueGame.find { LeagueGames.multiverseId eq multiverseId }.firstOrNull() ?: throw NotFoundException("Game not found")
                     server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUserOrNull())
                 })
+            }
+
+            post("league/seasons/{season_id}/training-seed") { config ->
+                val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
+
+                val (result, seedId, worldSeedIds) = newSuspendedTransaction {
+                    val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found");
+
+                    val result = server.seedGeneratorService.generateSeed(season.universePreset, authenticatedUserOrNull())
+
+                    result.generationResult then
+                            (result.seed?.id?.value ?: 0L) then
+                            (result.seed?.worldSeeds?.map { it.id.value } ?: listOf())
+                }
+
+                if (result.isSuccess) {
+                    call.respond(
+                        HttpStatusCode.Created, SeedGenResponse(
+                            result = SeedGenResult(
+                                seedId = seedId,
+                                worldSeedIds = worldSeedIds,
+                            ),
+                            warnings = result.getOrNull()?.warnings?.ifBlank { null },
+                        )
+                    )
+                } else {
+                    call.respondText(
+                        result.exceptionOrNull()?.message ?: "Unknown seedgen error",
+                        ContentType.Text.Plain,
+                        HttpStatusCode.InternalServerError,
+                    )
+                }
             }
         }
 
