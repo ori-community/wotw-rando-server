@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.EntityChangeType
 import org.jetbrains.exposed.dao.EntityHook
 import org.jetbrains.exposed.dao.toEntity
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.*
 import wotw.server.main.WotwBackendServer
@@ -183,7 +184,7 @@ class LeagueManager(val server: WotwBackendServer) {
         }
 
         return newSuspendedTransaction {
-            val previousGame = season.currentGame
+            val previousGame = season.games.orderBy(LeagueGames.gameNumber to SortOrder.DESC).firstOrNull()
 
             // Don't create more games if we reached this season's end.
             // If we don't create a new game, this season won't be scheduled
