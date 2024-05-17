@@ -401,6 +401,14 @@ class LeagueManager(val server: WotwBackendServer) {
                     **You have time to finish this game until <t:${submittableUntilTimestamp}:f> (<t:${submittableUntilTimestamp}:R>)!**
                 """.trimIndent()
 
+                this.components = mutableListOf(
+                    ActionRowBuilder().also {
+                        it.linkButton(server.getUiUrl("/league/game/${currentGame.id.value}")) {
+                            this.label = "Open Game"
+                        }
+                    }
+                )
+
                 this.suppressEmbeds = true
 
                 this.allowedMentions {
