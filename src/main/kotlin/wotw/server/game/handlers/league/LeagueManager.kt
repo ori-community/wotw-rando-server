@@ -155,6 +155,9 @@ class LeagueManager(val server: WotwBackendServer) {
     suspend fun setup() {
         scheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
 
+        /*
+        Make this a developer API at some point
+
         newSuspendedTransaction {
             LeagueSeason.all().forEach { season ->
                 season.games.forEach { game ->
@@ -166,6 +169,7 @@ class LeagueManager(val server: WotwBackendServer) {
                 season.recalculateMembershipPointsAndRanks()
             }
         }
+        */
 
         EntityHook.subscribe {
             runBlocking {
