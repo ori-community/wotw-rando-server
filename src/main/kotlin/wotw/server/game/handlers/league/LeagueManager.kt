@@ -152,8 +152,20 @@ class LeagueManager(val server: WotwBackendServer) {
         upcomingSeasonReminderTimes.keys.removeAll { upcomingSeasonReminderTimes[it]?.isEmpty() == true }
     }
 
-    fun setup() {
+    suspend fun setup() {
         scheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
+
+        newSuspendedTransaction {
+            LeagueSeason.all().forEach { season ->
+                season.games.forEach { game ->
+                    if (!game.isCurrent) {
+                        game.recalculateSubmissionPointsAndRanks()
+                    }
+                }
+
+                season.recalculateMembershipPointsAndRanks()
+            }
+        }
 
         EntityHook.subscribe {
             runBlocking {
