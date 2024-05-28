@@ -449,7 +449,7 @@ class WotwBackendServer {
                     logger.debug("WotwBackendServer: Could not deserialize UDP packet from connection $connectionId")
                 }
             } catch (e: Exception) {
-                logger.debug("Failed receiving UDP packet:", e)
+                logger.trace("Failed receiving UDP packet:", e)
             }
         }
     }
