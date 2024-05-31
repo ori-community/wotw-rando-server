@@ -246,7 +246,7 @@ class LeagueManager(val server: WotwBackendServer) {
                     """.trimIndent()
 
                     this.content += "\n\n"
-                    this.content += season.longDescriptionMarkdown.lines().joinToString("\n") { "> $it" }
+                    this.content += season.longDescriptionMarkdown.lines().joinToString("\n") { "> $it" }.replace("<br>", "")
                     this.content += "\n\n"
 
                     this.content += """
