@@ -214,6 +214,20 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                                 state.playerFinishedTimes[message.sender.id.value] = 0f
 
                                 checkWorldAndUniverseFinished(message.sender.world)
+
+                                server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
+                                    val playerEnvironmentCache = server.worldMembershipEnvironmentCache.get(message.sender.id.value)
+
+                                    server.connections.toPlayers(
+                                        worldMembershipIds - playerEnvironmentCache.universeWorldMembershipIds,
+                                        makeServerTextMessage("${message.sender.user.name} forfeited from the race"),
+                                    )
+
+                                    server.connections.toPlayers(
+                                        playerEnvironmentCache.universeWorldMembershipIds,
+                                        makeServerTextMessage("You forfeited from the race"),
+                                    )
+                                }
                             }
                         }
                     }
