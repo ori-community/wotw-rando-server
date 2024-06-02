@@ -166,7 +166,7 @@ class WotwBackendServer {
     val multiverseUtil = MultiverseUtil(this)
     val discordService = DiscordService(this)
     val opherAutobanController = OpherAutobanController(this)
-    private var kord: Kord? = null  // Use tryKord if you want to use it
+    private var kord: Kord? = null  // Use ifKord if you want to use it
 
     val connections = ConnectionRegistry(this)
     val sync = StateSynchronization(this)
@@ -235,6 +235,9 @@ class WotwBackendServer {
 
     val leagueManager = LeagueManager(this)
 
+    /**
+     * Run [block] if there's an active Kord (Discord API) instance
+     */
     suspend fun ifKord(block: suspend (Kord) -> Unit) {
         kord?.let {
             if (it.isActive) {
