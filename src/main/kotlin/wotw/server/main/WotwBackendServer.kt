@@ -207,8 +207,8 @@ class WotwBackendServer {
         runBlocking {
             connections.toAll(
                 false, makeServerTextMessage(
-                    text = "Server is going down for maintenance.\nWill be back shortly. Or not. OriShrug",
-                    time = 10f,
+                    text = "Server is restarting.\nJust *keep playing*, the game will\nreconnect automatically in a few seconds.",
+                    time = 6f,
                 )
             )
         }
