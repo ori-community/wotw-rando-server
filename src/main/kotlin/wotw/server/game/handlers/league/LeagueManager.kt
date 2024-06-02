@@ -51,6 +51,16 @@ class LeagueManager(val server: WotwBackendServer) {
         return Snowflake(channelId)
     }
 
+    fun getLeaguePlayersRoleId(): Snowflake? {
+        val roleId = System.getenv("LEAGUE_PLAYERS_ROLE_ID")
+
+        if (roleId.isNullOrBlank()) {
+            return null
+        }
+
+        return Snowflake(roleId)
+    }
+
     private val scheduler = Scheduler {
         val now = Instant.now()
 
@@ -240,7 +250,13 @@ class LeagueManager(val server: WotwBackendServer) {
                 kord.rest.channel.createMessage(getDiscordChannel()) {
                     val joinableUntilTimestamp = season.nextContinuationAt.epochSecond
 
-                    this.content = """
+                    this.content = ""
+
+                    getLeaguePlayersRoleId()?.let { roleId ->
+                        this.content += "<@&${roleId}>\n\n"
+                    }
+
+                    this.content += """
                         # ${season.name}: Season signups opened! ${server.discordService.getEmojiMarkdown("orilurk")}
                         
                         A new season of the Ori and the Will of the Wisps Randomizer League is coming up!
