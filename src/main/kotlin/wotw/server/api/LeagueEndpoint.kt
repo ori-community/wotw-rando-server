@@ -9,6 +9,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.notExists
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.SeedGenResponse
 import wotw.io.messages.SeedGenResult
@@ -121,6 +123,38 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
         }
 
         authenticate(JWT_AUTH) {
+            get("league/seasons/pending") {
+                call.respond(newSuspendedTransaction {
+                    val user = authenticatedUser()
+
+                    val pendingSeasons = LeagueSeason.wrapRows(
+                        LeagueSeasons
+                            .innerJoin(LeagueSeasonMemberships)
+                            .innerJoin(LeagueGameSubmissions)
+                            .innerJoin(LeagueGames)
+                            .select(LeagueSeasons.columns)
+                            .where {
+                                (LeagueSeasons.id eq LeagueSeasonMemberships.seasonId) and
+                                        (LeagueSeasonMemberships.userId eq user.id) and
+                                        (LeagueGames.id eq LeagueSeasons.currentGameId) and
+                                        notExists(
+                                            LeagueGameSubmissions
+                                                .selectAll()
+                                                .where {
+                                                    (LeagueGameSubmissions.gameId eq LeagueSeasons.currentGameId) and
+                                                            (LeagueGameSubmissions.membershipId eq LeagueSeasonMemberships.id)
+                                                }
+                                        )
+                            }
+                            .groupBy(LeagueSeasons.id)
+                    )
+
+                    pendingSeasons.map {
+                        server.infoMessagesService.generateLeagueSeasonInfo(it, user)
+                    }
+                })
+            }
+
             post("league/seasons/{season_id}/membership") {
                 val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 
