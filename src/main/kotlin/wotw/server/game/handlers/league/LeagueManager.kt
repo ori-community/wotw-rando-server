@@ -8,6 +8,7 @@ import dev.kord.common.entity.optional.OptionalBoolean
 import dev.kord.core.Kord
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.allowedMentions
+import dev.kord.rest.builder.message.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
 import dev.kord.rest.request.KtorRequestException
 import io.ktor.util.logging.*
@@ -255,7 +256,13 @@ class LeagueManager(val server: WotwBackendServer) {
                         Read more about the seed settings and rules on the season page.
                     """.trimIndent()
 
-                    this.suppressEmbeds = true
+                    season.backgroundImageUrl?.let { backgroundImageUrl ->
+                        embed {
+                            this.image = backgroundImageUrl
+                            this.url = server.getUiUrl("/league/seasons/${season.id.value}")
+                            this.title = season.name
+                        }
+                    }
 
                     this.components = mutableListOf(
                         ActionRowBuilder().also {
