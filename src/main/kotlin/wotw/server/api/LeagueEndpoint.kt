@@ -9,6 +9,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.notExists
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -34,6 +35,28 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 call.respond(newSuspendedTransaction {
                     LeagueSeason.all()
                         .sortedByDescending { it.scheduleStartAt }
+                        .map { server.infoMessagesService.generateLeagueSeasonInfo(it) }
+                })
+            }
+
+            get("league/seasons/upcoming") {
+                call.respond(newSuspendedTransaction {
+                    LeagueSeason.wrapRows(
+                        LeagueSeasons
+                            .innerJoin(LeagueGames)
+                            .select(LeagueSeasons.columns)
+                            .where {
+                                exists(
+                                    LeagueGames
+                                        .selectAll()
+                                        .where {
+                                            (LeagueGames.seasonId eq LeagueSeasons.id) and (LeagueGames.gameNumber greater 1)
+                                        }
+                                )
+                            }
+                            .groupBy(LeagueSeasons.id)
+                    )
+                        .sortedBy { it.nextContinuationAt }
                         .map { server.infoMessagesService.generateLeagueSeasonInfo(it) }
                 })
             }
