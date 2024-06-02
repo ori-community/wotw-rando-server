@@ -41,21 +41,15 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
             get("league/seasons/upcoming") {
                 call.respond(newSuspendedTransaction {
-                    LeagueSeason.wrapRows(
-                        LeagueSeasons
-                            .innerJoin(LeagueGames)
-                            .select(LeagueSeasons.columns)
-                            .where {
-                                notExists(
-                                    LeagueGames
-                                        .selectAll()
-                                        .where {
-                                            (LeagueGames.seasonId eq LeagueSeasons.id) and (LeagueGames.gameNumber greater 1)
-                                        }
-                                )
-                            }
-                            .groupBy(LeagueSeasons.id)
-                    )
+                    LeagueSeason.find {
+                        notExists(
+                            LeagueGames
+                                .selectAll()
+                                .where {
+                                    (LeagueGames.seasonId eq LeagueSeasons.id) and (LeagueGames.gameNumber greater 1)
+                                }
+                        )
+                    }
                         .sortedBy { it.nextContinuationAt }
                         .map { server.infoMessagesService.generateLeagueSeasonInfo(it) }
                 })
