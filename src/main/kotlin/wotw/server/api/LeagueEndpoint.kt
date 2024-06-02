@@ -46,7 +46,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             .innerJoin(LeagueGames)
                             .select(LeagueSeasons.columns)
                             .where {
-                                exists(
+                                notExists(
                                     LeagueGames
                                         .selectAll()
                                         .where {
