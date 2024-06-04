@@ -20,6 +20,7 @@ import wotw.server.util.assertTransaction
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.jvm.optionals.getOrNull
+import kotlin.math.max
 import kotlin.math.min
 
 object LeagueSeasons : LongIdTable("league_seasons") {
@@ -157,7 +158,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             val submissions = membership.submissions.sortedBy { it.points }
             val worstSubmissionsToDiscardCount = min(
                 discardWorstGamesCount,
-                min(submissions.count() - 1, 0),
+                max(submissions.count() - 1, 0),
             )
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
