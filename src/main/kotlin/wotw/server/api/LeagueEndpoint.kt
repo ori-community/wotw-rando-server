@@ -147,7 +147,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     val pendingSeasons = LeagueSeason.wrapRows(
                         LeagueSeasons
                             .innerJoin(LeagueSeasonMemberships)
-                            .innerJoin(LeagueGameSubmissions)
+                            .leftJoin(LeagueGameSubmissions)
                             .innerJoin(LeagueGames)
                             .select(LeagueSeasons.columns)
                             .where {
