@@ -7,7 +7,6 @@ import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
-import dev.kord.core.event.gateway.ConnectEvent
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.on
 import io.ktor.client.*
@@ -48,7 +47,10 @@ import wotw.server.api.*
 import wotw.server.database.MultiverseMemberCache
 import wotw.server.database.WorldMembershipEnvironmentCache
 import wotw.server.database.model.*
-import wotw.server.exception.*
+import wotw.server.exception.ConflictException
+import wotw.server.exception.ForbiddenException
+import wotw.server.exception.MissingScopeException
+import wotw.server.exception.UnauthorizedException
 import wotw.server.game.GameHandlerRegistry
 import wotw.server.game.handlers.league.LeagueManager
 import wotw.server.io.ClientConnectionUDPRegistry
@@ -206,6 +208,8 @@ class WotwBackendServer {
     }
 
     val userProfileUpdateScheduler = Scheduler {
+        logger.debug("Updating profile pictures...")
+
         ifKord { kord ->
             val userIds = Users.select(Users.id).map { it[Users.id] }
 
@@ -225,6 +229,8 @@ class WotwBackendServer {
                 delay(1000)
             }
         }
+
+        logger.debug("Profile picture update task done.")
     }
 
     val shutdownHook = Thread {
