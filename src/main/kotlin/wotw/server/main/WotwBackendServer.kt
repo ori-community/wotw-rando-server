@@ -8,6 +8,7 @@ import com.zaxxer.hikari.HikariDataSource
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.event.gateway.ConnectEvent
+import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.on
 import io.ktor.client.*
 import io.ktor.client.engine.java.*
@@ -437,8 +438,8 @@ class WotwBackendServer {
                 kord = Kord(token)
 
                 var handledConnectEventOnce = false
-                kord?.on<ConnectEvent> {
-                    logger.info("Connected to Discord Gateway")
+                kord?.on<ReadyEvent> {
+                    logger.info("Discord Bot is ready")
 
                     if (!handledConnectEventOnce) {
                         handledConnectEventOnce = false
