@@ -284,7 +284,6 @@ class WotwBackendServer {
 
         cacheScheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
         bingothonEndpointCleanupScheduler.scheduleExecution(Every(1, TimeUnit.HOURS))
-        userProfileUpdateScheduler.scheduleExecution(Every(24 * 60, TimeUnit.MINUTES, 1))
 
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         val env = applicationEngineEnvironment {
@@ -442,8 +441,8 @@ class WotwBackendServer {
                     logger.info("Discord Bot is ready")
 
                     if (!handledConnectEventOnce) {
-                        handledConnectEventOnce = false
-                        userProfileUpdateScheduler.scheduleExecution(Every(24, TimeUnit.HOURS, 0))
+                        handledConnectEventOnce = true
+                        userProfileUpdateScheduler.scheduleExecution(Every(24 * 60, TimeUnit.MINUTES, 1))
                     }
                 }
 
