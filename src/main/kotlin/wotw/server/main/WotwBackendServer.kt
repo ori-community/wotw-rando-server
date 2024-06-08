@@ -5,6 +5,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import io.ktor.client.*
 import io.ktor.client.engine.java.*
@@ -31,14 +32,12 @@ import io.ktor.server.websocket.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.core.*
 import io.sentry.Sentry
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import wotw.io.messages.protobuf.UdpPacket
@@ -203,6 +202,28 @@ class WotwBackendServer {
         }
     }
 
+    val userProfileUpdateScheduler = Scheduler {
+        ifKord { kord ->
+            val userIds = Users.select(Users.id).map { it[Users.id] }
+
+            userIds.forEach { userId ->
+                try {
+                    val profile = kord.getUser(Snowflake(userId.value))
+
+                    newSuspendedTransaction {
+                        Users.update({ Users.id eq userId }) {
+                            it[Users.avatarId] = profile?.avatarHash
+                        }
+                    }
+                } catch (e: Exception) {
+                    logger.error("Could not update profile picture of ${userId.value}", e)
+                }
+
+                delay(1000)
+            }
+        }
+    }
+
     val shutdownHook = Thread {
         runBlocking {
             connections.toAll(
@@ -256,6 +277,7 @@ class WotwBackendServer {
 
         cacheScheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
         bingothonEndpointCleanupScheduler.scheduleExecution(Every(1, TimeUnit.HOURS))
+        userProfileUpdateScheduler.scheduleExecution(Every(24, TimeUnit.HOURS))
 
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         val env = applicationEngineEnvironment {
