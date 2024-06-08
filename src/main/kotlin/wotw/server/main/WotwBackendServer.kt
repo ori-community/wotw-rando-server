@@ -211,7 +211,9 @@ class WotwBackendServer {
         logger.debug("Updating profile pictures...")
 
         ifKord { kord ->
-            val userIds = Users.select(Users.id).map { it[Users.id] }
+            val userIds = newSuspendedTransaction {
+                Users.select(Users.id).map { it[Users.id] }
+            }
 
             userIds.forEach { userId ->
                 try {
