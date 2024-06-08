@@ -18,9 +18,9 @@ class Scheduler(private val task: suspend () -> Unit) {
         }
 
         if (fixedRate) {
-            executor.scheduleAtFixedRate(taskWrapper, every.n, every.n, every.unit)
+            executor.scheduleAtFixedRate(taskWrapper, every.initialDelay, every.delay, every.unit)
         } else {
-            executor.scheduleWithFixedDelay(taskWrapper, every.n, every.n, every.unit)
+            executor.scheduleWithFixedDelay(taskWrapper, every.initialDelay, every.delay, every.unit)
         }
     }
 
@@ -32,4 +32,4 @@ class Scheduler(private val task: suspend () -> Unit) {
     }
 }
 
-data class Every(val n: Long, val unit: TimeUnit)
+data class Every(val delay: Long, val unit: TimeUnit, val initialDelay: Long = delay)

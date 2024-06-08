@@ -212,7 +212,7 @@ class WotwBackendServer {
 
                     newSuspendedTransaction {
                         Users.update({ Users.id eq userId }) {
-                            it[Users.avatarId] = profile?.avatarHash
+                            it[avatarId] = profile?.avatarHash
                         }
                     }
                 } catch (e: Exception) {
@@ -277,7 +277,7 @@ class WotwBackendServer {
 
         cacheScheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
         bingothonEndpointCleanupScheduler.scheduleExecution(Every(1, TimeUnit.HOURS))
-        userProfileUpdateScheduler.scheduleExecution(Every(24, TimeUnit.HOURS))
+        userProfileUpdateScheduler.scheduleExecution(Every(24, TimeUnit.HOURS, 0))
 
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         val env = applicationEngineEnvironment {
