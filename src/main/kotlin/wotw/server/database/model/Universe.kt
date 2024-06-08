@@ -70,7 +70,7 @@ object WorldMemberships : LongIdTable("world_memberships") {
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val worldId = reference("world_id", Worlds, ReferenceOption.CASCADE)
     val userId = reference("user_id", Users, ReferenceOption.CASCADE)
-    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
+    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 
     init {
         uniqueIndex(multiverseId, userId)

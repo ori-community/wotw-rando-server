@@ -6,18 +6,18 @@ buildscript {
     }
 }
 
-val kotlinVersion = "1.9.23"
-val ktorVersion = "2.3.8"
+val kotlinVersion = "2.0.0"
+val ktorVersion = "2.3.11"
 val logbackVersion = "1.5.0"
-val exposedVersion = "0.48.0"
-val serializationVersion = "1.6.3"
+val exposedVersion = "0.51.1"
+val serializationVersion = "1.7.0"
 val cronutilsVersion = "9.2.0"
 val semverVersion = "1.4.2"
-val kordVersion = "0.13.1"
+val kordVersion = "0.14.0"
 
 plugins {
-    kotlin("jvm") version "1.9.23"
-    kotlin("plugin.serialization") version "1.9.23"
+    kotlin("jvm") version "2.0.0"
+    kotlin("plugin.serialization") version "2.0.0"
 }
 
 repositories {

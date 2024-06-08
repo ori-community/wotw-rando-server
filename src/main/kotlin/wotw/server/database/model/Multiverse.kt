@@ -13,7 +13,6 @@ import wotw.server.bingo.BingoBoard
 import wotw.server.bingo.Point
 import wotw.server.bingo.UberStateMap
 import wotw.server.bingo.plus
-import wotw.server.database.model.LeagueGames.defaultExpression
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.sync.UniverseStateCache
 import wotw.server.util.assertTransaction
@@ -30,7 +29,7 @@ object Multiverses : LongIdTable("multiverses") {
     val gameHandlerStateJson = jsonb("game_handler_state", { s -> s }, { s -> s }).nullable()
     val locked = bool("locked").default(false)
     val isLockable = bool("is_lockable").default(true)
-    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
+    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 }
 
 class Multiverse(id: EntityID<Long>) : LongEntity(id) {

@@ -11,7 +11,7 @@ import org.jetbrains.exposed.sql.javatime.timestamp
 object LeagueSeasonMemberships : LongIdTable("league_season_memberships") {
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
     val userId = reference("user_id", Users, ReferenceOption.CASCADE)
-    val joinedAt = timestamp("joined_at").defaultExpression(CurrentTimestamp())
+    val joinedAt = timestamp("joined_at").defaultExpression(CurrentTimestamp)
     val points = integer("points").default(0)
     val pointsWithoutDiscarded = integer("points_without_discarded").default(0)
     val rank = integer("rank").nullable()

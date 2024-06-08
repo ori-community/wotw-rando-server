@@ -128,7 +128,10 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
         return newSuspendedTransaction {
             User.findById(userId)?.also {
-                if (!it.isCustomName && discordDisplayName != null && it.name != discordDisplayName) it.name = discordDisplayName
+                if (!it.isCustomName && it.name != discordDisplayName) {
+                    it.name = discordDisplayName
+                }
+
                 it.avatarId = avatarId
             } ?: User.new(userId) {
                 this.name = discordDisplayName

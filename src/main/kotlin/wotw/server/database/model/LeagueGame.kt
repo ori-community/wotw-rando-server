@@ -10,17 +10,15 @@ import org.jetbrains.exposed.sql.javatime.timestamp
 import wotw.io.messages.protobuf.Vector2
 import wotw.server.util.assertTransaction
 import wotw.server.util.inverseLerp
-import wotw.server.util.lerp
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.math.ceil
-import kotlin.math.max
 
 object LeagueGames : LongIdTable("league_games") {
     val gameNumber = integer("game_number")
     val seasonId = reference("season_id", LeagueSeasons, ReferenceOption.CASCADE)
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE).uniqueIndex()
-    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
+    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
     val discordSpoilerThreadId = ulong("discord_thread_id").nullable()
     val reminderSent = bool("reminder_sent").default(false)
 
