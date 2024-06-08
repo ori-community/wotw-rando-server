@@ -576,4 +576,8 @@ class LeagueManager(val server: WotwBackendServer) {
             LeagueSeason.all().forEach(::cacheLeagueSeasonSchedule)
         }
     }
+
+    fun stop() {
+        scheduler.stop()
+    }
 }

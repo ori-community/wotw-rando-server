@@ -7,6 +7,8 @@ import com.auth0.jwt.interfaces.JWTVerifier
 import com.zaxxer.hikari.HikariDataSource
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.event.gateway.ConnectEvent
+import dev.kord.core.on
 import io.ktor.client.*
 import io.ktor.client.engine.java.*
 import io.ktor.http.*
@@ -247,6 +249,10 @@ class WotwBackendServer {
         }
 
         cacheScheduler.stop()
+        bingothonEndpointCleanupScheduler.stop()
+        userProfileUpdateScheduler.stop()
+        leagueManager.stop()
+
         runBlocking {
             sync.purgeCache(-1)
         }
@@ -277,7 +283,7 @@ class WotwBackendServer {
 
         cacheScheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
         bingothonEndpointCleanupScheduler.scheduleExecution(Every(1, TimeUnit.HOURS))
-        userProfileUpdateScheduler.scheduleExecution(Every(24, TimeUnit.HOURS, 0))
+        userProfileUpdateScheduler.scheduleExecution(Every(24 * 60, TimeUnit.MINUTES, 1))
 
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         val env = applicationEngineEnvironment {
@@ -429,6 +435,17 @@ class WotwBackendServer {
 
                 logger.info("Setting up Discord Bot...")
                 kord = Kord(token)
+
+                var handledConnectEventOnce = false
+                kord?.on<ConnectEvent> {
+                    logger.info("Connected to Discord Gateway")
+
+                    if (!handledConnectEventOnce) {
+                        handledConnectEventOnce = false
+                        userProfileUpdateScheduler.scheduleExecution(Every(24, TimeUnit.HOURS, 0))
+                    }
+                }
+
                 kord?.login()
             }
 

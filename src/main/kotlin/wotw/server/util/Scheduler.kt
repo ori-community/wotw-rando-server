@@ -27,7 +27,7 @@ class Scheduler(private val task: suspend () -> Unit) {
     fun stop() {
         executor.shutdown()
         try {
-            executor.awaitTermination(1, TimeUnit.HOURS)
+            executor.awaitTermination(1, TimeUnit.MINUTES)
         } catch (_: InterruptedException) { }
     }
 }
