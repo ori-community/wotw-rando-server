@@ -88,8 +88,6 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
             return
         }
 
-        val speedPointsRange = lowestTime * season.speedPointsRangeFactor - lowestTime
-
         val pointsCalculator = PointsCalculator(season, lowestTime)
 
         cachedSubmissions.forEach { submission ->
