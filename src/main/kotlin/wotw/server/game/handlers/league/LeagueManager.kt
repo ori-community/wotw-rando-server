@@ -79,10 +79,10 @@ class LeagueManager(val server: WotwBackendServer) {
             recacheLeagueSeasonSchedules()
         }
 
-        logger().debug("LeagueManager: Processing League schedules")
-        logger().debug("LeagueManager: Now:      {}", now)
-        logger().debug("LeagueManager: Upcoming: {}", upcomingSeasonProcessingTimes.keys.joinToString(", "))
-        logger().debug("LeagueManager: Reminder: {}", upcomingSeasonReminderTimes.keys.joinToString(", "))
+        logger().info("LeagueManager: Processing League schedules")
+        logger().info("LeagueManager: Now:      {}", now)
+        logger().info("LeagueManager: Upcoming: {}", upcomingSeasonProcessingTimes.keys.joinToString(", "))
+        logger().info("LeagueManager: Reminder: {}", upcomingSeasonReminderTimes.keys.joinToString(", "))
 
         for (time in upcomingSeasonProcessingTimes.keys) {
             if (now < time) {  // We can break here because the keys are sorted in ascending order
@@ -542,7 +542,7 @@ class LeagueManager(val server: WotwBackendServer) {
             season.updateNextContinuationAtTimestamp()
             val time = season.nextContinuationAt
 
-            logger().debug("LeagueManager: Scheduled season for processing {} at {}", season.id.value, time)
+            logger().info("LeagueManager: Scheduled season for processing {} at {}", season.id.value, time)
 
             upcomingSeasonProcessingTimes[time]?.also { cache ->
                 cache.add(season.id.value)
@@ -563,7 +563,7 @@ class LeagueManager(val server: WotwBackendServer) {
                     oneDayBeforeEnd
                 }
 
-                logger().debug("LeagueManager: Scheduled season reminder for season {} at {}", season.id.value, time)
+                logger().info("LeagueManager: Scheduled season reminder for season {} at {}", season.id.value, time)
 
                 upcomingSeasonReminderTimes[reminderTime]?.also { cache ->
                     cache.add(season.id.value)
