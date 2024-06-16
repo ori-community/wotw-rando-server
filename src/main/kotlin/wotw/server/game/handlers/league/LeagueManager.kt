@@ -79,6 +79,11 @@ class LeagueManager(val server: WotwBackendServer) {
             recacheLeagueSeasonSchedules()
         }
 
+        logger().debug("LeagueManager: Processing League schedules")
+        logger().debug("LeagueManager: Now:      {}", now)
+        logger().debug("LeagueManager: Upcoming: {}", upcomingSeasonProcessingTimes.keys.joinToString(", "))
+        logger().debug("LeagueManager: Reminder: {}", upcomingSeasonReminderTimes.keys.joinToString(", "))
+
         for (time in upcomingSeasonProcessingTimes.keys) {
             if (now < time) {  // We can break here because the keys are sorted in ascending order
                 break
@@ -154,7 +159,7 @@ class LeagueManager(val server: WotwBackendServer) {
                     }
                 }
 
-                seasonIds.removeAll(seasonIds)
+                seasonIds.clear()
             }
         }
 
