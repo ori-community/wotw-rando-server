@@ -151,6 +151,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             .innerJoin(LeagueGames)
                             .select(LeagueSeasons.columns)
                             .where {
+                                (LeagueSeasons.currentGameId neq null) and
                                 (LeagueSeasons.id eq LeagueSeasonMemberships.seasonId) and
                                         (LeagueSeasonMemberships.userId eq user.id) and
                                         (LeagueGames.id eq LeagueSeasons.currentGameId) and
