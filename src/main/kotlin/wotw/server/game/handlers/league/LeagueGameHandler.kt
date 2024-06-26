@@ -45,8 +45,6 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
     init {
         // Prevent going backwards in time
         messageEventBus.register(this, ReportInGameTimeMessage::class) { message, worldMembershipId ->
-            state.playerInGameTimes[worldMembershipId] = message.inGameTime
-
             val currentInGameTime = state.playerInGameTimes[worldMembershipId] ?: 0f
 
             if (currentInGameTime > message.inGameTime) {

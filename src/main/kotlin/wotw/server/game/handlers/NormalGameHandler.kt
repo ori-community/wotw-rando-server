@@ -159,20 +159,22 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         }
 
         messageEventBus.register(this, ReportInGameTimeMessage::class) { message, worldMembershipId ->
-            state.playerInGameTimes[worldMembershipId] = message.inGameTime
-
             val currentInGameTime = state.playerInGameTimes[worldMembershipId] ?: 0f
 
             if (currentInGameTime > message.inGameTime) {
                 server.connections.toPlayers(listOf(worldMembershipId), OverrideInGameTimeMessage(currentInGameTime))
                 return@register
             } else {
-                state.playerInGameTimes[worldMembershipId] = message.inGameTime
+                lazilyNotifyClientInfoChangedIf {
+                    state.playerInGameTimes.put(worldMembershipId, message.inGameTime) != message.inGameTime
+                }
             }
 
             if (message.isFinished) {
                 if (!state.playerFinishedTimes.containsKey(worldMembershipId)) {
-                    state.playerFinishedTimes[worldMembershipId] = message.inGameTime
+                    lazilyNotifyClientInfoChangedIf {
+                        state.playerInGameTimes.put(worldMembershipId, message.inGameTime) != message.inGameTime
+                    }
 
                     newSuspendedTransaction {
                         val worldMembership = WorldMembership.findById(worldMembershipId) ?: error("Error: Reported time for unknown world membership $worldMembershipId")
@@ -253,6 +255,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         }
 
         scheduler.scheduleExecution(Every(1, TimeUnit.SECONDS), true)
+    }
+
+    fun lazilyNotifyClientInfoChangedIf(block: () -> Boolean) {
+        lazilyNotifyClientInfoChanged = block.invoke() || lazilyNotifyClientInfoChanged
     }
 
     override fun serializeState(): String {
