@@ -173,7 +173,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             if (message.isFinished) {
                 if (!state.playerFinishedTimes.containsKey(worldMembershipId)) {
                     lazilyNotifyClientInfoChangedIf {
-                        state.playerInGameTimes.put(worldMembershipId, message.inGameTime) != message.inGameTime
+                        state.playerFinishedTimes.put(worldMembershipId, message.inGameTime) != message.inGameTime
                     }
 
                     newSuspendedTransaction {
@@ -182,8 +182,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                     }
                 }
             }
-
-            lazilyNotifyClientInfoChanged = true
         }
 
         messageEventBus.register(this, ReportPlayerRaceReadyMessage::class) { message, worldMembershipId ->
