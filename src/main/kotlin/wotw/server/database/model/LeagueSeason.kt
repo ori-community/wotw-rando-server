@@ -158,7 +158,11 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         val discardedGameRankingMultiplier = 1.0f - seasonProgress
 
         for (membership in memberships) {
-            val submissions = membership.submissions.sortedBy { it.points }
+            val submissions = membership
+                .submissions
+                .filter { !it.game.isCurrent }
+                .sortedBy { it.points }
+
             val worstSubmissionsToDiscardCount = min(
                 discardWorstGamesCount,
                 max(submissions.count() - 1, 0),
