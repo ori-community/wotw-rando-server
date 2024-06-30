@@ -140,6 +140,18 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     call.respond(HttpStatusCode.Created)
                 }
+
+                post("/league/season/recalculate-points") {
+                    requireDeveloper()
+
+                    newSuspendedTransaction {
+                        LeagueSeason.all().forEach { season ->
+                            season.recalculateMembershipPointsAndRanks()
+                        }
+                    }
+
+                    call.respond(HttpStatusCode.OK)
+                }
             }
         }
     }
