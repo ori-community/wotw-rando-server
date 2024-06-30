@@ -154,7 +154,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     fun recalculateMembershipPointsAndRanks() {
         assertTransaction()
 
-        val seasonProgress = games.count().toFloat() / gameCount.toFloat()
+        val seasonProgress = (games - currentGame).count() / gameCount.toFloat()
         val discardedGameRankingMultiplier = 1.0f - seasonProgress
 
         for (membership in memberships) {
