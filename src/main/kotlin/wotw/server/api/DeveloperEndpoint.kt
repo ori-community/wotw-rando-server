@@ -11,6 +11,7 @@ import wotw.io.messages.ClaimBingoCardRequest
 import wotw.io.messages.CreateLeagueSeasonRequest
 import wotw.io.messages.admin.RemoteTrackerEndpointDescriptor
 import wotw.server.database.model.BingoCardClaim
+import wotw.server.database.model.LeagueGameSubmission
 import wotw.server.database.model.LeagueSeason
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
@@ -146,6 +147,10 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     newSuspendedTransaction {
                         LeagueSeason.all().forEach { season ->
+                            season.games.forEach { game ->
+                                game.recalculateSubmissionPointsAndRanks()
+                            }
+
                             season.recalculateMembershipPointsAndRanks()
                         }
                     }
