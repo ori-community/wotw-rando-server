@@ -155,8 +155,8 @@ class InfoMessagesService(private val server: WotwBackendServer) {
             submission.time,
             submission.points,
             submission.rank,
-            submission.discarded,
             submission.videoUrl,
+            submission.rankingMultiplier,
         )
     )
 

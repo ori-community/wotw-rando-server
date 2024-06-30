@@ -154,6 +154,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     fun recalculateMembershipPointsAndRanks() {
         assertTransaction()
 
+        val seasonProgress = games.count().toFloat() / gameCount.toFloat()
+        val discardedGameRankingMultiplier = 1.0f - seasonProgress
+
         for (membership in memberships) {
             val submissions = membership.submissions.sortedBy { it.points }
             val worstSubmissionsToDiscardCount = min(
@@ -162,15 +165,14 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             )
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
-                submission.discarded = true
+                submission.rankingMultiplier = discardedGameRankingMultiplier
             }
 
-            val countingSubmissions = submissions.drop(worstSubmissionsToDiscardCount)
-            countingSubmissions.forEach { submission ->
-                submission.discarded = false
+            submissions.drop(worstSubmissionsToDiscardCount).forEach { submission ->
+                submission.rankingMultiplier = 1.0f
             }
 
-            membership.points = countingSubmissions.sumOf { it.points }
+            membership.points = submissions.sumOf { (it.points * it.rankingMultiplier).toInt() }
         }
 
         val membershipsGroupedByPointsInDescendingOrder = memberships

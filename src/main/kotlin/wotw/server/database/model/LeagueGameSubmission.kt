@@ -18,7 +18,7 @@ object LeagueGameSubmissions : LongIdTable("league_game_submissions") {
     val points = integer("points").default(0)
     val rank = integer("rank").nullable()
     val videoUrl = varchar("video_url", 128).nullable()
-    val discarded = bool("discarded").default(false)
+    val rankingMultiplier = float("rankingMultiplier").default(1.0f)
     val validated = bool("validated").default(false)
     val autoValidationErrors = text("auto_validation_error").nullable()
 }
@@ -34,7 +34,7 @@ class LeagueGameSubmission(id: EntityID<Long>) : LongEntity(id) {
     var points by LeagueGameSubmissions.points
     var rank by LeagueGameSubmissions.rank
     var videoUrl by LeagueGameSubmissions.videoUrl
-    var discarded by LeagueGameSubmissions.discarded
+    var rankingMultiplier by LeagueGameSubmissions.rankingMultiplier
     var validated by LeagueGameSubmissions.validated
     var autoValidationErrors by LeagueGameSubmissions.autoValidationErrors
 
