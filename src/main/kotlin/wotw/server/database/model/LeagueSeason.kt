@@ -20,6 +20,7 @@ import wotw.server.util.assertTransaction
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.jvm.optionals.getOrNull
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -168,8 +169,23 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 max(submissions.count() - 1, 0),
             )
 
+            val submissionsWithATime = submissions.filter { it.time != null }
+            val averagePoints = if (submissionsWithATime.isNotEmpty()) {
+                submissionsWithATime.sumOf { it.points }.toFloat() / submissionsWithATime.size.toFloat()
+            } else 0f
+
+            val discardingSubmissionWeights = mutableMapOf<LeagueGameSubmission, Float>()
+
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
-                submission.rankingMultiplier = discardedGameRankingMultiplier
+                discardingSubmissionWeights[submission] = 1f - abs(submission.points - averagePoints) / (this.basePoints + this.speedPoints).toFloat()
+            }
+
+            val totalDiscardingSubmissionWeight = discardingSubmissionWeights.values.sum()
+
+            submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
+                val weight = discardingSubmissionWeights[submission] ?: throw RuntimeException("This should never happen")
+
+                submission.rankingMultiplier = discardedGameRankingMultiplier * (this.discardWorstGamesCount * (weight / totalDiscardingSubmissionWeight))
             }
 
             submissions.drop(worstSubmissionsToDiscardCount).forEach { submission ->
@@ -227,6 +243,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             }
 
             currentGame.recalculateSubmissionPointsAndRanks()
+            currentGame.refresh(true)
         } ?: throw RuntimeException("Cannot finish current game because there is no current game")
 
         this.recalculateMembershipPointsAndRanks()
