@@ -20,9 +20,7 @@ import wotw.server.util.assertTransaction
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.jvm.optionals.getOrNull
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
+import kotlin.math.*
 
 object LeagueSeasons : LongIdTable("league_seasons") {
     val name = varchar("name", 64)
@@ -162,6 +160,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             val submissions = membership
                 .submissions
                 .filter { !it.game.isCurrent }
+                .sortedBy { it.game.gameNumber }
                 .sortedBy { it.points }
 
             val worstSubmissionsToDiscardCount = min(
@@ -174,19 +173,23 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 submissionsWithATime.sumOf { it.points }.toFloat() / submissionsWithATime.size.toFloat()
             } else 0f
 
+            val variance = if (submissionsWithATime.isNotEmpty()) {
+                submissionsWithATime.sumOf { (it.points - averagePoints).toDouble().pow(2) } / submissionsWithATime.size
+            } else 0.0
+
+            val standardDeviation = sqrt(variance).toFloat()
+
             val discardingSubmissionWeights = mutableMapOf<LeagueGameSubmission, Float>()
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
                 discardingSubmissionWeights[submission] = if (submission.time != null) {
-                    1f - abs(submission.points - averagePoints) / (this.basePoints + this.speedPoints).toFloat()
+                    max(0f, 1f - abs(submission.points - averagePoints) / max(standardDeviation, 1f))
                 } else 0f
             }
 
             val totalDiscardingSubmissionWeight = discardingSubmissionWeights.values.sum()
 
-            submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
-                val weight = discardingSubmissionWeights[submission] ?: throw RuntimeException("This should never happen")
-
+            discardingSubmissionWeights.forEach { (submission, weight) ->
                 submission.rankingMultiplier = if (totalDiscardingSubmissionWeight > 0f) {
                     discardedGameRankingMultiplier * (worstSubmissionsToDiscardCount * (weight / totalDiscardingSubmissionWeight))
                 } else discardedGameRankingMultiplier
