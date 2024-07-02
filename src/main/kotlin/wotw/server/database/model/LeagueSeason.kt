@@ -177,7 +177,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             val discardingSubmissionWeights = mutableMapOf<LeagueGameSubmission, Float>()
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
-                discardingSubmissionWeights[submission] = 1f - abs(submission.points - averagePoints) / (this.basePoints + this.speedPoints).toFloat()
+                discardingSubmissionWeights[submission] = if (submission.time != null) {
+                    1f - abs(submission.points - averagePoints) / (this.basePoints + this.speedPoints).toFloat()
+                } else 0f
             }
 
             val totalDiscardingSubmissionWeight = discardingSubmissionWeights.values.sum()
@@ -185,7 +187,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
                 val weight = discardingSubmissionWeights[submission] ?: throw RuntimeException("This should never happen")
 
-                submission.rankingMultiplier = discardedGameRankingMultiplier * (this.discardWorstGamesCount * (weight / totalDiscardingSubmissionWeight))
+                submission.rankingMultiplier = if (totalDiscardingSubmissionWeight > 0f) {
+                    discardedGameRankingMultiplier * (worstSubmissionsToDiscardCount * (weight / totalDiscardingSubmissionWeight))
+                } else discardedGameRankingMultiplier
             }
 
             submissions.drop(worstSubmissionsToDiscardCount).forEach { submission ->
