@@ -183,7 +183,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
                 discardingSubmissionWeights[submission] = if (submission.time != null) {
-                    max(0f, 1f - abs(submission.points - averagePoints) / max(standardDeviation, 1f))
+                    max(Float.MIN_VALUE, 1f - abs(submission.points - averagePoints) / max(standardDeviation, 1f))
                 } else 0f
             }
 
