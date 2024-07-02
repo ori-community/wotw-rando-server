@@ -170,28 +170,28 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
             val submissionsWithATime = submissions.filter { it.time != null }
             val averagePoints = if (submissionsWithATime.isNotEmpty()) {
-                submissionsWithATime.sumOf { it.points }.toFloat() / submissionsWithATime.size.toFloat()
-            } else 0f
-
-            val variance = if (submissionsWithATime.isNotEmpty()) {
-                submissionsWithATime.sumOf { (it.points - averagePoints).toDouble().pow(2) } / submissionsWithATime.size
+                submissionsWithATime.sumOf { it.points }.toDouble() / submissionsWithATime.size.toDouble()
             } else 0.0
 
-            val standardDeviation = sqrt(variance).toFloat()
+            val variance = if (submissionsWithATime.isNotEmpty()) {
+                submissionsWithATime.sumOf { (it.points - averagePoints).pow(2) } / submissionsWithATime.size
+            } else 0.0
 
-            val discardingSubmissionWeights = mutableMapOf<LeagueGameSubmission, Float>()
+            val standardDeviation = sqrt(variance)
+
+            val discardingSubmissionWeights = mutableMapOf<LeagueGameSubmission, Double>()
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
                 discardingSubmissionWeights[submission] = if (submission.time != null) {
-                    max(Float.MIN_VALUE, 1f - abs(submission.points - averagePoints) / max(standardDeviation, 1f))
-                } else 0f
+                    max(0.01, 1.0 - abs(submission.points - averagePoints) / max(standardDeviation, 1.0))
+                } else 0.0
             }
 
             val totalDiscardingSubmissionWeight = discardingSubmissionWeights.values.sum()
 
             discardingSubmissionWeights.forEach { (submission, weight) ->
-                submission.rankingMultiplier = if (totalDiscardingSubmissionWeight > 0f) {
-                    discardedGameRankingMultiplier * (worstSubmissionsToDiscardCount * (weight / totalDiscardingSubmissionWeight))
+                submission.rankingMultiplier = if (totalDiscardingSubmissionWeight > 0.0) {
+                    (discardedGameRankingMultiplier * (worstSubmissionsToDiscardCount * (weight / totalDiscardingSubmissionWeight))).toFloat()
                 } else discardedGameRankingMultiplier
             }
 
