@@ -177,13 +177,20 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 submissionsWithATime.sumOf { (it.points - averagePoints).pow(2) } / submissionsWithATime.size
             } else 0.0
 
-            val standardDeviation = sqrt(variance)
+            // We don't want that all submissions lie outside the standard
+            // deviation.
+            val minimalDeviation = if (submissionsWithATime.isNotEmpty()) {
+                submissionsWithATime.minOf { abs(it.points - averagePoints) } + 1.0
+            } else 1.0
+
+            // Max of standard deviation and minimal deviation to catch at least one game
+            val deviationRange = max(sqrt(variance), minimalDeviation)
 
             val discardingSubmissionWeights = mutableMapOf<LeagueGameSubmission, Double>()
 
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
                 discardingSubmissionWeights[submission] = if (submission.time != null) {
-                    max(0.01, 1.0 - abs(submission.points - averagePoints) / max(standardDeviation, 1.0))
+                    max(0.0, 1.0 - abs(submission.points - averagePoints) / deviationRange)
                 } else 0.0
             }
 
