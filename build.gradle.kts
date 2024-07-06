@@ -9,7 +9,7 @@ buildscript {
 val kotlinVersion = "2.0.0"
 val ktorVersion = "2.3.11"
 val logbackVersion = "1.5.0"
-val exposedVersion = "0.51.1"
+val exposedVersion = "0.52.0"
 val serializationVersion = "1.7.0"
 val cronutilsVersion = "9.2.0"
 val semverVersion = "1.4.2"
