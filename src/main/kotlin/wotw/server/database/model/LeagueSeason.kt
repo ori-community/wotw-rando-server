@@ -8,9 +8,12 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.javatime.timestamp
 import org.jetbrains.exposed.sql.json.jsonb
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.WorldPreset
 import wotw.io.messages.json
@@ -260,8 +263,10 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             currentGame.refresh(true)
         } ?: throw RuntimeException("Cannot finish current game because there is no current game")
 
-        this.recalculateMembershipPointsAndRanks()
         this.currentGame = null
+        this.flush()
+
+        this.recalculateMembershipPointsAndRanks()
     }
 
     suspend fun createScheduledGame(seedGeneratorService: SeedGeneratorService): LeagueGame {
