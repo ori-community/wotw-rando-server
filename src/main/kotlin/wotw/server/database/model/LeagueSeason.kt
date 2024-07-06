@@ -199,14 +199,27 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
             val totalDiscardingSubmissionWeight = discardingSubmissionWeights.values.sum()
 
-            discardingSubmissionWeights.forEach { (submission, weight) ->
-                submission.rankingMultiplier = if (totalDiscardingSubmissionWeight > 0.0) {
-                    (discardedGameRankingMultiplier * (worstSubmissionsToDiscardCount * (weight / totalDiscardingSubmissionWeight))).toFloat()
-                } else discardedGameRankingMultiplier
+            // Reset all to 1.0f
+            submissions.forEach { submission ->
+                submission.rankingMultiplier = 1.0f
             }
 
-            submissions.drop(worstSubmissionsToDiscardCount).forEach { submission ->
-                submission.rankingMultiplier = 1.0f
+            if (totalDiscardingSubmissionWeight > 0.0) {  // If any of the discarded games has > 0 points
+                discardingSubmissionWeights.forEach { (submission, weight) ->
+                    submission.rankingMultiplier = (discardedGameRankingMultiplier * (worstSubmissionsToDiscardCount * (weight / totalDiscardingSubmissionWeight))).toFloat()
+                }
+            } else { // All discarded games are 0 points, we need to
+                // Discard the worst games right away
+                discardingSubmissionWeights.forEach { (submission, _) ->
+                    submission.rankingMultiplier = 0.0f
+                }
+
+                // ...multiply the worst submission to account for the missing games
+                submissions
+                    .firstOrNull { it.points > 0 }
+                    ?.let { worstSubmissionWithPoints ->
+                        worstSubmissionWithPoints.rankingMultiplier = 1.0f + discardedGameRankingMultiplier * worstSubmissionsToDiscardCount
+                    }
             }
 
             membership.points = submissions.sumOf { (it.points * it.rankingMultiplier).toInt() }
