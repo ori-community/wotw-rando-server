@@ -18,6 +18,7 @@ import wotw.server.game.handlers.GameHandlerType
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
 import wotw.server.util.inverseLerp
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.jvm.optionals.getOrNull
@@ -261,6 +262,14 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 val pointsToBoost = averagePoints * additionalPartsDiscarded
                 val additionalMultiplier = pointsToBoost / gameNearestToAverage.points
                 gameNearestToAverage.rankingMultiplier += additionalMultiplier.toFloat()
+            }
+
+            // Pass 4: Round multipliers to 2 decimal places
+            submissions.forEach { submission ->
+                submission.rankingMultiplier = submission.rankingMultiplier
+                    .toBigDecimal()
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .toFloat()
             }
 
             // Calculate leaderboard points
