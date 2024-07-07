@@ -266,7 +266,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                     submission.rankingMultiplier = 1.0f
                     pointsToBoostLeft -= pointsAvailableToBoostForThisGame
                 } else {
-                    val additionalMultiplier = pointsToBoostLeft / submission.points
+                    val additionalMultiplier = pointsToBoostLeft / submission.points.toDouble()
                     submission.rankingMultiplier += additionalMultiplier.toFloat()
                     pointsToBoostLeft = 0
                 }
