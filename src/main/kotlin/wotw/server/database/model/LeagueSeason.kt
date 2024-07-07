@@ -243,9 +243,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 val partToActuallyDiscardAdditionally = max(
                     0.0f,
                     min(
-                        submission.rankingMultiplier.toDouble(),
-                        min(partRequestedToDiscardAdditionally, availableAdditionalParts - additionalPartsDiscarded)
-                    ).toFloat()
+                        submission.rankingMultiplier,
+                        min(partRequestedToDiscardAdditionally, availableAdditionalParts - additionalPartsDiscarded).toFloat()
+                    )
                 )
 
                 submission.rankingMultiplier -= partToActuallyDiscardAdditionally
