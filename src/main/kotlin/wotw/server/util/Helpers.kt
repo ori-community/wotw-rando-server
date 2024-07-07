@@ -89,3 +89,5 @@ fun String.md5(): String {
 fun lerp(x: Float, y: Float, t: Float): Float = x * (1 - t) + y * t
 
 fun inverseLerp(from: Float, to: Float, t: Float): Float = (t - from) / (to - from)
+
+fun inverseLerp(from: Double, to: Double, t: Double): Double = (t - from) / (to - from)

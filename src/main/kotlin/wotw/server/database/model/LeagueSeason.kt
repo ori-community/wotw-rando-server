@@ -8,18 +8,16 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.javatime.timestamp
 import org.jetbrains.exposed.sql.json.jsonb
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.WorldPreset
 import wotw.io.messages.json
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
+import wotw.server.util.inverseLerp
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.jvm.optionals.getOrNull
@@ -118,6 +116,33 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     val minimumInGameTimeToAllowBreaks = float("minimum_in_game_time_to_allow_breaks").default(60f * 60f * 2f)
 }
 
+/**
+ * The minimum percentage of the max. possible points
+ * difference from average a submission
+ * must be to be able to be considered an outlier.
+ */
+const val OUTLIER_MIN_PERCENTAGE_FROM_MAX_POINTS = 0.05
+
+/**
+ * The minimum percentage of the max. possible points
+ * difference from average for the point algorithm to try to
+ * discard it completely.
+ */
+const val OUTLIER_MAX_PERCENTAGE_FROM_MAX_POINTS = 0.1
+
+/**
+ * How many standard deviations a game must be away
+ * from the average to be able to be considered an outlier.
+ */
+const val OUTLIER_MIN_STANDARD_DEVIATIONS = 1.5
+
+/**
+ * How many standard deviations a game must be away
+ * from the average for the point algorithm to try to
+ * discard it completely.
+ */
+const val OUTLIER_MAX_STANDARD_DEVIATIONS = 3
+
 class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<LeagueSeason>(LeagueSeasons) {
         private val cronParser = CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
@@ -153,11 +178,12 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
     val hasReachedGameCountLimit get() = games.count() >= gameCount
 
+    val maxPossiblePoints get() = speedPoints + basePoints
+
     fun recalculateMembershipPointsAndRanks() {
         assertTransaction()
 
-        val seasonProgress = (games - currentGame).count() / gameCount.toFloat()
-        val discardedGameRankingMultiplier = 1.0f - seasonProgress
+        val seasonProgress = (games - currentGame).count() / gameCount.toDouble()
 
         for (membership in memberships) {
             val submissions = membership
@@ -180,48 +206,56 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 submissionsWithATime.sumOf { (it.points - averagePoints).pow(2) } / submissionsWithATime.size
             } else 0.0
 
-            // We don't want that all submissions lie outside the standard
-            // deviation.
-            val minimalDeviation = if (submissionsWithATime.isNotEmpty()) {
-                submissionsWithATime.minOf { abs(it.points - averagePoints) } + 1.0
-            } else 1.0
+            val standardDeviation = sqrt(variance)
+            val outlierMinPoints = max(
+                0.0,
+                min(
+                    averagePoints - standardDeviation * OUTLIER_MAX_STANDARD_DEVIATIONS,
+                    averagePoints - maxPossiblePoints * OUTLIER_MAX_PERCENTAGE_FROM_MAX_POINTS,
+                )
+            )
+            val outlierMaxPoints = min(
+                averagePoints - standardDeviation * OUTLIER_MIN_STANDARD_DEVIATIONS,
+                averagePoints - maxPossiblePoints * OUTLIER_MIN_PERCENTAGE_FROM_MAX_POINTS,
+            )
 
-            // Max of standard deviation and minimal deviation to catch at least one game
-            val deviationRange = max(sqrt(variance), minimalDeviation)
+            val availableAdditionalParts = worstSubmissionsToDiscardCount - seasonProgress * worstSubmissionsToDiscardCount
+            var additionalPartsDiscarded = 0.0
 
-            val discardingSubmissionWeights = mutableMapOf<LeagueGameSubmission, Double>()
-
+            // Pass 1: Discard x games partially
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
-                discardingSubmissionWeights[submission] = if (submission.time != null) {
-                    max(0.0, 1.0 - abs(submission.points - averagePoints) / deviationRange)
-                } else 0.0
+                submission.rankingMultiplier = (1.0 - seasonProgress).toFloat()
             }
 
-            val totalDiscardingSubmissionWeight = discardingSubmissionWeights.values.sum()
-
-            // Reset all to 1.0f
-            submissions.forEach { submission ->
-                submission.rankingMultiplier = 1.0f
-            }
-
-            if (totalDiscardingSubmissionWeight > 0.0) {  // If any of the discarded games has > 0 points
-                discardingSubmissionWeights.forEach { (submission, weight) ->
-                    submission.rankingMultiplier = (discardedGameRankingMultiplier * (worstSubmissionsToDiscardCount * (weight / totalDiscardingSubmissionWeight))).toFloat()
-                }
-            } else { // All discarded games are 0 points, we need to
-                // Discard the worst games right away
-                discardingSubmissionWeights.forEach { (submission, _) ->
-                    submission.rankingMultiplier = 0.0f
+            // Pass 2: Find outliers and discard them right away as much as possible
+            for (submission in submissions) {
+                if (additionalPartsDiscarded >= availableAdditionalParts) {
+                    break
                 }
 
-                // ...multiply the worst submission to account for the missing games
-                submissions
-                    .firstOrNull { it.points > 0 }
-                    ?.let { worstSubmissionWithPoints ->
-                        worstSubmissionWithPoints.rankingMultiplier = 1.0f + discardedGameRankingMultiplier * worstSubmissionsToDiscardCount
-                    }
+                val partRequestedToDiscardAdditionally = inverseLerp(outlierMinPoints, outlierMaxPoints, submission.points.toDouble())
+
+                val partToActuallyDiscardAdditionally = min(
+                    submission.rankingMultiplier.toDouble(),
+                    min(partRequestedToDiscardAdditionally, availableAdditionalParts - additionalPartsDiscarded)
+                )
+
+                submission.rankingMultiplier -= partToActuallyDiscardAdditionally.toFloat()
+                additionalPartsDiscarded += partToActuallyDiscardAdditionally
             }
 
+            // Pass 3: If we discarded additional parts (outliers), compensate them by boosting games around the average
+            submissions.minByOrNull { abs(it.points - averagePoints) }?.let { gameNearestToAverage ->
+                if (gameNearestToAverage.points <= 0) {
+                    return@let
+                }
+
+                val pointsToBoost = averagePoints * additionalPartsDiscarded
+                val additionalMultiplier = pointsToBoost / gameNearestToAverage.points
+                gameNearestToAverage.rankingMultiplier += additionalMultiplier.toFloat()
+            }
+
+            // Calculate leaderboard points
             membership.points = submissions.sumOf { (it.points * it.rankingMultiplier).toInt() }
         }
 
