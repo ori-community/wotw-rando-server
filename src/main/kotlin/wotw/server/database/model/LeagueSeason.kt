@@ -228,13 +228,12 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             }
 
             // Pass 2: Find outliers and discard them right away as much as possible
-            /*
             for (submission in submissions) {
                 if (additionalPartsDiscarded >= availableAdditionalParts) {
                     break
                 }
 
-                val partRequestedToDiscardAdditionally = inverseLerp(outlierMinPoints, outlierMaxPoints, submission.points.toDouble())
+                val partRequestedToDiscardAdditionally = max(0.0, inverseLerp(outlierMaxPoints, outlierMinPoints, submission.points.toDouble()))
 
                 val partToActuallyDiscardAdditionally = min(
                     submission.rankingMultiplier.toDouble(),
@@ -244,7 +243,6 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 submission.rankingMultiplier -= partToActuallyDiscardAdditionally.toFloat()
                 additionalPartsDiscarded += partToActuallyDiscardAdditionally
             }
-            */
 
             // Pass 3: If we discarded additional parts (outliers), compensate them by boosting games around the average
             submissions.minByOrNull { abs(it.points - averagePoints) }?.let { gameNearestToAverage ->
