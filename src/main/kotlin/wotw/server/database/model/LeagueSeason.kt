@@ -222,12 +222,16 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             val availableAdditionalParts = worstSubmissionsToDiscardCount - seasonProgress * worstSubmissionsToDiscardCount
             var additionalPartsDiscarded = 0.0
 
+            // Reset all ranking multipliers
+            submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
+                submission.rankingMultiplier = 1.0f
+            }
+
             // Pass 1: Discard x games partially
             submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
                 submission.rankingMultiplier = (1.0 - seasonProgress).toFloat()
             }
 
-            /*
             // Pass 2: Find outliers and discard them right away as much as possible
             for (submission in submissions) {
                 if (additionalPartsDiscarded >= availableAdditionalParts) {
@@ -258,7 +262,6 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 val additionalMultiplier = pointsToBoost / gameNearestToAverage.points
                 gameNearestToAverage.rankingMultiplier += additionalMultiplier.toFloat()
             }
-            */
 
             // Calculate leaderboard points
             membership.points = submissions.sumOf { (it.points * it.rankingMultiplier).toInt() }
