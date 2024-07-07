@@ -223,7 +223,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             var additionalPartsDiscarded = 0.0
 
             // Reset all ranking multipliers
-            submissions.take(worstSubmissionsToDiscardCount).forEach { submission ->
+            submissions.forEach { submission ->
                 submission.rankingMultiplier = 1.0f
             }
 
