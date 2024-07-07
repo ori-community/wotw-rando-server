@@ -278,7 +278,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                     return@let
                 }
 
-                val additionalMultiplier = pointsToBoostLeft / submissionNearestToAverage.points
+                val additionalMultiplier = pointsToBoostLeft / submissionNearestToAverage.points.toDouble()
                 submissionNearestToAverage.rankingMultiplier += additionalMultiplier.toFloat()
             }
 
