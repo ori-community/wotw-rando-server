@@ -253,15 +253,33 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 additionalPartsDiscarded += partToActuallyDiscardAdditionally
             }
 
-            // Pass 3: If we discarded additional parts (outliers), compensate them by boosting games around the average
-            submissions.minByOrNull { abs(it.points - averagePoints) }?.let { gameNearestToAverage ->
-                if (gameNearestToAverage.points <= 0) {
+            // Pass 3: If we discarded additional parts (outliers), boost previously discarded games towards 1
+            var pointsToBoostLeft = (averagePoints * additionalPartsDiscarded).toInt()
+            submissions.reversed().forEach { submission ->
+                if (submission.rankingMultiplier >= 1.0f || submission.points == 0) {
+                    return@forEach
+                }
+
+                val pointsAvailableToBoostForThisGame = submission.points - (submission.points * submission.rankingMultiplier).toInt()
+
+                if (pointsAvailableToBoostForThisGame <= pointsToBoostLeft) {
+                    submission.rankingMultiplier = 1.0f
+                    pointsToBoostLeft -= pointsAvailableToBoostForThisGame
+                } else {
+                    val additionalMultiplier = pointsToBoostLeft / submission.points
+                    submission.rankingMultiplier += additionalMultiplier.toFloat()
+                    pointsToBoostLeft = 0
+                }
+            }
+
+            // Pass 4: Compensate the rest by boosting the game nearest to the average
+            submissions.minByOrNull { abs(it.points - averagePoints) }?.let { submissionNearestToAverage ->
+                if (submissionNearestToAverage.points <= 0) {
                     return@let
                 }
 
-                val pointsToBoost = averagePoints * additionalPartsDiscarded
-                val additionalMultiplier = pointsToBoost / gameNearestToAverage.points
-                gameNearestToAverage.rankingMultiplier += additionalMultiplier.toFloat()
+                val additionalMultiplier = pointsToBoostLeft / submissionNearestToAverage.points
+                submissionNearestToAverage.rankingMultiplier += additionalMultiplier.toFloat()
             }
 
             // Pass 4: Round multipliers to 2 decimal places
