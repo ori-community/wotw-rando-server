@@ -102,6 +102,7 @@ class LeagueGame(id: EntityID<Long>) : LongEntity(id) {
         }
 
         val submissionsGroupedByTime = cachedSubmissions
+            .filter { it.time != null }
             .groupBy { it.time ?: 0f }
             .toSortedMap()
             .values
