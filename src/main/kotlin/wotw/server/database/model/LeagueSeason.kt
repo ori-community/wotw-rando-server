@@ -282,7 +282,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
                 submissionNearestToAverage.rankingMultiplier += additionalMultiplier.toFloat()
             }
 
-            // Pass 4: Round multipliers to 2 decimal places
+            // Pass 5: Round multipliers to 2 decimal places
             submissions.forEach { submission ->
                 submission.rankingMultiplier = submission.rankingMultiplier
                     .toBigDecimal()
