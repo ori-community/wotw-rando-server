@@ -7,11 +7,15 @@ import dev.kord.common.entity.optional.Optional
 import dev.kord.common.entity.optional.OptionalBoolean
 import dev.kord.core.Kord
 import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.message.AttachmentBuilder
+import dev.kord.rest.builder.message.addFile
 import dev.kord.rest.builder.message.allowedMentions
 import dev.kord.rest.builder.message.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
 import dev.kord.rest.request.KtorRequestException
+import io.ktor.client.request.forms.*
 import io.ktor.util.logging.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.EntityChangeType
 import org.jetbrains.exposed.dao.EntityHook
@@ -27,6 +31,7 @@ import wotw.server.util.logger
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.Path
 
 
 /**
@@ -272,7 +277,8 @@ class LeagueManager(val server: WotwBackendServer) {
                     """.trimIndent()
 
                     this.content += "\n\n"
-                    this.content += season.longDescriptionMarkdown.lines().joinToString("\n") { "> $it" }.replace("<br>", "")
+                    this.content += season.longDescriptionMarkdown.lines().joinToString("\n") { "> $it" }
+                        .replace("<br>", "")
                     this.content += "\n\n"
 
                     this.content += """
@@ -304,7 +310,11 @@ class LeagueManager(val server: WotwBackendServer) {
         }
     }
 
-    private suspend fun trySendNewGameCreatedDiscordMessage(season: LeagueSeason, game: LeagueGame, previousGame: LeagueGame?) {
+    private suspend fun trySendNewGameCreatedDiscordMessage(
+        season: LeagueSeason,
+        game: LeagueGame,
+        previousGame: LeagueGame?
+    ) {
         try {
             server.ifKord { kord ->
                 assertTransaction()
@@ -385,7 +395,8 @@ class LeagueManager(val server: WotwBackendServer) {
                     val maxPoints = allVisibleMemberships.maxOfOrNull { it.points } ?: 0
                     val maxPointsDigits = maxPoints.toString().length
 
-                    this.content = "## ${season.name}: Season has ended ${server.discordService.getEmojiMarkdown("orihype")}"
+                    this.content =
+                        "## ${season.name}: Season has ended ${server.discordService.getEmojiMarkdown("orihype")}"
 
                     if (allVisibleMemberships.isEmpty()) {
                         this.content += """
@@ -485,6 +496,14 @@ class LeagueManager(val server: WotwBackendServer) {
                             
                             [Open Game](${server.getUiUrl("/league/game/${game.id.value}")})
                         """.trimIndent()
+
+                        game.multiverse.seed?.spoilerText?.let { spoilerText ->
+                            this.addFile("${game.season.name} (Game ${game.gameNumber}).txt", ChannelProvider(null) {
+                                ByteReadChannel(spoilerText)
+                            }) {
+                                this.description = "Spoiler for ${game.season.name} (Game ${game.gameNumber})"
+                            }
+                        }
 
                         this.suppressEmbeds = true
                     }
