@@ -189,7 +189,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         for (membership in memberships) {
             val submissions = membership
                 .submissions
-                .filter { !it.game.isCurrent }
+                .filter { it.game.id != currentGame?.id }
                 .sortedBy { it.game.gameNumber }
                 .sortedBy { it.points }
 
@@ -346,7 +346,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         } ?: throw RuntimeException("Cannot finish current game because there is no current game")
 
         this.currentGame = null
-        this.flush()
+        this.refresh(true)
 
         this.recalculateMembershipPointsAndRanks()
     }
