@@ -159,6 +159,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         }
 
         messageEventBus.register(this, ReportInGameTimeMessage::class) { message, worldMembershipId ->
+            if (!state.playerSaveGuids.containsKey(worldMembershipId)) {
+                return@register
+            }
+
             val currentInGameTime = state.playerInGameTimes[worldMembershipId] ?: 0f
 
             if (currentInGameTime > message.inGameTime) {
