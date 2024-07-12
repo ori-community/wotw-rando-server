@@ -37,6 +37,18 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
     private var state = LeagueGameHandlerState()
 
+    private var seasonMinimumInGameTimeToAllowBreaksCache: Float? = null
+
+    private val seasonMinimumInGameTimeToAllowBreaks: Float get() {
+        return seasonMinimumInGameTimeToAllowBreaksCache ?: run {
+            val season = getLeagueGame().season
+
+            seasonMinimumInGameTimeToAllowBreaksCache = season.minimumInGameTimeToAllowBreaks
+
+            season.minimumInGameTimeToAllowBreaks
+        }
+    }
+
     fun getLeagueGame(): LeagueGame {
         assertTransaction()
         return LeagueGame.find { LeagueGames.multiverseId eq multiverseId }.firstOrNull() ?: throw RuntimeException("Could not find league game for multiverse $multiverseId")
@@ -55,6 +67,17 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 server.connections.toPlayers(listOf(worldMembershipId), OverrideInGameTimeMessage(currentInGameTime))
                 return@register
             } else {
+                if (!message.isFinished && currentInGameTime < seasonMinimumInGameTimeToAllowBreaks && message.inGameTime >= seasonMinimumInGameTimeToAllowBreaks) {
+                    server.connections.toPlayers(
+                        listOf(worldMembershipId),
+                        makeServerTextMessage("""
+                            Your in-game time passed ${seasonMinimumInGameTimeToAllowBreaks / 60.0} minutes.
+                            You are #allowed to take a break# from this game now.
+                            To do that, close the game completely after hitting a checkpoint.
+                        """.trimIndent())
+                    )
+                }
+
                 state.playerInGameTimes[worldMembershipId] = message.inGameTime
 
                 if (message.isFinished && !state.playerFinishedAtTimestamps.containsKey(worldMembershipId)) {
