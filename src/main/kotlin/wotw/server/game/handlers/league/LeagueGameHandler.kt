@@ -207,8 +207,10 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         val leagueGame = getLeagueGame()
 
+        val gameTitle = "${leagueGame.season.name} ${leagueGame.gameNumber}/${leagueGame.season.gameCount}"
+
         val universe = Universe.new {
-            name = "League Game ${leagueGame.gameNumber}"
+            name = gameTitle
             this.multiverse = multiverse
         }
 
@@ -220,7 +222,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
         val worldSeed = multiverse.seed?.worldSeeds?.firstOrNull() ?: throw RuntimeException("World seed not found")
 
-        val world = World.new(universe, "League Game ${leagueGame.gameNumber}", worldSeed)
+        val world = World.new(universe, gameTitle, worldSeed)
         server.multiverseUtil.movePlayerToWorld(user, world)
     }
 
