@@ -97,6 +97,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         membership.rank,
         membership.lastRankDelta,
         membership.joinedAt.toEpochMilli(),
+        membership.rankingCompensationPoints,
     )
 
     suspend fun generateLeagueGameInfo(game: LeagueGame, selfUser: User? = null): LeagueGameInfo {

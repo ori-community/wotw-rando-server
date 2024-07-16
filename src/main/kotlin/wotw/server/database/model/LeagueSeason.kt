@@ -254,35 +254,9 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             }
 
             // Pass 3: If we discarded additional parts (outliers), boost previously discarded games towards 1
-            var pointsToBoostLeft = (averagePoints * additionalPartsDiscarded).toInt()
-            submissions.reversed().forEach { submission ->
-                if (submission.rankingMultiplier >= 1.0f || submission.points == 0) {
-                    return@forEach
-                }
+            membership.rankingCompensationPoints = (averagePoints * additionalPartsDiscarded).toInt()
 
-                val pointsAvailableToBoostForThisGame = submission.points - (submission.points * submission.rankingMultiplier).toInt()
-
-                if (pointsAvailableToBoostForThisGame <= pointsToBoostLeft) {
-                    submission.rankingMultiplier = 1.0f
-                    pointsToBoostLeft -= pointsAvailableToBoostForThisGame
-                } else {
-                    val additionalMultiplier = pointsToBoostLeft / submission.points.toDouble()
-                    submission.rankingMultiplier += additionalMultiplier.toFloat()
-                    pointsToBoostLeft = 0
-                }
-            }
-
-            // Pass 4: Compensate the rest by boosting the game nearest to the average
-            submissions.minByOrNull { abs(it.points - averagePoints) }?.let { submissionNearestToAverage ->
-                if (submissionNearestToAverage.points <= 0) {
-                    return@let
-                }
-
-                val additionalMultiplier = pointsToBoostLeft / submissionNearestToAverage.points.toDouble()
-                submissionNearestToAverage.rankingMultiplier += additionalMultiplier.toFloat()
-            }
-
-            // Pass 5: Round multipliers to 2 decimal places
+            // Pass 4: Round multipliers to 2 decimal places
             submissions.forEach { submission ->
                 submission.rankingMultiplier = submission.rankingMultiplier
                     .toBigDecimal()
@@ -291,7 +265,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             }
 
             // Calculate leaderboard points
-            membership.points = submissions.sumOf { (it.points * it.rankingMultiplier).toInt() }
+            membership.points = submissions.sumOf { (it.points * it.rankingMultiplier).toInt() } + membership.rankingCompensationPoints
         }
 
         val membershipsGroupedByPointsInDescendingOrder = memberships

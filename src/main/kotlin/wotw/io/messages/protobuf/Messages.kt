@@ -515,6 +515,7 @@ data class LeagueSeasonMembershipInfo(
     @ProtoNumber(3) @Required val rank: Int? = null,
     @ProtoNumber(4) @Required val lastRankDelta: Int? = null,
     @ProtoNumber(5) val joinedAt: Long,
+    @ProtoNumber(6) val rankingCompensationPoints: Int,
 )
 
 @Serializable
