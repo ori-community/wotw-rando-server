@@ -39,8 +39,8 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
     private var seasonMinimumInGameTimeToAllowBreaksCache: Float? = null
 
-    private val seasonMinimumInGameTimeToAllowBreaks: Float get() {
-        return seasonMinimumInGameTimeToAllowBreaksCache ?: run {
+    private suspend fun getSeasonMinimumInGameTimeToAllowBreaks(): Float {
+        return seasonMinimumInGameTimeToAllowBreaksCache ?: newSuspendedTransaction {
             val season = getLeagueGame().season
 
             seasonMinimumInGameTimeToAllowBreaksCache = season.minimumInGameTimeToAllowBreaks
@@ -67,11 +67,11 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
                 server.connections.toPlayers(listOf(worldMembershipId), OverrideInGameTimeMessage(currentInGameTime))
                 return@register
             } else {
-                if (!message.isFinished && currentInGameTime < seasonMinimumInGameTimeToAllowBreaks && message.inGameTime >= seasonMinimumInGameTimeToAllowBreaks) {
+                if (!message.isFinished && currentInGameTime < getSeasonMinimumInGameTimeToAllowBreaks() && message.inGameTime >= getSeasonMinimumInGameTimeToAllowBreaks()) {
                     server.connections.toPlayers(
                         listOf(worldMembershipId),
                         makeServerTextMessage("""
-                            Your in-game time passed ${seasonMinimumInGameTimeToAllowBreaks / 60.0} minutes.
+                            Your in-game time passed ${getSeasonMinimumInGameTimeToAllowBreaks() / 60.0} minutes.
                             You are #allowed to take a break# from this game now.
                             To do that, close the game completely after hitting a checkpoint.
                         """.trimIndent())
