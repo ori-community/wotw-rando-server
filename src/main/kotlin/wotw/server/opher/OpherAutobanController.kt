@@ -8,6 +8,7 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import wotw.server.main.WotwBackendServer
@@ -80,16 +81,6 @@ class OpherAutobanController(val server: WotwBackendServer) {
         rateLimitCache.garbageCollect()
     }
 
-    private fun getLogChannel(): Snowflake {
-        val channelId = System.getenv("DISCORD_OPHER_LOG_CHANNEL")
-
-        if (channelId.isNullOrBlank()) {
-            throw RuntimeException("DISCORD_OPHER_LOG_CHANNEL is not set")
-        }
-
-        return Snowflake(channelId)
-    }
-
     suspend fun start(discordToken: String) {
         val kord = Kord(discordToken)
 
@@ -125,13 +116,22 @@ class OpherAutobanController(val server: WotwBackendServer) {
                         this.communicationDisabledUntil = Clock.System.now().plus(2.days)
                     }
 
-                    kord.rest.channel.createMessage(getLogChannel()) {
-                        this.content = "Auto-Timeout triggered: <@${message.author?.id}>"
+                    message.getGuild().channels.firstOrNull { it.name == "opher-automod" }?.let { channel ->
+                        kord.rest.channel.createMessage(channel.id) {
+                            this.content = "Auto-Timeout triggered: <@${message.author?.id}>"
+                        }
+                    } ?: run {
+                        logger().warn("Did not find opher-automod channel!")
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    kord.rest.channel.createMessage(getLogChannel()) {
-                        this.content = "Spam detected but timeout wasn't possible: <@${message.author?.id}>"
+
+                    message.getGuild().channels.firstOrNull { it.name == "opher-automod" }?.let { channel ->
+                        kord.rest.channel.createMessage(channel.id) {
+                            this.content = "Spam detected but timeout wasn't possible: <@${message.author?.id}>"
+                        }
+                    } ?: run {
+                        logger().warn("Did not find opher-automod channel!")
                     }
                 }
 
