@@ -188,7 +188,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
     }
 
     override suspend fun shouldPreventCheats(worldMembership: WorldMembership): Boolean {
-        return System.getenv("LEAGUE_ALLOW_CHEATS") != "true"
+        return System.getenv("LEAGUE_ALLOW_CHEATS") != "true" && !state.playerFinishedAtTimestamps.containsKey(worldMembership.id.value)
     }
 
     // We only support creating new universes. Every other join operation
