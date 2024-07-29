@@ -374,9 +374,14 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
         val scheduleStartAtZoned = this.scheduleStartAt.atZone(ZoneId.systemDefault())
 
-        var time = this.games.maxOfOrNull { it.createdAt }?.atZone(ZoneId.systemDefault()) ?: scheduleStartAtZoned
+        var nthCronOccurrenceToUse = this.scheduleEveryNthOccurrence
 
-        repeat(this.scheduleEveryNthOccurrence) {
+        var time = this.games.maxOfOrNull { it.createdAt }?.atZone(ZoneId.systemDefault()) ?: scheduleStartAtZoned.also {
+            // This is the first game, so use the first cron occurrence after scheduleStartAt
+            nthCronOccurrenceToUse = 1
+        }
+
+        repeat(nthCronOccurrenceToUse) {
             time = ExecutionTime
                 .forCron(cron)
                 .nextExecution(time)
