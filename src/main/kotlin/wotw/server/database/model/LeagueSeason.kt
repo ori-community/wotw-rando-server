@@ -40,6 +40,12 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     val scheduleStartAt = timestamp("schedule_start_at")
 
     /**
+     * Trigger on every nth occurrence of the schedule cron definition.
+     * Useful for schedules like "every nth friday".
+     */
+    val scheduleEveryNthOccurrence = integer("schedule_every_nth_occurrence").default(1)
+
+    /**
      * How many games this Season should host.
      */
     val gameCount = integer("game_count").default(4)
@@ -152,6 +158,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     var name by LeagueSeasons.name
     var scheduleCron by LeagueSeasons.scheduleCron
     var scheduleStartAt by LeagueSeasons.scheduleStartAt
+    var scheduleEveryNthOccurrence by LeagueSeasons.scheduleEveryNthOccurrence
     var gameCount by LeagueSeasons.gameCount
     var basePoints by LeagueSeasons.basePoints
     var speedPoints by LeagueSeasons.speedPoints
@@ -367,15 +374,20 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
         val scheduleStartAtZoned = this.scheduleStartAt.atZone(ZoneId.systemDefault())
 
-        val time = ExecutionTime
-            .forCron(cron)
-            .nextExecution(this.games.maxOfOrNull { it.createdAt }?.atZone(ZoneId.systemDefault()) ?: scheduleStartAtZoned)
-            .getOrNull()
-            ?.toInstant()
-            ?: throw RuntimeException("Cron expression '$scheduleCron' does not seem to repeat infinitely")
+        var time = this.games.maxOfOrNull { it.createdAt }?.atZone(ZoneId.systemDefault()) ?: scheduleStartAtZoned
 
-        this.nextContinuationAtCache = time
+        repeat(this.scheduleEveryNthOccurrence) {
+            time = ExecutionTime
+                .forCron(cron)
+                .nextExecution(time)
+                .getOrNull()
+                ?: throw RuntimeException("Cron expression '$scheduleCron' does not seem to repeat infinitely")
+        }
 
-        return time
+        val timeInstant = time.toInstant()
+
+        this.nextContinuationAtCache = timeInstant
+
+        return timeInstant
     }
 }
