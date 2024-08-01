@@ -74,7 +74,7 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
                             Your in-game time passed ${getSeasonMinimumInGameTimeToAllowBreaks() / 60.0} minutes.
                             You are #allowed to take a break# from this game now.
                             To do that, close the game completely after hitting a checkpoint.
-                        """.trimIndent())
+                        """.trimIndent(), 10f)
                     )
                 }
 
