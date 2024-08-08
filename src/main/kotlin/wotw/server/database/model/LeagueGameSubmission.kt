@@ -21,6 +21,10 @@ object LeagueGameSubmissions : LongIdTable("league_game_submissions") {
     val rankingMultiplier = float("rankingMultiplier").default(1.0f)
     val validated = bool("validated").default(false)
     val autoValidationErrors = text("auto_validation_error").nullable()
+
+    init {
+        uniqueIndex(gameId, membershipId)
+    }
 }
 
 class LeagueGameSubmission(id: EntityID<Long>) : LongEntity(id) {

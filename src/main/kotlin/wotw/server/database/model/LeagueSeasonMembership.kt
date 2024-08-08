@@ -16,6 +16,10 @@ object LeagueSeasonMemberships : LongIdTable("league_season_memberships") {
     val rankingCompensationPoints = integer("discard_compensation_points").default(0)
     val rank = integer("rank").nullable()
     val lastRankDelta = integer("last_rank_delta").nullable()
+
+    init {
+        uniqueIndex(userId, seasonId)
+    }
 }
 
 class LeagueSeasonMembership(id: EntityID<Long>) : LongEntity(id) {
