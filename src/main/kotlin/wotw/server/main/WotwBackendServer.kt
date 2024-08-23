@@ -76,7 +76,7 @@ class WotwBackendServer {
             if (System.getenv("SENTRY_DSN") != null) {
                 Sentry.init { options ->
                     options.dsn = System.getenv("SENTRY_DSN")
-                    options.setEnableUncaughtExceptionHandler(false)
+                    options.isEnableUncaughtExceptionHandler = false
                 }
 
                 Thread.setDefaultUncaughtExceptionHandler { _, throwable ->

@@ -25,18 +25,18 @@ fun generatePool() = mutableListOf(
     ),
     nof(
         3,
-        pickupsIn.marsh,
-        pickupsIn.hollow,
-        pickupsIn.glades,
-        pickupsIn.wellspring,
-        pickupsIn.burrows,
-        pickupsIn.woods,
-        pickupsIn.depths,
-        pickupsIn.pools,
-        pickupsIn.reach,
-        pickupsIn.wastes,
-        pickupsIn.willow,
-        pickupsIn.houses,
+        PickupsByArea.marsh,
+        PickupsByArea.hollow,
+        PickupsByArea.glades,
+        PickupsByArea.wellspring,
+        PickupsByArea.burrows,
+        PickupsByArea.woods,
+        PickupsByArea.depths,
+        PickupsByArea.pools,
+        PickupsByArea.reach,
+        PickupsByArea.wastes,
+        PickupsByArea.willow,
+        PickupsByArea.houses,
     ).weighted(300),
     bool("Spin the Wheel outside Luma Pools", 945, 12852),
 
@@ -734,7 +734,7 @@ fun generatePool() = mutableListOf(
         bool("Woods Entrance", 58674, 7071),
         bool("Woods Exit", 58674, 1965),
         bool("Feeding Grounds", 58674, 10029),
-        bool("Wastes", 20120, 49994),
+        bool("Central Wastes", 20120, 49994),
         bool("Outer Ruins", 20120, 41398),
         bool("Willow's End", 16155, 41465),
         bool("Inner Ruins", 10289, 4928, countOnly = true),
@@ -881,7 +881,7 @@ fun generatePool() = mutableListOf(
     ),
 )
 
-object pickupsIn {
+object PickupsByArea {
     val marsh = group(
         "Collect # Pickups In Inkwater Marsh",
         threshold("MarshPastOpher.SpiritTrial", 44964, 45951, threshold = 2, hideValue = true),

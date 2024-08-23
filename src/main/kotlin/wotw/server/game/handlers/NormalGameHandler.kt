@@ -11,6 +11,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.*
+import wotw.server.bingo.Point
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
@@ -336,13 +337,13 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                 this.finishedTime = finishedTime
             }
 
-            multiverse.universes.forEach() { universe ->
+            multiverse.universes.forEach { universe ->
                 val team = RaceTeam.new {
                     this.race = race
                     this.finishedTime = state.universeFinishedTimes[universe.id.value]
                 }
 
-                universe.memberships.forEach() { worldMembership ->
+                universe.memberships.forEach { worldMembership ->
                     RaceTeamMember.new {
                         this.raceTeam = team
                         this.user = worldMembership.user

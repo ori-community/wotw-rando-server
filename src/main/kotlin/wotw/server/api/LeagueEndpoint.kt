@@ -9,7 +9,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.notExists
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -24,8 +23,6 @@ import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.NTuple5
 import wotw.server.util.then
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import kotlin.math.floor
 
 class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {

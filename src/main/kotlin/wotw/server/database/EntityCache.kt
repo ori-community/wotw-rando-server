@@ -45,7 +45,7 @@ open class EntityCache<KEY : Any, VALUE : Any>(
         return null
     }
 
-    suspend fun put(key: KEY, value: VALUE?) = CacheEntry(value, currentTimeMillis()).let {
+    fun put(key: KEY, value: VALUE?) = CacheEntry(value, currentTimeMillis()).let {
         cache[key] = it
         it.value
     }

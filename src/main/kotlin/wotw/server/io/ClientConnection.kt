@@ -8,7 +8,7 @@ import io.ktor.network.sockets.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.websocket.*
 import io.ktor.utils.io.core.*
-import io.ktor.utils.io.errors.*
+import io.ktor.utils.io.errors.IOException
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -31,7 +31,7 @@ fun DecodedJWT.parsePayload(): Payload {
 
 class ClientConnectionUDPRegistry() {
     companion object {
-        private val availableUdpIDs = HashSet((0..65535).toList());
+        private val availableUdpIDs = HashSet((0..65535).toList())
         private val connections: HashMap<Int, ClientConnection> = hashMapOf()
 
         fun register(connection: ClientConnection): Int {

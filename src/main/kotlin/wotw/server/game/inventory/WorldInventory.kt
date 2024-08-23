@@ -24,7 +24,7 @@ class WorldInventory(private val gameState: GameState) {
             gameState.uberStateData[target.uberId] = target.value
         }
 
-        var value = request.amount.toDouble();
+        var value = request.amount.toDouble()
         if (request.relative) {
             value += gameState.uberStateData[request.resourceUberId] ?: 0.0
         }

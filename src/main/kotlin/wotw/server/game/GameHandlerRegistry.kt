@@ -78,7 +78,7 @@ class GameHandlerRegistry(val server: WotwBackendServer) {
         return handler
     }
 
-    public fun purgeFromCache(multiverseId: Long) {
+    fun purgeFromCache(multiverseId: Long) {
         handlers.remove(multiverseId)
     }
 

@@ -7,7 +7,6 @@ import dev.kord.common.entity.optional.Optional
 import dev.kord.common.entity.optional.OptionalBoolean
 import dev.kord.core.Kord
 import dev.kord.rest.builder.component.ActionRowBuilder
-import dev.kord.rest.builder.message.AttachmentBuilder
 import dev.kord.rest.builder.message.addFile
 import dev.kord.rest.builder.message.allowedMentions
 import dev.kord.rest.builder.message.embed
@@ -31,7 +30,6 @@ import wotw.server.util.logger
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-import kotlin.io.path.Path
 
 
 /**
@@ -177,7 +175,7 @@ class LeagueManager(val server: WotwBackendServer) {
         }
     }
 
-    suspend fun setup() {
+    fun setup() {
         scheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
 
         /*

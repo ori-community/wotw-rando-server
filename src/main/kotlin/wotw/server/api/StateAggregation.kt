@@ -20,7 +20,7 @@ data class UberStateSyncStrategy(val aggregation: (old: Double, new: Double) -> 
         val KEEP = UberStateSyncStrategy({ v, _ -> v })
         val AVG = UberStateSyncStrategy({ o, n -> (o + n) / 2 })
 
-        fun MAX_THRESHOLD(threshold: Double): UberStateSyncStrategy {
+        fun maxThreshold(threshold: Double): UberStateSyncStrategy {
             return UberStateSyncStrategy({ old, new -> min(MAX.aggregation(old, new), threshold) })
         }
     }

@@ -49,7 +49,8 @@ class World(id: EntityID<Long>) : LongEntity(id) {
             val gameState = GameState.new {
                 this.multiverse = universe.multiverse
                 this.universe = universe
-                val world = World.new {
+
+                val world = new {
                     this.universe = universe
                     this.name = name
                     this.seed = seed

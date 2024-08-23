@@ -1762,7 +1762,7 @@ val normalWorldSyncAggregationStrategy by lazy {
 
             /// Quests
             // TODO: Add all quests here
-            sync(14019, 33776).with(UberStateSyncStrategy.MAX_THRESHOLD(3.0)), // Acorn Quest
+            sync(14019, 33776).with(UberStateSyncStrategy.maxThreshold(3.0)), // Acorn Quest
         )
     }
 }

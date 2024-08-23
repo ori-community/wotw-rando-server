@@ -11,7 +11,7 @@ object Spectators : LongIdTable("spectators") {
     val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
 
     init {
-        uniqueIndex(Spectators.gameId, Spectators.playerId)
+        uniqueIndex(gameId, playerId)
     }
 }
 

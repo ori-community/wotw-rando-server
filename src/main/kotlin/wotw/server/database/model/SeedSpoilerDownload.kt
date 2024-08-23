@@ -11,7 +11,7 @@ object SeedSpoilerDownloads : LongIdTable("seed_spoiler_downloads") {
     val playerId = reference("user_id", Users, ReferenceOption.CASCADE)
 
     init {
-        uniqueIndex(SeedSpoilerDownloads.seedId, SeedSpoilerDownloads.playerId)
+        uniqueIndex(seedId, playerId)
     }
 }
 

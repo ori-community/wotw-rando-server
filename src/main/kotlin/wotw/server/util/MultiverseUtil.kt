@@ -38,7 +38,7 @@ class MultiverseUtil(val server: WotwBackendServer) {
         server.connections.broadcastMultiverseInfoMessage(worldMembership.multiverse)
     }
 
-    suspend fun movePlayerToWorld(player: User, world: World): WorldMembership {
+    fun movePlayerToWorld(player: User, world: World): WorldMembership {
         var worldMembership = WorldMembership.find {
             (WorldMemberships.userId eq player.id) and (WorldMemberships.multiverseId eq world.universe.multiverse.id)
         }.firstOrNull()

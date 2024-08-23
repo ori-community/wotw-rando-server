@@ -10,7 +10,7 @@ import wotw.server.database.StringIdTable
 
 object BingothonTokens : StringIdTable("bingothon_tokens") {
     val owner = reference("owner_id", Users, ReferenceOption.CASCADE, ReferenceOption.CASCADE).uniqueIndex()
-    val multiverseId = BingothonTokens.reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
+    val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val created = datetime("created_at").defaultExpression(CurrentDateTime)
 }
 
