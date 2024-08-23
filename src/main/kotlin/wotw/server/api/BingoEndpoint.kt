@@ -35,7 +35,7 @@ class BingoEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         val player = authenticatedUserOrNull()
 
                         val multiverse = Multiverse.findById(multiverseId) ?: throw NotFoundException()
-                        multiverse.board ?: throw NotFoundException()
+                        multiverse.cachedBoard ?: throw NotFoundException()
                         val info = multiverse.bingoUniverseInfo()
 
                         val currentPlayerUniverseInThisMultiverse = player?.id?.value?.let { playerId ->

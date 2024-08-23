@@ -16,8 +16,12 @@ import wotw.server.bingo.plus
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.sync.UniverseStateCache
 import wotw.server.util.assertTransaction
+import wotw.util.ExpiringCache
 import java.util.*
 import kotlin.math.ceil
+import kotlin.time.Duration.Companion.minutes
+
+val bingoBoardCache = ExpiringCache<Long, BingoBoard?>(20.minutes)
 
 object Multiverses : LongIdTable("multiverses") {
     val seedId = reference("seed_id", Seeds).nullable()
@@ -67,10 +71,13 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     val playersAndSpectators
         get() = players + spectators
 
+    val cachedBoard
+        get() = bingoBoardCache.getOrPut(id.value) { board }
+
     suspend fun getNewBingoCardClaims(universe: Universe): List<BingoCardClaim> {
         val newClaims = mutableListOf<BingoCardClaim>()
 
-        val board = board ?: return emptyList()
+        val board = cachedBoard ?: return emptyList()
         val state =
             UniverseStateCache.get(universe.id.value)//universeStates[universe]?.uberStateData ?: UberStateMap.empty
         val claimedSquarePositions = bingoCardClaims.filter { it.universe == universe }.map { it.x to it.y }
@@ -99,7 +106,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
         targetUniverse: Universe?,
         spectator: Boolean = false
     ): BingoBoardMessage {
-        val board = board ?: return BingoBoardMessage()
+        val board = cachedBoard ?: return BingoBoardMessage()
 
         val targetUniverseState = targetUniverse?.let { u -> UniverseStateCache.get(u.id.value) } ?: UberStateMap.empty
 
@@ -192,9 +199,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
             // all of them. Goals with revealed neighbors are handled above.
             if (board.config.lockout) {
                 ownCardClaims.forEach { claim ->
-                    goals[claim.x to claim.y]?.let { goal ->
-                        goal.visibleFor.add(universe.id.value)
-                    }
+                    goals[claim.x to claim.y]?.visibleFor?.add(universe.id.value)
                 }
             }
         }
@@ -214,7 +219,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     }
 
     private fun goalCompletionMap(): Map<Pair<Int, Int>, Set<Universe>> {
-        val board = board ?: return emptyMap()
+        val board = cachedBoard ?: return emptyMap()
         val events = bingoCardClaims
         return (1..board.size).flatMap { x ->
             (1..board.size).map { y ->
@@ -226,7 +231,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     }
 
     fun getLockoutGoalOwnerMap(): Map<Pair<Int, Int>, Universe?> {
-        val board = board ?: return emptyMap()
+        val board = cachedBoard ?: return emptyMap()
         val owners = (1..board.size).flatMap { x ->
             (1..board.size).map { y ->
                 x to y
@@ -238,13 +243,13 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     }
 
     fun scoreRelevantCompletionMap() =
-        (if (board?.config?.lockout == true) getLockoutGoalOwnerMap().mapValues {
+        (if (cachedBoard?.config?.lockout == true) getLockoutGoalOwnerMap().mapValues {
             val universe = it.value ?: return@mapValues emptySet()
             setOf(universe)
         } else goalCompletionMap())
 
     fun bingoUniverseInfo(universe: Universe): BingoUniverseInfo {
-        val board = board ?: return BingoUniverseInfo(universe.id.value, "")
+        val board = cachedBoard ?: return BingoUniverseInfo(universe.id.value, "")
         val lockout = board.config.lockout
         val completions = scoreRelevantCompletionMap().filterValues { universe in it }.keys.toSet()
 
@@ -322,7 +327,7 @@ class Multiverse(id: EntityID<Long>) : LongEntity(id) {
     fun updateAutomaticWorldNames() {
         assertTransaction()
 
-        var nextEmptyWorldNumber = 1;
+        var nextEmptyWorldNumber = 1
         for (world in worlds) {
             if (world.hasCustomName) {
                 return

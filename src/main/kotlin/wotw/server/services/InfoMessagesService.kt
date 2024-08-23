@@ -37,7 +37,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
 
     fun generateMultiverseMetadataInfoMessage(multiverse: Multiverse) = MultiverseMetadataInfoMessage(
         multiverse.id.value,
-        multiverse.board != null,
+        multiverse.cachedBoard != null,
         multiverse.seed != null,
         multiverse.memberships.map { generateUserInfo(it.user) },
         multiverse.createdAt.toEpochMilli(),
@@ -47,7 +47,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         multiverse.id.value,
         multiverse.universes.sortedBy { it.id }
             .mapIndexed { index, universe -> generateUniverseInfo(universe, COLORS[index % COLORS.size]) },
-        multiverse.board != null,
+        multiverse.cachedBoard != null,
         multiverse.spectators.map(::generateUserInfo),
         multiverse.seed?.takeIf { it.allowDownload }?.id?.value,
         multiverse.gameHandlerType,

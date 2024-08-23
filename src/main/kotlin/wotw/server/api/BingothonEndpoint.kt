@@ -28,7 +28,7 @@ class BingothonEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val token = BingothonToken.findById(tokenId) ?: throw NotFoundException()
                 val player = token.owner
                 val multiverse = token.multiverse
-                val board = multiverse.board ?: throw BadRequestException("No bingo board attached to current multiverse")
+                val board = multiverse.cachedBoard ?: throw BadRequestException("No bingo board attached to current multiverse")
                 val playerIsSpectator = multiverse.spectators.contains(player)
 
                 if (board.size != 5) {

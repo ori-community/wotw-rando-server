@@ -11,7 +11,6 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.*
 import wotw.server.api.*
-import wotw.server.bingo.Point
 import wotw.server.bingo.UberStateMap
 import wotw.server.database.model.*
 import wotw.server.exception.ConflictException
@@ -424,7 +423,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
             val results = server.sync.aggregateStates(worldMembership, uberStates)
 
-            getMultiverse().board?.let { board ->
+            getMultiverse().cachedBoard?.let { board ->
                 val newBingoCardClaims = world.universe.multiverse.getNewBingoCardClaims(world.universe)
 
                 if (board.config.lockout) {
@@ -482,7 +481,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
         // Add bingo states if we have a bingo game
         newSuspendedTransaction {
-            Multiverse.findById(multiverseId)?.board?.goals?.flatMap { it.value.keys }
+            Multiverse.findById(multiverseId)?.cachedBoard?.goals?.flatMap { it.value.keys }
         }?.let {
             aggregationRegistry += AggregationStrategyRegistry().apply {
                 register(

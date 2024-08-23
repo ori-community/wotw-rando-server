@@ -181,6 +181,7 @@ class WotwBackendServer {
 
     val cacheScheduler = Scheduler {
         sync.purgeCache(60)
+        bingoBoardCache.garbageCollect()
 
         gameHandlerRegistry.cacheEntries.filter { cacheEntry ->
             cacheEntry.isDisposable().also { disposable ->

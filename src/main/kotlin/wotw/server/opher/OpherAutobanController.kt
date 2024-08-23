@@ -66,7 +66,7 @@ class OpherAutobanController(val server: WotwBackendServer) {
         private fun hashMessage(message: Message): MessageHash = message.content.trim().md5()
 
         suspend fun reportMessage(message: Message): MessageBurstInfo {
-            val burstInfo = messageBurstsInChannels.getOrPut(hashMessage(message)) { MessageBurstInfo() }
+            val burstInfo = messageBurstsInChannels.getOrPutSuspended(hashMessage(message)) { MessageBurstInfo() }
             burstInfo.channels[message.channelId] = Clock.System.now()
             burstInfo.messages += message
             return burstInfo
@@ -95,7 +95,7 @@ class OpherAutobanController(val server: WotwBackendServer) {
 
             val author = message.author ?: return@on
 
-            val guildId = channelIdGuildIdCache.getOrTryPut(message.channelId) {
+            val guildId = channelIdGuildIdCache.getOrTryPutSuspended(message.channelId) {
                 message.getGuildOrNull()?.id
             }
 
@@ -105,7 +105,7 @@ class OpherAutobanController(val server: WotwBackendServer) {
 
             val memberId = MemberId(guildId, author.id)
 
-            val recentCommunication = rateLimitCache.getOrPut(memberId) { RecentMemberCommunication() }
+            val recentCommunication = rateLimitCache.getOrPutSuspended(memberId) { RecentMemberCommunication() }
             recentCommunication.garbageCollect()
 
             val burstInfo = recentCommunication.reportMessage(message)
