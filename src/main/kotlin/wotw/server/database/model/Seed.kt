@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.javatime.datetime
 import org.jetbrains.exposed.sql.json.jsonb
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.json
+import wotw.io.messages.protobuf.GameDifficultySettingsOverrides
 
 object Seeds : LongIdTable("seeds") {
     // TODO: Make seedgen return the used UniverseSettings and save them here instead of the preset
@@ -46,4 +47,23 @@ class WorldSeed(id: EntityID<Long>): LongEntity(id){
     var seed by Seed referencedOn WorldSeeds.seed
     var worldIndex by WorldSeeds.worldIndex
     var content by WorldSeeds.content
+
+    fun inferGameDifficultySettingsOverrides(): GameDifficultySettingsOverrides {
+        // TODO: Temporary.
+        //       Replace this with something that doesn't rely on the seedgen config at some point
+
+        if (seed.seedgenConfig.worldSettings[worldIndex].hard) {
+            return GameDifficultySettingsOverrides(
+                GameDifficultySettingsOverrides.Setting.Deny,
+                GameDifficultySettingsOverrides.Setting.Deny,
+                GameDifficultySettingsOverrides.Setting.Allow,
+            )
+        }
+
+        return GameDifficultySettingsOverrides(
+            GameDifficultySettingsOverrides.Setting.Deny,
+            GameDifficultySettingsOverrides.Setting.Allow,
+            GameDifficultySettingsOverrides.Setting.Deny,
+        )
+    }
 }

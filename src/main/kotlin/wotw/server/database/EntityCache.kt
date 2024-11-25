@@ -83,16 +83,15 @@ open class EntityCache<KEY : Any, VALUE : Any>(
     }
 }
 
-@Serializable
 data class WorldMembershipEnvironmentCacheEntry(
     val worldMembershipId: Long,
     val playerId: String,
     val worldId: Long?,
+    val worldSeedId: Long?,
     val universeWorldMembershipIds: Set<Long>,
     val worldWorldMembershipIds: Set<Long>,
 )
 
-@Serializable
 data class MultiverseMemberCacheEntry(
     val multiverseId: Long,
     val playerAndSpectatorPlayerIds: Set<String>,
@@ -107,6 +106,7 @@ class WorldMembershipEnvironmentCache : EntityCache<Long, WorldMembershipEnviron
             worldMembershipId,
             worldMembership?.user?.id?.value ?: "<invalid cache>",
             worldMembership?.world?.id?.value,
+            worldMembership?.world?.seed?.id?.value,
             worldMembership?.world?.universe?.memberships?.map { it.id.value }?.toSet() ?: emptySet(),
             worldMembership?.world?.memberships?.map { it.id.value }?.toSet() ?: emptySet(),
         )

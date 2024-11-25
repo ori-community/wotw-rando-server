@@ -44,9 +44,11 @@ fun Random.nextTriangular(min: Double, max: Double, mode: Double): Double {
         min + sqrt((1 - rand) * (max - min) * (max - mode))
 }
 
-data class GeneratorConfig(val random: Random, val difficulty: Difficulty = Difficulty.NORMAL, val repeats: Int = 0)
-enum class Difficulty {
-    EASY, NORMAL, HARD
+data class GeneratorConfig(val random: Random, val difficulty: BingoDifficulty = BingoDifficulty.Normal, val repeats: Int = 0)
+enum class BingoDifficulty {
+    Easy,
+    Normal,
+    Hard,
 }
 
 fun aggr(aggr: AggregationExpression.Aggregation, group: NumberStateGeneratorGroup)= NumberStateGenerator {
@@ -115,7 +117,7 @@ fun uber(group: Int, state: Int) = NumberStateGenerator {
     UberStateExpression(group, state)
 }
 
-fun difficulty(difficulties: Map<Difficulty, NumberStateGenerator>) = NumberStateGenerator { config ->
+fun difficulty(difficulties: Map<BingoDifficulty, NumberStateGenerator>) = NumberStateGenerator { config ->
     difficulties[config.difficulty]?.invoke(config)
 }
 
@@ -215,16 +217,16 @@ fun group(
             }
             subsetGoal -> {
                 val maxAmount = when (difficulty) {
-                    Difficulty.EASY -> 2
-                    Difficulty.NORMAL -> 3
-                    Difficulty.HARD -> 4
+                    BingoDifficulty.Easy -> 2
+                    BingoDifficulty.Normal -> 3
+                    BingoDifficulty.Hard -> 4
                 }
 
                 val goalAmount = random.nextInt(1, maxAmount + 1)
                 val requiredAmount = when (difficulty) {
-                    Difficulty.EASY -> 1
-                    Difficulty.NORMAL -> if (random.nextDouble() > orChance) goalAmount else 1
-                    Difficulty.HARD -> goalAmount
+                    BingoDifficulty.Easy -> 1
+                    BingoDifficulty.Normal -> if (random.nextDouble() > orChance) goalAmount else 1
+                    BingoDifficulty.Hard -> goalAmount
                 }
                 val generatedGoals = mutableListOf<BingoGoal>()
 

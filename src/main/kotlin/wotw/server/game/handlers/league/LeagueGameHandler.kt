@@ -39,6 +39,12 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
 
     private var seasonMinimumInGameTimeToAllowBreaksCache: Float? = null
 
+    private var gameDifficultyCache: GameDifficulty? = null
+
+    private suspend fun getGameDifficulty(): GameDifficulty = gameDifficultyCache ?: newSuspendedTransaction {
+        getLeagueGame().season.gameDifficulty
+    }
+
     private suspend fun getSeasonMinimumInGameTimeToAllowBreaks(): Float {
         return seasonMinimumInGameTimeToAllowBreaksCache ?: newSuspendedTransaction {
             val season = getLeagueGame().season
@@ -269,9 +275,17 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         }
     }
 
-    override fun shouldEnforceSeedDifficulty(): Boolean = true
-
     fun getPlayerDisconnectedTime(worldMembership: WorldMembership): Float {
         return state.playerDisconnectedTimes[worldMembership.id.value] ?: 0f
+    }
+
+    override suspend fun getDifficultySettingsOverrides(worldMembershipId: WorldMembershipId): GameDifficultySettingsOverrides {
+        val difficulty = getGameDifficulty()
+
+        return GameDifficultySettingsOverrides(
+            if (difficulty == GameDifficulty.Easy) GameDifficultySettingsOverrides.Setting.Allow else GameDifficultySettingsOverrides.Setting.Deny,
+            if (difficulty == GameDifficulty.Normal) GameDifficultySettingsOverrides.Setting.Allow else GameDifficultySettingsOverrides.Setting.Deny,
+            if (difficulty == GameDifficulty.Hard) GameDifficultySettingsOverrides.Setting.Allow else GameDifficultySettingsOverrides.Setting.Deny,
+        )
     }
 }

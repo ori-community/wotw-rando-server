@@ -6,6 +6,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protoBuf
+import wotw.io.messages.protobuf.GameDifficultySettingsOverrides
 import wotw.io.messages.protobuf.MoodGuid
 import wotw.io.messages.protobuf.SetBlockStartingNewGameMessage
 import wotw.server.api.AggregationStrategyRegistry
@@ -185,5 +186,5 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
 
     open fun canDuplicateMultiverse(): Boolean = true
 
-    open fun shouldEnforceSeedDifficulty(): Boolean = false
+    open suspend fun getDifficultySettingsOverrides(worldMembershipId: WorldMembershipId): GameDifficultySettingsOverrides? = null
 }

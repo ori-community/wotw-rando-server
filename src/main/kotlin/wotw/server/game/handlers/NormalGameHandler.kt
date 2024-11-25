@@ -199,11 +199,19 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                 "enableRaceMode" -> {
                     state.raceModeEnabled = true
 
-                    server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
-                        server.connections.toPlayers(
-                            worldMembershipIds,
-                            SetEnforceSeedDifficultyMessage(true),
-                        )
+                    newSuspendedTransaction {
+                        val worlds = getMultiverse().worlds
+
+                        worlds.forEach { world ->
+                            world.seed?.let { worldSeed ->
+                                server.connections.toPlayers(
+                                    world.memberships.map { it.id.value },
+                                    SetGameDifficultySettingsOverridesMessage(
+                                        worldSeed.inferGameDifficultySettingsOverrides()
+                                    ),
+                                )
+                            }
+                        }
                     }
 
                     notifyMultiverseOrClientInfoChanged()
@@ -629,5 +637,19 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         }
     }
 
-    override fun shouldEnforceSeedDifficulty(): Boolean = state.raceModeEnabled
+    override suspend fun getDifficultySettingsOverrides(worldMembershipId: WorldMembershipId): GameDifficultySettingsOverrides? {
+        if (!state.raceModeEnabled) {
+            return null
+        }
+
+        return newSuspendedTransaction {
+            server.worldMembershipEnvironmentCache.get(worldMembershipId).worldSeedId?.let { worldSeedId ->
+                WorldSeed.findById(worldSeedId)?.let { worldSeed ->
+                    return@newSuspendedTransaction worldSeed.inferGameDifficultySettingsOverrides()
+                }
+            }
+
+            return@newSuspendedTransaction null
+        }
+    }
 }

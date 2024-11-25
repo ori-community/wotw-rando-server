@@ -9,6 +9,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.math.pow
 
+enum class GameDifficulty {
+    Easy,
+    Normal,
+    Hard,
+}
+
 @Serializable
 data class UserInfo(
     @ProtoNumber(1) val id: String,
@@ -156,8 +162,21 @@ data class SetSaveGuidRestrictionsMessage(
 )
 
 @Serializable
-data class SetEnforceSeedDifficultyMessage(
-    @ProtoNumber(1) val shouldEnforceSeedDifficulty: Boolean,
+data class GameDifficultySettingsOverrides(
+    @ProtoNumber(1) val easy: Setting,
+    @ProtoNumber(2) val normal: Setting,
+    @ProtoNumber(3) val hard: Setting,
+) {
+    enum class Setting {
+        Allow,
+        Warn,
+        Deny,
+    }
+}
+
+@Serializable
+data class SetGameDifficultySettingsOverridesMessage(
+    @ProtoNumber(1) @Required val overrides: GameDifficultySettingsOverrides? = null,
 )
 
 @Serializable
@@ -166,7 +185,7 @@ data class InitGameSyncMessage(
     @ProtoNumber(2) val blockStartingNewGame: Boolean = false,
     @ProtoNumber(3) val saveGuidRestrictions: SetSaveGuidRestrictionsMessage,
     @ProtoNumber(4) val preventCheats: Boolean = false,
-    @ProtoNumber(5) val enforceSeedDifficulty: SetEnforceSeedDifficultyMessage,
+    @ProtoNumber(5) val difficultySettingsOverrides: SetGameDifficultySettingsOverridesMessage,
 )
 
 @Serializable

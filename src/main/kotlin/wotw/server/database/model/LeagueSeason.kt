@@ -14,6 +14,7 @@ import org.jetbrains.exposed.sql.json.jsonb
 import wotw.io.messages.UniversePreset
 import wotw.io.messages.WorldPreset
 import wotw.io.messages.json
+import wotw.io.messages.protobuf.GameDifficulty
 import wotw.server.game.handlers.GameHandlerType
 import wotw.server.seedgen.SeedGeneratorService
 import wotw.server.util.assertTransaction
@@ -121,6 +122,8 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     val announcementSent = bool("announcement_sent").default(false)
 
     val minimumInGameTimeToAllowBreaks = float("minimum_in_game_time_to_allow_breaks").default(60f * 60f * 2f)
+
+    val gameDifficulty = enumeration("game_difficulty", GameDifficulty::class).default(GameDifficulty.Normal)
 }
 
 /**
@@ -178,6 +181,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
     var backgroundImageUrl by LeagueSeasons.backgroundImageUrl
     var announcementSent by LeagueSeasons.announcementSent
     var minimumInGameTimeToAllowBreaks by LeagueSeasons.minimumInGameTimeToAllowBreaks
+    var gameDifficulty by LeagueSeasons.gameDifficulty
 
     val nextContinuationAt: Instant get() = this.nextContinuationAtCache ?: this.updateNextContinuationAtTimestamp()
 
