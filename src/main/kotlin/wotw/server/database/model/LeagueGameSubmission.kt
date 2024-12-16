@@ -44,8 +44,11 @@ class LeagueGameSubmission(id: EntityID<Long>) : LongEntity(id) {
     var validated by LeagueGameSubmissions.validated
     var autoValidationErrors by LeagueGameSubmissions.autoValidationErrors
 
-    val formattedTime: String get() {
-        return this.time?.let { time ->
+    val formattedTime: String get() = formatTime(time)
+    val formattedOriginalTime: String get() = formatTime(originalTime)
+
+    private fun formatTime(seconds: Float?): String {
+        return seconds?.let { time ->
             (time * 1000f).toLong().milliseconds.toComponents { hours, minutes, seconds, nanoseconds ->
                 var result = ""
 

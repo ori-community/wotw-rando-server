@@ -537,7 +537,13 @@ class LeagueManager(val server: WotwBackendServer) {
                     }
 
                     if (!submission.validated) {
-                        this.content += " (auto-validation failed)"
+                        this.content += " (auto-validation failed"
+
+                        if (submission.originalTime != null) {
+                            this.content += ", original time: ${submission.formattedOriginalTime}"
+                        }
+
+                        this.content += ")"
                     }
 
                     this.suppressEmbeds = true
