@@ -15,7 +15,7 @@ object LeagueGameSubmissions : LongIdTable("league_game_submissions") {
     val submittedAt = timestamp("submitted_at").defaultExpression(CurrentTimestamp)
     val saveFile = binary("save_file", 512 * 1024).nullable()
     val time = float("time").nullable()
-    val save_file_time = float("save_file_time").nullable()
+    val originalTime = float("originalTime").nullable()
     val points = integer("points").default(0)
     val rank = integer("rank").nullable()
     val videoUrl = varchar("video_url", 128).nullable()
@@ -36,7 +36,7 @@ class LeagueGameSubmission(id: EntityID<Long>) : LongEntity(id) {
     var submittedAt by LeagueGameSubmissions.submittedAt
     var saveFile by LeagueGameSubmissions.saveFile
     var time by LeagueGameSubmissions.time
-    var saveFileTime by LeagueGameSubmissions.save_file_time
+    var originalTime by LeagueGameSubmissions.originalTime
     var points by LeagueGameSubmissions.points
     var rank by LeagueGameSubmissions.rank
     var videoUrl by LeagueGameSubmissions.videoUrl

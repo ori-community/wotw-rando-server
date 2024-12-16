@@ -262,8 +262,12 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 newSuspendedTransaction {
                     handler.createSubmission(authenticatedUser()) {
-                        it.time = timeOverride ?: saveData.inGameTime
-                        it.saveFileTime = saveData.inGameTime
+                        if (timeOverride != null) {
+                            it.time = timeOverride
+                            it.originalTime = saveData.inGameTime
+                        } else {
+                            it.time = saveData.inGameTime
+                        }
 
                         it.saveFile = saveFileArray
 
