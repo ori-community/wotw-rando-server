@@ -247,11 +247,13 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 saveFileBuffer.get(saveFileArray)
 
                 val autoValidationErrors = mutableListOf<String>()
+                var timeOverride: Float? = null
 
                 if (
                     saveData.inGameTime < minimumInGameTimeToAllowBreaks &&
                     playerDisconnectedTime > LEAGUE_MAX_DISCONNECTED_TIME
                 ) {
+                    timeOverride = minimumInGameTimeToAllowBreaks
                     autoValidationErrors += """
                         Taking breaks during the run is only allowed after ${floor(minimumInGameTimeToAllowBreaks / 60f)} minutes of in-game time.
                         You were disconnected for $playerDisconnectedTime seconds.
@@ -260,7 +262,9 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 newSuspendedTransaction {
                     handler.createSubmission(authenticatedUser()) {
-                        it.time = saveData.inGameTime
+                        it.time = timeOverride ?: saveData.inGameTime
+                        it.saveFileTime = saveData.inGameTime
+
                         it.saveFile = saveFileArray
 
                         if (autoValidationErrors.isNotEmpty()) {

@@ -586,4 +586,5 @@ data class LeagueGameSubmissionRankingData(
     @ProtoNumber(3) @Required val rank: Int? = null,
     @ProtoNumber(5) @Required val videoUrl: String? = null,
     @ProtoNumber(6) val rankingMultiplier: Float,
+    @ProtoNumber(7) @Required val saveFileTime: Float? = null,
 )
