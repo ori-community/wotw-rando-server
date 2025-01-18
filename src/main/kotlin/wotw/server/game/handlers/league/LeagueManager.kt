@@ -578,17 +578,10 @@ class LeagueManager(val server: WotwBackendServer) {
             }
 
             season.currentGame?.let { currentGame ->
-                // Remind at 80% of the time, but at most 24 hours before submission ends
-                val oneDayBeforeEnd = time.minus(Duration.ofHours(24))
-                val eightyPercentBeforeEnd = Instant.ofEpochSecond(
+                // Remind at 80% of the time
+                val reminderTime = Instant.ofEpochSecond(
                     (currentGame.createdAt.epochSecond + (time.epochSecond - currentGame.createdAt.epochSecond) * 0.8).toLong()
                 )
-
-                val reminderTime = if (eightyPercentBeforeEnd.isAfter(oneDayBeforeEnd)) {
-                    eightyPercentBeforeEnd
-                } else {
-                    oneDayBeforeEnd
-                }
 
                 logger().info("LeagueManager: Scheduled season reminder for season {} at {}", season.id.value, time)
 
