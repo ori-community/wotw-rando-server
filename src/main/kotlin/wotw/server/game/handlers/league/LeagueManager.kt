@@ -29,6 +29,7 @@ import wotw.server.util.assertTransaction
 import wotw.server.util.logger
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 
@@ -41,8 +42,8 @@ class LeagueManager(val server: WotwBackendServer) {
      * Processing = finishing current game and eventually creating next game.
      * {time -> [LeagueSeason IDs]
      */
-    private var upcomingSeasonProcessingTimes = sortedMapOf<Instant, MutableList<Long>>()
-    private var upcomingSeasonReminderTimes = sortedMapOf<Instant, MutableList<Long>>()
+    private var upcomingSeasonProcessingTimes = ConcurrentHashMap<Instant, MutableList<Long>>()
+    private var upcomingSeasonReminderTimes = ConcurrentHashMap<Instant, MutableList<Long>>()
 
     fun getDiscordChannel(): Snowflake {
         val channelId = System.getenv("LEAGUE_DISCORD_CHANNEL_ID")
@@ -85,10 +86,10 @@ class LeagueManager(val server: WotwBackendServer) {
 
             logger().debug("LeagueManager: Processing League schedules")
             logger().debug("LeagueManager: Now:      {}", now)
-            logger().debug("LeagueManager: Upcoming: {}", upcomingSeasonProcessingTimes.keys.joinToString(", "))
-            logger().debug("LeagueManager: Reminder: {}", upcomingSeasonReminderTimes.keys.joinToString(", "))
+            logger().debug("LeagueManager: Upcoming: {}", upcomingSeasonProcessingTimes.keys.sorted().joinToString(", "))
+            logger().debug("LeagueManager: Reminder: {}", upcomingSeasonReminderTimes.keys.sorted().joinToString(", "))
 
-            for (time in upcomingSeasonProcessingTimes.keys) {
+            for (time in upcomingSeasonProcessingTimes.keys.sorted()) {
                 if (now < time) {  // We can break here because the keys are sorted in ascending order
                     break
                 }
@@ -128,7 +129,7 @@ class LeagueManager(val server: WotwBackendServer) {
                 }
             }
 
-            for (time in upcomingSeasonReminderTimes.keys) {
+            for (time in upcomingSeasonReminderTimes.keys.sorted()) {
                 if (now < time) {  // We can break here because the keys are sorted in ascending order
                     break
                 }
@@ -177,22 +178,6 @@ class LeagueManager(val server: WotwBackendServer) {
 
     fun setup() {
         scheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
-
-        /*
-        Make this a developer API at some point
-
-        newSuspendedTransaction {
-            LeagueSeason.all().forEach { season ->
-                season.games.forEach { game ->
-                    if (!game.isCurrent) {
-                        game.recalculateSubmissionPointsAndRanks()
-                    }
-                }
-
-                season.recalculateMembershipPointsAndRanks()
-            }
-        }
-        */
 
         EntityHook.subscribe {
             runBlocking {
