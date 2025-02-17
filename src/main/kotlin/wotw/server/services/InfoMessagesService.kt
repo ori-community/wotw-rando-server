@@ -45,7 +45,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
 
     suspend fun generateMultiverseInfoMessage(multiverse: Multiverse) = MultiverseInfoMessage(
         multiverse.id.value,
-        multiverse.universes.sortedBy { it.id }
+        multiverse.universes.sortedBy { it.id.value }
             .mapIndexed { index, universe -> generateUniverseInfo(universe, colors[index % colors.size]) },
         multiverse.cachedBoard != null,
         multiverse.spectators.map(::generateUserInfo),
@@ -63,8 +63,8 @@ class InfoMessagesService(private val server: WotwBackendServer) {
     fun generateUniverseInfo(universe: Universe, color: String? = null) = UniverseInfo(
         universe.id.value,
         universe.name,
-        color ?: colors[universe.multiverse.universes.sortedBy { it.id }.indexOf(universe) % colors.size],
-        universe.worlds.sortedBy { it.id }.mapIndexed { index, world ->
+        color ?: colors[universe.multiverse.universes.sortedBy { it.id.value }.indexOf(universe) % colors.size],
+        universe.worlds.sortedBy { it.id.value }.mapIndexed { index, world ->
             generateWorldInfo(world, colors[index % colors.size])
         }
     )
@@ -79,7 +79,7 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         WorldInfo(
             world.id.value,
             world.name,
-            color ?: colors[world.universe.worlds.sortedBy { it.id }.indexOf(world) % colors.size],
+            color ?: colors[world.universe.worlds.sortedBy { it.id.value }.indexOf(world) % colors.size],
             world.memberships.map(::generateWorldMembershipInfo),
             world.seed?.id?.value,
         )
