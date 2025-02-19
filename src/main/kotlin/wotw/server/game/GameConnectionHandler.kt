@@ -1,10 +1,13 @@
 package wotw.server.game
 
+import io.ktor.websocket.CloseReason
+import io.ktor.websocket.close
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.InitGameSyncMessage
 import wotw.io.messages.protobuf.SetGameDifficultySettingsOverridesMessage
 import wotw.io.messages.protobuf.SetSaveGuidRestrictionsMessage
+import wotw.io.messages.protobuf.ShowUINotificationMessage
 import wotw.server.database.model.User
 import wotw.server.database.model.WorldMembership
 import wotw.server.database.model.WorldMemberships
@@ -61,6 +64,16 @@ class GameConnectionHandler(
 
             val handler = server.gameHandlerRegistry.getHandler(multiverse.id.value)
             val states = handler.generateStateAggregationRegistry(world).getSyncedStates()
+
+            if (!handler.allowPrereleaseClientVersions() && (this@GameConnectionHandler.connection.clientVersion?.isPreRelease ?: true)) {
+                val text = "This online game cannot be played on\ndevelopment versions of the randomizer."
+                this@GameConnectionHandler.connection.sendMessage(makeServerTextMessage(text, 10f), ignoreAuthentication = true)
+                this@GameConnectionHandler.connection.sendMessage(ShowUINotificationMessage(text, "error"), ignoreAuthentication = true)
+
+                this@GameConnectionHandler.connection.webSocket.flush()
+                this@GameConnectionHandler.connection.webSocket.close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Invalid client version"))
+                return@newSuspendedTransaction null
+            }
 
             this@GameConnectionHandler.connection.sendMessage(
                 InitGameSyncMessage(

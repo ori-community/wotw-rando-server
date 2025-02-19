@@ -288,4 +288,6 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
             if (difficulty == GameDifficulty.Hard) GameDifficultySettingsOverrides.Setting.Allow else GameDifficultySettingsOverrides.Setting.Deny,
         )
     }
+
+    override fun allowPrereleaseClientVersions(): Boolean = false
 }

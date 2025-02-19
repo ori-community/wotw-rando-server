@@ -3,6 +3,7 @@ package wotw.server.io
 import com.auth0.jwt.impl.JWTParser
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
+import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersionOrNull
 import io.ktor.network.sockets.*
 import io.ktor.server.auth.jwt.*
@@ -60,6 +61,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
     var udpId: Int? = null
     var udpAddress: SocketAddress? = null
     val udpKey = ByteArray(16)
+    var clientVersion: Version? = null
 
     var principal: WotwUserPrincipal? = null
         private set
@@ -80,10 +82,10 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                     val message = Packet.deserialize(frame.data) ?: continue
 
                     if (message is AuthenticateMessage) {
-                        val clientVersion = message.clientVersion.toVersionOrNull()
+                        val messageClientVersion = message.clientVersion.toVersionOrNull()
 
-                        if (clientVersion == null || !SUPPORTED_CLIENT_VERSIONS.isSatisfiedBy(clientVersion)) {
-                            logger().warn("Tried to authenticate with an unsupported client version: $clientVersion")
+                        if (messageClientVersion == null || !SUPPORTED_CLIENT_VERSIONS.isSatisfiedBy(messageClientVersion)) {
+                            logger().warn("Tried to authenticate with an unsupported client version: $messageClientVersion")
 
                             val text = "Your Randomizer version is not compatible with online games.\nPlease make sure you are on the latest version"
                             sendMessage(makeServerTextMessage(text, 10f), ignoreAuthentication = true)
@@ -93,6 +95,8 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                             webSocket.close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Invalid client version"))
                             return
                         }
+
+                        clientVersion = messageClientVersion
 
                         if (principal == null) {
                             val verifier = WotwBackendServer.getJwtVerifier()

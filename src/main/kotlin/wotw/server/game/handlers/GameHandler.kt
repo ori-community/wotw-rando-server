@@ -187,4 +187,5 @@ abstract class GameHandler<CLIENT_INFO_TYPE : Any>(
     open fun canDuplicateMultiverse(): Boolean = true
 
     open suspend fun getDifficultySettingsOverrides(worldMembershipId: WorldMembershipId): GameDifficultySettingsOverrides? = null
+    open fun allowPrereleaseClientVersions(): Boolean = true
 }
