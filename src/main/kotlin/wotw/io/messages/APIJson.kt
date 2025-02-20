@@ -53,6 +53,7 @@ data class WorldPreset(
     val difficulty: String? = null,
     val tricks: Set<String> = emptySet(),
     val hard: Boolean = false,
+    val randomizeDoors: Boolean = false,
 
     @Deprecated("Will be deprecated soon when goals are headerified")
     val goals: Set<String> = emptySet(),
@@ -68,6 +69,7 @@ data class WorldSettings(
     val difficulty: String,
     val tricks: Set<String> = emptySet(),
     val hard: Boolean = false,
+    val randomizeDoors: Boolean = false,
     val headers: Set<String> = emptySet(),
     val headerConfig: List<HeaderConfig> = emptyList(),
     val inlineHeaders: List<Header> = emptyList(),
