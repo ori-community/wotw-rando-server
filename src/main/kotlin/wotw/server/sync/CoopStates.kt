@@ -75,7 +75,7 @@ val spiritTrialIds = mapOf(
 )
 
 val questIds = mapOf(
-    "The Missing Key " to UberId(48248, 51645),
+    "The Missing Key" to UberId(48248, 51645),
     "Into the Burrows" to UberId(48248, 18458),
     "The Lost Compass" to UberId(14019, 20667),
     "A Little Braver" to UberId(14019, 15983),
@@ -663,6 +663,7 @@ val unsortedCoop = listOf(
     UberId(9593, 59418),      // inkwaterMarshStateGroup.enemyRoom
     UberId(9593, 9229),      // inkwaterMarshStateGroup.lanternAndCreepA
     UberId(18793, 13352),      // mouldwoodDepthsGroup.darknessLiftedUberState
+    UberId(6, 500),      // randoState.canOpenMokiFatherHut
 )
 
 val mapSegments = listOf(
@@ -1732,6 +1733,41 @@ val mapSegments = listOf(
     UberId(22, 146473),
 )
 
+val doorEntries = listOf(
+    UberId(28, 1),
+    UberId(28, 2),
+    UberId(28, 3),
+    UberId(28, 4),
+    UberId(28, 5),
+    UberId(28, 6),
+    UberId(28, 7),
+    UberId(28, 8),
+    UberId(28, 9),
+    UberId(28, 10),
+    UberId(28, 11),
+    UberId(28, 12),
+    UberId(28, 13),
+    UberId(28, 14),
+    UberId(28, 15),
+    UberId(28, 16),
+    UberId(28, 17),
+    UberId(28, 18),
+    UberId(28, 19),
+    UberId(28, 20),
+    UberId(28, 21),
+    UberId(28, 22),
+    UberId(28, 23),
+    UberId(28, 24),
+    UberId(28, 25),
+    UberId(28, 26),
+    UberId(28, 27),
+    UberId(28, 28),
+    UberId(28, 29),
+    UberId(28, 30),
+    UberId(28, 31),
+    UberId(28, 32),
+)
+
 val gameFinished = UberId(34543, 11226)
 
 val normalWorldSyncAggregationStrategy by lazy {
@@ -1751,6 +1787,7 @@ val normalWorldSyncAggregationStrategy by lazy {
             sync(spiritTrialIds.values),
             sync(unsortedCoop),
             sync(mapSegments),
+            sync(doorEntries),
             sync(furnaces).with(UberStateSyncStrategy.ALWAYS_OVERWRITE),
             sync(37858, 8487).on(threshold = 5), // Wellspring fight room
             sync(5377, 53480).on(threshold = 4), // pools fight room 2
