@@ -2,6 +2,7 @@ package wotw.server.services
 
 import wotw.io.messages.protobuf.*
 import wotw.server.database.model.*
+import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 
@@ -91,6 +92,12 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         user.isDeveloper,
     )
 
+    fun generateSaveFileGameStatsInfo(saveFileData: WotwSaveFileReader.SaveFileData) = SaveFileGameStatsInfo(
+        inGameTime = saveFileData.inGameTime,
+        collectedPickups = saveFileData.collectedPickups,
+        teleports = saveFileData.teleports,
+    )
+
     fun generateLeagueSeasonMembershipInfo(membership: LeagueSeasonMembership) = LeagueSeasonMembershipInfo(
         generateUserInfo(membership.user),
         membership.points,
@@ -159,7 +166,8 @@ class InfoMessagesService(private val server: WotwBackendServer) {
             submission.videoUrl,
             submission.rankingMultiplier,
             submission.originalTime,
-        )
+        ),
+        submission.saveFile != null,
     )
 
     fun generateReducedLeagueGameSubmissionInfo(submission: LeagueGameSubmission) = LeagueGameSubmissionInfo(
@@ -167,5 +175,6 @@ class InfoMessagesService(private val server: WotwBackendServer) {
         generateLeagueSeasonMembershipInfo(submission.membership),
         submission.submittedAt.toEpochMilli(),
         null,
+        false,
     )
 }

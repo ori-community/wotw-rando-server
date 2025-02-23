@@ -576,7 +576,8 @@ data class LeagueGameSubmissionInfo(
     @ProtoNumber(1) val id: Long,
     @ProtoNumber(2) val membership: LeagueSeasonMembershipInfo,
     @ProtoNumber(3) val submittedAt: Long,
-    @ProtoNumber(4) @Required val rankingData: LeagueGameSubmissionRankingData? = null
+    @ProtoNumber(4) @Required val rankingData: LeagueGameSubmissionRankingData? = null,
+    @ProtoNumber(5) val hasSaveFile: Boolean,
 )
 
 @Serializable
@@ -587,4 +588,11 @@ data class LeagueGameSubmissionRankingData(
     @ProtoNumber(5) @Required val videoUrl: String? = null,
     @ProtoNumber(6) val rankingMultiplier: Float,
     @ProtoNumber(7) @Required val originalTime: Float? = null,
+)
+
+@Serializable
+data class SaveFileGameStatsInfo(
+    @ProtoNumber(1) val inGameTime: Float,
+    @ProtoNumber(2) val collectedPickups: String?,
+    @ProtoNumber(3) val teleports: String?,
 )
