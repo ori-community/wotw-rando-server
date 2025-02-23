@@ -1733,7 +1733,7 @@ val mapSegments = listOf(
     UberId(22, 146473),
 )
 
-val doorEntries = listOf(
+val knownDoorConnections = listOf(
     UberId(28, 1),
     UberId(28, 2),
     UberId(28, 3),
@@ -1787,7 +1787,7 @@ val normalWorldSyncAggregationStrategy by lazy {
             sync(spiritTrialIds.values),
             sync(unsortedCoop),
             sync(mapSegments),
-            sync(doorEntries),
+            sync(knownDoorConnections),
             sync(furnaces).with(UberStateSyncStrategy.ALWAYS_OVERWRITE),
             sync(37858, 8487).on(threshold = 5), // Wellspring fight room
             sync(5377, 53480).on(threshold = 4), // pools fight room 2
