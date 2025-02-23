@@ -22,7 +22,9 @@ import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.NTuple5
+import wotw.server.util.logger
 import wotw.server.util.then
+import java.nio.ByteBuffer
 import kotlin.math.floor
 
 class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -56,7 +58,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             get("league/seasons/{season_id}") {
-                val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
+                val seasonId =
+                    call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
 
                 call.respond(newSuspendedTransaction {
                     val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
@@ -65,7 +68,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             get("league/games/{game_id}") {
-                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable game_id")
+                val gameId =
+                    call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable game_id")
 
                 call.respond(newSuspendedTransaction {
                     val game = LeagueGame.findById(gameId) ?: throw NotFoundException("Game not found")
@@ -74,13 +78,15 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             get("league/games/{game_id}/submissions") {
-                val gameId = call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable game_id")
+                val gameId =
+                    call.parameters["game_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable game_id")
 
                 call.respond(newSuspendedTransaction {
                     val game = LeagueGame.findById(gameId) ?: throw NotFoundException("Game not found")
 
                     val user = authenticatedUserOrNull()
-                    val handler = server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler ?: throw BadRequestException("This is not a league game")
+                    val handler = server.gameHandlerRegistry.getHandler(game.multiverse) as? LeagueGameHandler
+                        ?: throw BadRequestException("This is not a league game")
 
                     // Return full submissions if the game is over or the user submitted for this game,
                     // otherwise return reduced information
@@ -98,21 +104,25 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             get("league/{multiverse_id}/game") {
-                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull()
+                    ?: throw BadRequestException("Unparsable MultiverseID")
 
                 call.respond(newSuspendedTransaction {
-                    val game = LeagueGame.find { LeagueGames.multiverseId eq multiverseId }.firstOrNull() ?: throw NotFoundException("Game not found")
+                    val game = LeagueGame.find { LeagueGames.multiverseId eq multiverseId }.firstOrNull()
+                        ?: throw NotFoundException("Game not found")
                     server.infoMessagesService.generateLeagueGameInfo(game, authenticatedUserOrNull())
                 })
             }
 
             post("league/seasons/{season_id}/training-seed") { config ->
-                val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
+                val seasonId =
+                    call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
 
                 val (result, seedId, worldSeedIds) = newSuspendedTransaction {
                     val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
 
-                    val result = server.seedGeneratorService.generateSeed(season.universePreset, authenticatedUserOrNull())
+                    val result =
+                        server.seedGeneratorService.generateSeed(season.universePreset, authenticatedUserOrNull())
 
                     result.generationResult then
                             (result.seed?.id?.value ?: 0L) then
@@ -137,6 +147,40 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     )
                 }
             }
+
+            get("league/submissions/{submission_id}/gamestats") {
+                val submissionId = call.parameters["submission_id"]?.toLongOrNull()
+                    ?: throw BadRequestException("Unparsable submission_id")
+
+                newSuspendedTransaction {
+                    val submission =
+                        LeagueGameSubmission.findById(submissionId) ?: throw NotFoundException("Submission not found")
+                    val user = authenticatedUserOrNull()
+
+                    val handler =
+                        server.gameHandlerRegistry.getHandler(submission.game.multiverse) as? LeagueGameHandler
+                            ?: throw BadRequestException("This is not a league game")
+
+                    val leagueGame = handler.getLeagueGame()
+
+                    if (((user != null && handler.didSubmitForThisGame(user)) || !leagueGame.isCurrent)) {
+                        submission.saveFile?.let { saveFile ->
+                            val saveFileData = WotwSaveFileReader(ByteBuffer.wrap(saveFile))
+
+                            call.respond(
+                                server.infoMessagesService.generateSaveFileGameStatsInfo(
+                                    saveFileData.parse() ?: throw RuntimeException("Unable to parse save file data")
+                                )
+                            )
+                        } ?: run {
+                            call.respond(HttpStatusCode.NotFound, "Save file not found")
+                            return@newSuspendedTransaction
+                        }
+                    } else {
+                        call.respond(HttpStatusCode.Unauthorized, "Unauthorized to fetch game stats")
+                    }
+                }
+            }
         }
 
         authenticate(JWT_AUTH) {
@@ -152,7 +196,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             .select(LeagueSeasons.columns)
                             .where {
                                 (LeagueSeasons.currentGameId neq null) and
-                                (LeagueSeasons.id eq LeagueSeasonMemberships.seasonId) and
+                                        (LeagueSeasons.id eq LeagueSeasonMemberships.seasonId) and
                                         (LeagueSeasonMemberships.userId eq user.id) and
                                         (LeagueGames.id eq LeagueSeasons.currentGameId) and
                                         notExists(
@@ -174,7 +218,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             post("league/seasons/{season_id}/membership") {
-                val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+                val seasonId =
+                    call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 
                 val seasonInfo = newSuspendedTransaction {
                     val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
@@ -202,7 +247,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             post("league/{multiverse_id}/submission") {
-                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
+                val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull()
+                    ?: throw BadRequestException("Unparsable MultiverseID")
 
                 val (handler, canSubmit, expectedSaveGuid, playerDisconnectedTime, minimumInGameTimeToAllowBreaks) = newSuspendedTransaction {
                     val user = authenticatedUser()
@@ -210,7 +256,9 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         .find { (WorldMemberships.userId eq user.id.value) and (WorldMemberships.multiverseId eq multiverseId) }
                         .firstOrNull() ?: throw BadRequestException("You are not part of that multiverse")
 
-                    val handler = server.gameHandlerRegistry.getHandler(worldMembership.multiverse) as? LeagueGameHandler ?: throw BadRequestException("This is not a league game")
+                    val handler =
+                        server.gameHandlerRegistry.getHandler(worldMembership.multiverse) as? LeagueGameHandler
+                            ?: throw BadRequestException("This is not a league game")
 
                     NTuple5(
                         handler,
@@ -222,7 +270,10 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 if (!canSubmit) {
-                    call.respond(HttpStatusCode.UnprocessableEntity, "The League game expired or you did submit already")
+                    call.respond(
+                        HttpStatusCode.UnprocessableEntity,
+                        "The League game expired or you did submit already"
+                    )
                     return@post
                 }
 
@@ -238,7 +289,10 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 if (expectedSaveGuid != saveData.saveFileGuid) {
-                    call.respond(HttpStatusCode.UnprocessableEntity, "Invalid save file GUID, expected $expectedSaveGuid but got ${saveData.saveFileGuid}")
+                    call.respond(
+                        HttpStatusCode.UnprocessableEntity,
+                        "Invalid save file GUID, expected $expectedSaveGuid but got ${saveData.saveFileGuid}"
+                    )
                     return@post
                 }
 
@@ -288,10 +342,12 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
 
             post<SetSubmissionVideoUrlRequest>("league/submissions/{submission_id}/video-url") { request ->
-                val submissionId = call.parameters["submission_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable Submission ID")
+                val submissionId = call.parameters["submission_id"]?.toLongOrNull()
+                    ?: throw BadRequestException("Unparsable Submission ID")
 
                 newSuspendedTransaction {
-                    val submission = LeagueGameSubmission.findById(submissionId) ?: throw NotFoundException("Submission not found")
+                    val submission =
+                        LeagueGameSubmission.findById(submissionId) ?: throw NotFoundException("Submission not found")
 
                     if (submission.membership.user.id != authenticatedUser().id) {
                         throw ForbiddenException("You can only set the video URL of your own submissions")
