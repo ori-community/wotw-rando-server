@@ -17,8 +17,8 @@ class WotwSaveFileReader(
         val inGameTime: Float,
         val asyncLoadingTime: Float,
         val saveFileGuid: MoodGuid,
-        val collectedPickups: String?,
-        val teleports: String?,
+        val collectedPickups: JsonElement?,
+        val teleports: JsonElement?,
     )
 
     companion object {
@@ -82,8 +82,6 @@ class WotwSaveFileReader(
 
             val inGameTimeElement = json.jsonObject["in_game_time"]
             val asyncLoadingTimesElement = json.jsonObject["async_loading_times"]
-            val collectedPickupsElement = json.jsonObject["collected_pickups"]
-            val teleportsElement = json.jsonObject["teleports"]
 
             if (inGameTimeElement == null || inGameTimeElement !is JsonPrimitive) {
                 logger().error("WotwSaveFileReader: Tried to read in-game-time but element was null or not a primitive")
@@ -113,15 +111,8 @@ class WotwSaveFileReader(
                 totalAsyncLoadingTime += asyncLoadingTime
             }
 
-            var collectedPickups: String? = null
-            if (collectedPickupsElement != null && collectedPickupsElement is JsonObject) {
-                collectedPickups = collectedPickupsElement.toString()
-            }
-
-            var teleports: String? = null
-            if (teleportsElement != null && teleportsElement is JsonArray) {
-                teleports = teleportsElement.toString()
-            }
+            val collectedPickups = json.jsonObject["collected_pickups"]
+            val teleports = json.jsonObject["teleports"]
 
             return SaveFileData(
                 saveFileVersion,
