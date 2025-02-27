@@ -6,6 +6,7 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.math.pow
 
@@ -592,7 +593,7 @@ data class LeagueGameSubmissionRankingData(
 
 @Serializable
 data class SaveFileGameStatsInfo(
-    @ProtoNumber(1) val inGameTime: Float,
-    @ProtoNumber(2) val collectedPickups: String?,
-    @ProtoNumber(3) val teleports: String?,
+    val inGameTime: Float,
+    val collectedPickups: JsonElement?,
+    val teleports: JsonElement?,
 )
