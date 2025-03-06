@@ -328,6 +328,8 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
 
             currentGame.recalculateSubmissionPointsAndRanks()
             currentGame.refresh(true)
+            currentGame.multiverse.seed?.allowDownload = true
+
         } ?: throw RuntimeException("Cannot finish current game because there is no current game")
 
         this.currentGame = null
