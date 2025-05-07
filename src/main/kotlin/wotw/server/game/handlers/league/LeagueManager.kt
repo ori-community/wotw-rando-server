@@ -265,7 +265,7 @@ class LeagueManager(val server: WotwBackendServer) {
                     this.content += "\n\n"
 
                     this.content += """
-                        **You can join until <t:${joinableUntilTimestamp}:f> (<t:${joinableUntilTimestamp}:R>)**
+                        **The first game is playable from <t:${joinableUntilTimestamp}:f> (<t:${joinableUntilTimestamp}:R>) and you can join until it ended!**
                         
                         Read more about the seed settings and rules on the season page.
                     """.trimIndent()
