@@ -121,7 +121,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
 
                                 logger().info("ClientConnection: User ${userInfo.name} (${userInfo.id}) authenticated a WebSocket connection")
 
-                                sendMessage(AuthenticatedMessage(userInfo, udpId!!, udpKey))
+                                sendMessage(AuthenticatedMessage(userInfo, udpId!!, udpKey, WotwBackendServer.announcedUdpPort))
                                 afterAuthenticatedHandler?.invoke()
                             } ?: logger().info("ClientConnection: Authentication failed. Could not validate JWT.")
                         } else {

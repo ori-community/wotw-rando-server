@@ -106,6 +106,9 @@ class WotwBackendServer {
         }
 
         var udpSocket: BoundDatagramSocket? = null
+
+        val udpPort: Int get() = System.getenv("UDP_PORT").toIntOrNull() ?: 31415
+        val announcedUdpPort: Int get() = System.getenv("ANNOUNCED_UDP_PORT").toIntOrNull() ?: udpPort
     }
 
     val logger: org.slf4j.Logger = logger()
@@ -420,8 +423,7 @@ class WotwBackendServer {
 
             val udpSocketBuilder = aSocket(ActorSelectorManager(Dispatchers.IO)).udp()
 
-            udpSocket =
-                udpSocketBuilder.bind(InetSocketAddress("0.0.0.0", (System.getenv("UDP_PORT") ?: "31415").toInt()))
+            udpSocket = udpSocketBuilder.bind(InetSocketAddress("0.0.0.0", udpPort))
 
             // TODO: Move this out of main class
             udpSocket?.let {

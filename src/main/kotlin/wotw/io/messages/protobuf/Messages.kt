@@ -403,6 +403,7 @@ data class AuthenticatedMessage(
     @ProtoNumber(1) val user: UserInfo,
     @ProtoNumber(2) val udpId: Int = 0,
     @ProtoNumber(3) val udpKey: ByteArray,
+    @ProtoNumber(4) val udpPort: Int,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -410,19 +411,22 @@ data class AuthenticatedMessage(
 
         other as AuthenticatedMessage
 
-        if (user != other.user) return false
         if (udpId != other.udpId) return false
+        if (udpPort != other.udpPort) return false
+        if (user != other.user) return false
         if (!udpKey.contentEquals(other.udpKey)) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = user.hashCode()
-        result = 31 * result + udpId
+        var result = udpId
+        result = 31 * result + udpPort
+        result = 31 * result + user.hashCode()
         result = 31 * result + udpKey.contentHashCode()
         return result
     }
+
 }
 
 @Serializable
