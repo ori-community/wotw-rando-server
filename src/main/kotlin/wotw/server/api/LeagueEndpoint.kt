@@ -8,6 +8,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
+import io.ktor.utils.io.readRemaining
+import kotlinx.io.readByteArray
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.notExists
 import org.jetbrains.exposed.sql.selectAll
@@ -114,7 +116,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 })
             }
 
-            post("league/seasons/{season_id}/training-seed") { config ->
+            post("league/seasons/{season_id}/training-seed") {
                 val seasonId =
                     call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
 
@@ -146,6 +148,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         HttpStatusCode.InternalServerError,
                     )
                 }
+
+                return@post
             }
 
             get("league/submissions/{submission_id}/gamestats") {
@@ -244,6 +248,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 call.respond(HttpStatusCode.Created, seasonInfo)
+                return@post
             }
 
             post("league/{multiverse_id}/submission") {
@@ -278,9 +283,9 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 }
 
                 // Parse save file and check if the Save File GUID is correct
-                val saveFilePacket = call.receiveChannel().readRemaining(1024 * 256 /* max 256 KB */)
-                val saveFileBuffer = saveFilePacket.readByteBuffer()
-                val saveFileReader = WotwSaveFileReader(saveFileBuffer)
+                val saveFilePacket = call.receiveChannel().readRemaining(1024 * 1024 /* max 1 MB */)
+                val saveFileArray = saveFilePacket.readByteArray()
+                val saveFileReader = WotwSaveFileReader(ByteBuffer.wrap(saveFileArray))
                 val saveData = saveFileReader.parse()
 
                 if (saveData == null) {
@@ -295,10 +300,6 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     )
                     return@post
                 }
-
-                val saveFileArray = ByteArray(saveFileBuffer.limit() - 1)
-                saveFileBuffer.rewind()
-                saveFileBuffer.get(saveFileArray)
 
                 val autoValidationErrors = mutableListOf<String>()
                 var timeOverride: Float? = null
@@ -339,6 +340,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 } else {
                     call.respond(HttpStatusCode.Created)
                 }
+
+                return@post
             }
 
             post<SetSubmissionVideoUrlRequest>("league/submissions/{submission_id}/video-url") { request ->

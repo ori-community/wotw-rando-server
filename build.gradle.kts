@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
@@ -6,18 +7,17 @@ buildscript {
     }
 }
 
-val kotlinVersion = "2.0.0"
 val ktorVersion = "2.3.13"
-val logbackVersion = "1.5.0"
-val exposedVersion = "0.58.0"
-val serializationVersion = "1.8.0"
-val cronutilsVersion = "9.2.0"
-val semverVersion = "1.4.2"
-val kordVersion = "0.14.0"
+val logbackVersion = "1.5.18"
+val exposedVersion = "0.61.0"
+val serializationVersion = "1.8.1"
+val cronutilsVersion = "9.2.1"
+val semverVersion = "3.0.0"
+val kordVersion = "0.15.0"
 
 plugins {
-    kotlin("jvm") version "2.0.0"
-    kotlin("plugin.serialization") version "2.0.0"
+    kotlin("jvm") version "2.1.21"
+    kotlin("plugin.serialization") version "2.1.21"
 }
 
 repositories {
@@ -75,7 +75,7 @@ dependencies {
 
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions.jvmTarget = "17"
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
 }
 
 val jvmJar = tasks.named<Jar>("jar") {
@@ -91,9 +91,9 @@ val jvmJar = tasks.named<Jar>("jar") {
     from(configurations["runtimeClasspath"].map { if (it.isDirectory) it else zipTree(it) })
 }
 
-tasks.create<JavaExec>("run") {
+tasks.register<JavaExec>("run") {
     group = "application"
-    main = "wotw.server.main.WotwBackendServer"
+    mainClass.set("wotw.server.main.WotwBackendServer")
 
     jvmArgs = listOf("-Xint")
     // jvmArgs = listOf("-XX:CompileCommand=exclude,wotw/server/game/GameSyncHandler.onPlayerPositionMessage")
