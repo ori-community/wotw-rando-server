@@ -20,17 +20,7 @@ import java.util.concurrent.Executor
 
 inline fun <reified T : Any> T.logger() = LoggerFactory.getLogger(T::class.java)
 
-@JvmName("putTyped")
-inline fun <reified R : Any> Route.put(
-    path: String,
-    crossinline body: suspend PipelineContext<Unit, ApplicationCall>.(R) -> Unit
-): Route {
-    return route(path, HttpMethod.Put) {
-        handle {
-            body(call.receive())
-        }
-    }
-}
+
 
 object CompletableFuture {
     fun <T> supplyAsync(executor: Executor? = null, block: () -> T) =

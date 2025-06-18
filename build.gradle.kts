@@ -7,7 +7,7 @@ buildscript {
     }
 }
 
-val ktorVersion = "2.3.13"
+val ktorVersion = "3.2.0"
 val logbackVersion = "1.5.18"
 val exposedVersion = "0.61.0"
 val serializationVersion = "1.8.1"

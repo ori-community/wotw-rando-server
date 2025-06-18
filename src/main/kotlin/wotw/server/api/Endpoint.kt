@@ -14,12 +14,27 @@ abstract class Endpoint(val server: WotwBackendServer) {
     fun init(routing: Route) = routing.initRouting()
     protected abstract fun Route.initRouting()
 
-    fun ApplicationCall.wotwPrincipalOrNull(): WotwUserPrincipal? {
-        return principal()
+    fun RoutingContext.wotwPrincipalOrNull(): WotwUserPrincipal? {
+        return call.principal()
     }
 
-    fun ApplicationCall.wotwPrincipal(): WotwUserPrincipal {
+    fun RoutingContext.wotwPrincipal(): WotwUserPrincipal {
         return wotwPrincipalOrNull() ?: throw UnauthorizedException()
+    }
+
+    fun RoutingContext.authenticatedUserOrNull(): User? {
+        val id = wotwPrincipalOrNull()?.userId ?: return null
+        return User.findById(id)
+    }
+
+    fun RoutingContext.authenticatedUser(): User {
+        return authenticatedUserOrNull() ?: throw UnauthorizedException()
+    }
+
+    suspend fun RoutingContext.requireDeveloper() {
+        if (!newSuspendedTransaction { authenticatedUser().isDeveloper }) {
+            throw ForbiddenException("You are not a developer")
+        }
     }
 
     fun PipelineContext<Unit, ApplicationCall>.wotwPrincipalOrNull(): WotwUserPrincipal? {

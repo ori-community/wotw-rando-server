@@ -1,12 +1,11 @@
 package wotw.server.database
 
 import io.ktor.server.plugins.*
-import kotlinx.html.currentTimeMillis
-import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.database.model.Multiverse
 import wotw.server.database.model.WorldMembership
+import java.lang.System.currentTimeMillis
 import java.util.concurrent.ConcurrentHashMap
 
 open class EntityCache<KEY : Any, VALUE : Any>(

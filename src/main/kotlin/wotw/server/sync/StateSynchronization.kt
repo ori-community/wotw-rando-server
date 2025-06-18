@@ -1,6 +1,5 @@
 package wotw.server.sync
 
-import kotlinx.html.currentTimeMillis
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
@@ -15,6 +14,7 @@ import wotw.server.database.model.World
 import wotw.server.database.model.WorldMembership
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
+import java.lang.System.currentTimeMillis
 import java.util.concurrent.ConcurrentHashMap
 
 

@@ -7,7 +7,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.server.main.WotwBackendServer
-import wotw.server.util.put
 
 class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
     override fun Route.initRouting() {

@@ -9,7 +9,6 @@ import io.ktor.network.sockets.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.websocket.*
 import io.ktor.utils.io.core.*
-import io.ktor.utils.io.errors.IOException
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -167,7 +166,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
     ) {
         if (principal != null || ignoreAuthentication) {
             val binaryData =
-                Packet.serialize(message) ?: throw IOException("Cannot serialize object: $message | ${message::class}")
+                Packet.serialize(message) ?: throw kotlinx.io.IOException("Cannot serialize object: $message | ${message::class}")
 
             if (unreliable) {
                 if (udpAddress == null) {

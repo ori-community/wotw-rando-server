@@ -7,7 +7,6 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.response.*
@@ -143,7 +142,7 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
 }
 
-data class WotwUserPrincipal(val userId: String, private val scopes: Set<String>) : Principal {
+data class WotwUserPrincipal(val userId: String, private val scopes: Set<String>) {
     constructor(userId: String, vararg scopes: String) : this(userId, setOf(*scopes))
 
     fun hasScope(scope: String): Boolean {
