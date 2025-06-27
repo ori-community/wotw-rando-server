@@ -194,6 +194,10 @@ class WotwBackendServer {
                         logger.info("Disposed handler for multiverse ${handler.multiverseId}")
                         handler.stop()
                         handler.persistState()
+
+                        newSuspendedTransaction {
+                            handler.getMultiverse().gameHandlerActive = false
+                        }
                     }
                 }
             }

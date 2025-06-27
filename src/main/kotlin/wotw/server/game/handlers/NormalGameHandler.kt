@@ -652,4 +652,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             return@newSuspendedTransaction null
         }
     }
+
+    override suspend fun isDisposable(): Boolean {
+        // Allow disposal if race mode is inactive or the race started >24h ago
+        return !state.raceModeEnabled || ((state.raceStartingAt ?: 0L) < (System.currentTimeMillis() - 24L * 60L * 60L))
+    }
 }
