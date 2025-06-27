@@ -12,7 +12,7 @@ class Scheduler(private val task: suspend () -> Unit) {
 
     fun scheduleExecution(every: Every, fixedRate: Boolean = false) {
         val taskWrapper = Runnable {
-            runBlocking(Dispatchers.Default) {
+            runBlocking(Dispatchers.Unconfined) {
                 task.invoke()
             }
         }
