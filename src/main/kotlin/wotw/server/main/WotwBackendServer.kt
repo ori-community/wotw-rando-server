@@ -109,7 +109,7 @@ class WotwBackendServer {
         var udpSocket: BoundDatagramSocket? = null
 
         val udpPort: Int get() = System.getenv("UDP_PORT").toIntOrNull() ?: 31415
-        val announcedUdpPort: Int get() = System.getenv("ANNOUNCED_UDP_PORT").toIntOrNull() ?: udpPort
+        val announcedUdpPort: Int get() = System.getenv().getOrElse("ANNOUNCED_UDP_PORT", { null })?.toInt() ?: udpPort
     }
 
     val logger: org.slf4j.Logger = logger()
