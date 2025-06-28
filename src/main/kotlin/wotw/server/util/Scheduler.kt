@@ -14,14 +14,18 @@ internal class SchedulerThreadFactory(private val name: String) : ThreadFactory 
     }
 }
 
-class Scheduler(name: String, private val task: suspend () -> Unit) {
+class Scheduler(private val name: String, private val task: suspend () -> Unit) {
     private val executor = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory(name))
 
     @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun scheduleExecution(every: Every, fixedRate: Boolean = false) {
         val taskWrapper = Runnable {
-            runBlocking(WotwBackendServer.serverCoroutineContext) {
-                task()
+            try {
+                runBlocking(WotwBackendServer.serverCoroutineContext) {
+                    task()
+                }
+            } catch (e: Throwable) {
+                logger().error("Encountered exception in scheduler '$name': ${e.message}", e)
             }
         }
 
