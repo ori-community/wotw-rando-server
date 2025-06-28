@@ -28,7 +28,7 @@ COPY --from=build-jar /app/build/libs/wotw-server.jar /app/server/wotw-server.ja
 COPY --from=seedgen /app/ /app/seedgen/
 COPY ./entrypoint /app/entrypoint
 
-RUN yum -y install shadow-utils && \
+RUN yum -y install shadow-utils nc && \
     useradd --uid 1010 wotw && \
     chown -R wotw /app
 
