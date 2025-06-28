@@ -218,6 +218,18 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             checkRaceStartCondition()
         }
 
+        multiverseEventBus.register(this, DebugEvent::class) { message ->
+            when (message.event) {
+                "enableDebugCount" -> {
+                    debugCountEnabled = true
+                }
+
+                "disableDebugCount" -> {
+                    debugCountEnabled = false
+                }
+            }
+        }
+
         multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
                 "enableRaceMode" -> {
@@ -267,14 +279,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                             }
                         }
                     }
-                }
-
-                "enableDebugCount" -> {
-                    debugCountEnabled = true
-                }
-
-                "disableDebugCount" -> {
-                    debugCountEnabled = false
                 }
             }
         }
