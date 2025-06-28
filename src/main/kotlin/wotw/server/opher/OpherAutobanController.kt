@@ -76,7 +76,7 @@ class OpherAutobanController(val server: WotwBackendServer) {
     private val channelIdGuildIdCache = ExpiringCache<Snowflake, Snowflake>(2.days)
     private val rateLimitCache = ExpiringCache<MemberId, RecentMemberCommunication>(10.minutes)
 
-    private val cacheGarbageCollectScheduler = Scheduler {
+    private val cacheGarbageCollectScheduler = Scheduler("Opher autoban GC scheduler") {
         channelIdGuildIdCache.garbageCollect()
         rateLimitCache.garbageCollect()
     }
