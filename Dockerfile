@@ -1,7 +1,7 @@
 ARG SEEDGEN_TAG=latest
 ARG SEEDGEN_IMAGE=ghcr.io/ori-community/wotw-seedgen:$SEEDGEN_TAG
 
-FROM gradle:7-jdk17 as build-jar
+FROM gradle:8-jdk21-corretto as build-jar
 
 WORKDIR /app
 COPY . /app
@@ -12,7 +12,7 @@ RUN gradle jar
 FROM $SEEDGEN_IMAGE as seedgen
 
 
-FROM openjdk:17-slim
+FROM amazoncorretto:21
 
 WORKDIR /app
 
@@ -29,9 +29,7 @@ COPY --from=seedgen /app/ /app/seedgen/
 COPY ./entrypoint /app/entrypoint
 
 RUN adduser --no-create-home --disabled-password --uid 1010 wotw && \
-    chown -R wotw /app && \
-    apt-get update -y && \
-    apt-get install netcat -y
+    chown -R wotw /app
 
 USER wotw
 
