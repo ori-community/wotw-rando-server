@@ -191,6 +191,7 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                     )
                 }
             } else {
+                logger().debug("Sending packet of type ${message::class.qualifiedName} to websocket connection")
                 webSocket.send(Frame.Binary(true, binaryData))
             }
         } else {
