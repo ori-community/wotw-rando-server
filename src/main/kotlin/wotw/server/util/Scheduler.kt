@@ -5,12 +5,17 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import wotw.server.main.WotwBackendServer
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
 
-class Scheduler(private val task: suspend () -> Unit) {
-    companion object {
-        private val executor = Executors.newSingleThreadScheduledExecutor()
+internal class SchedulerThreadFactory(private val name: String) : ThreadFactory {
+    override fun newThread(r: Runnable): Thread {
+        return Thread(r, name)
     }
+}
+
+class Scheduler(name: String, private val task: suspend () -> Unit) {
+    private val executor = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory(name))
 
     @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun scheduleExecution(every: Every, fixedRate: Boolean = false) {

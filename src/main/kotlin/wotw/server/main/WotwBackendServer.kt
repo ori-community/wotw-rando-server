@@ -186,7 +186,7 @@ class WotwBackendServer {
     val worldMembershipEnvironmentCache = WorldMembershipEnvironmentCache()
     val multiverseMemberCache = MultiverseMemberCache()
 
-    val cacheScheduler = Scheduler {
+    val cacheScheduler = Scheduler("Cache scheduler") {
         sync.purgeCache(60)
         bingoBoardCache.garbageCollect()
 
@@ -209,7 +209,7 @@ class WotwBackendServer {
         }
     }
 
-    val bingothonEndpointCleanupScheduler = Scheduler {
+    val bingothonEndpointCleanupScheduler = Scheduler("Bingothon endpoint cleanup scheduler") {
         newSuspendedTransaction {
             BingothonToken.all().forEach { token ->
                 if (token.created.isBefore(LocalDateTime.now().minusDays(7))) {
@@ -219,7 +219,7 @@ class WotwBackendServer {
         }
     }
 
-    val userProfileUpdateScheduler = Scheduler {
+    val userProfileUpdateScheduler = Scheduler("User profile update scheduler") {
         logger.debug("Updating profile pictures...")
 
         ifKord { kord ->

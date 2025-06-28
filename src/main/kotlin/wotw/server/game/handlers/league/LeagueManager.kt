@@ -65,7 +65,7 @@ class LeagueManager(val server: WotwBackendServer) {
         return Snowflake(roleId)
     }
 
-    private val scheduler = Scheduler {
+    private val scheduler = Scheduler("League manager scheduler") {
         try {
             val now = Instant.now()
 
