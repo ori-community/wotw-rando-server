@@ -196,8 +196,6 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                 val id = randomString(4)
                 logger().debug("{}: Sending packet of type {} to websocket connection", id, message::class.qualifiedName)
                 webSocket.send(Frame.Binary(true, binaryData))
-                webSocket.flush()
-                logger().debug("{}: Sent", id)
             }
         } else {
             logger().debug("ClientConnection: Packet of type ${message::class.qualifiedName} has been discarded. Authentication is required but websocket is not authenticated.")
