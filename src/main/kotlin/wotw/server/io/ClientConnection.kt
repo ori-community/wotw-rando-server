@@ -20,6 +20,7 @@ import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.makeServerTextMessage
+import wotw.server.util.randomString
 import wotw.util.EventBus
 import java.util.*
 import kotlin.text.String
@@ -192,11 +193,11 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                     )
                 }
             } else {
-                val i = rand(10000, 99999)
-                logger().debug("{}: Sending packet of type {} to websocket connection", i, message::class.qualifiedName)
+                val id = randomString(4)
+                logger().debug("{}: Sending packet of type {} to websocket connection", id, message::class.qualifiedName)
                 webSocket.send(Frame.Binary(true, binaryData))
                 webSocket.flush()
-                logger().debug("{}: Sent", i)
+                logger().debug("{}: Sent", id)
             }
         } else {
             logger().debug("ClientConnection: Packet of type ${message::class.qualifiedName} has been discarded. Authentication is required but websocket is not authenticated.")
