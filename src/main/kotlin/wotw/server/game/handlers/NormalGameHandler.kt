@@ -70,59 +70,59 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             debugCount += 1
         }
 
-        if (!state.raceModeEnabled) {
-            return@Scheduler
-        }
-
-        state.raceStartingAt?.let { startingAt ->
-            // In-game countdown
-            val startingAtInstant = Instant.ofEpochMilli(startingAt)
-            if (startingAtInstant.isAfter(Instant.now())) {
-                val secondsUntilStart = Instant.now().until(startingAtInstant, ChronoUnit.SECONDS)
-
-                val message = PrintTextMessage(
-                    if (secondsUntilStart <= 0) "<s_4>Go!</>" else "<s_2>Race starting in $secondsUntilStart</>",
-                    Vector2(0f, -2.2f),
-                    0,
-                    if (secondsUntilStart <= 0) 1f else 3f,
-                    screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
-                    horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
-                    alignment = PrintTextMessage.ALIGNMENT_CENTER,
-                    withBox = true,
-                    withSound = true,
-                    queue = "race_timer",
-                )
-
-                server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
-                    server.connections.toPlayers(worldMembershipIds, message)
-                }
-            } else if (startingAtInstant.isBefore(Instant.now()) && !state.raceStarted) {
-                state.raceStarted = true
-
-                newSuspendedTransaction {
-                    val multiverse = getMultiverse()
-                    multiverse.locked = true
-                    multiverse.isLockable = false
-
-                    getMultiverse().memberships.forEach { worldMembership ->
-                        server.connections.playerMultiverseConnections[worldMembership.id.value]?.raceReady = false
-                    }
-                }
-
-                notifyMultiverseOrClientInfoChanged()
-                notifyShouldBlockStartingGameChanged()
-            }
-
-            if (state.finishedTime == null && startingAtInstant.until(Instant.now(), ChronoUnit.HOURS) > 24) {
-                state.finishedTime = 0f
-                lazilyNotifyClientInfoChanged = true
-            }
-        }
-
-        if (lazilyNotifyClientInfoChanged) {
-            notifyMultiverseOrClientInfoChanged()
-            lazilyNotifyClientInfoChanged = false
-        }
+//        if (!state.raceModeEnabled) {
+//            return@Scheduler
+//        }
+//
+//        state.raceStartingAt?.let { startingAt ->
+//            // In-game countdown
+//            val startingAtInstant = Instant.ofEpochMilli(startingAt)
+//            if (startingAtInstant.isAfter(Instant.now())) {
+//                val secondsUntilStart = Instant.now().until(startingAtInstant, ChronoUnit.SECONDS)
+//
+//                val message = PrintTextMessage(
+//                    if (secondsUntilStart <= 0) "<s_4>Go!</>" else "<s_2>Race starting in $secondsUntilStart</>",
+//                    Vector2(0f, -2.2f),
+//                    0,
+//                    if (secondsUntilStart <= 0) 1f else 3f,
+//                    screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
+//                    horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
+//                    alignment = PrintTextMessage.ALIGNMENT_CENTER,
+//                    withBox = true,
+//                    withSound = true,
+//                    queue = "race_timer",
+//                )
+//
+//                server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
+//                    server.connections.toPlayers(worldMembershipIds, message)
+//                }
+//            } else if (startingAtInstant.isBefore(Instant.now()) && !state.raceStarted) {
+//                state.raceStarted = true
+//
+//                newSuspendedTransaction {
+//                    val multiverse = getMultiverse()
+//                    multiverse.locked = true
+//                    multiverse.isLockable = false
+//
+//                    getMultiverse().memberships.forEach { worldMembership ->
+//                        server.connections.playerMultiverseConnections[worldMembership.id.value]?.raceReady = false
+//                    }
+//                }
+//
+//                notifyMultiverseOrClientInfoChanged()
+//                notifyShouldBlockStartingGameChanged()
+//            }
+//
+//            if (state.finishedTime == null && startingAtInstant.until(Instant.now(), ChronoUnit.HOURS) > 24) {
+//                state.finishedTime = 0f
+//                lazilyNotifyClientInfoChanged = true
+//            }
+//        }
+//
+//        if (lazilyNotifyClientInfoChanged) {
+//            notifyMultiverseOrClientInfoChanged()
+//            lazilyNotifyClientInfoChanged = false
+//        }
     }
 
     init {
