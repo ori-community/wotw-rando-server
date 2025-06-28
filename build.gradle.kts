@@ -35,7 +35,7 @@ dependencies {
     implementation("io.github.classgraph:classgraph:4.8.147")
     implementation("io.sentry:sentry:6.0.0")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
@@ -74,7 +74,7 @@ dependencies {
 }
 
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
 }
 
@@ -102,3 +102,7 @@ tasks.register<JavaExec>("run") {
 }
 
 val compileKotlin: KotlinCompile by tasks
+
+kotlin {
+    jvmToolchain(21)
+}
