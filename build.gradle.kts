@@ -16,8 +16,8 @@ val semverVersion = "3.0.0"
 val kordVersion = "0.15.0"
 
 plugins {
-    kotlin("jvm") version "2.1.21"
-    kotlin("plugin.serialization") version "2.1.21"
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 repositories {

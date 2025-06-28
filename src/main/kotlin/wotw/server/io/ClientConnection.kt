@@ -14,6 +14,7 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.protobuf.*
 import wotw.server.api.WotwUserPrincipal
+import wotw.server.bingo.rand
 import wotw.server.constants.SUPPORTED_CLIENT_VERSIONS
 import wotw.server.database.model.User
 import wotw.server.main.WotwBackendServer
@@ -191,8 +192,11 @@ class ClientConnection(val webSocket: WebSocketServerSession, val eventBus: Even
                     )
                 }
             } else {
-                logger().debug("Sending packet of type ${message::class.qualifiedName} to websocket connection")
+                val i = rand(10000, 99999)
+                logger().debug("{}: Sending packet of type {} to websocket connection", i, message::class.qualifiedName)
                 webSocket.send(Frame.Binary(true, binaryData))
+                webSocket.flush()
+                logger().debug("{}: Sent", i)
             }
         } else {
             logger().debug("ClientConnection: Packet of type ${message::class.qualifiedName} has been discarded. Authentication is required but websocket is not authenticated.")
