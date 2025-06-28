@@ -111,8 +111,6 @@ class WotwBackendServer {
 
         val udpPort: Int get() = System.getenv("UDP_PORT").toIntOrNull() ?: 31415
         val announcedUdpPort: Int get() = System.getenv().getOrElse("ANNOUNCED_UDP_PORT", { null })?.toInt() ?: udpPort
-
-        var serverCoroutineContext: CoroutineContext = Dispatchers.Default
     }
 
     val logger: org.slf4j.Logger = logger()
@@ -416,8 +414,6 @@ class WotwBackendServer {
                 }
             }
         )
-
-        serverCoroutineContext = server.application.coroutineContext
 
         cacheScheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
         bingothonEndpointCleanupScheduler.scheduleExecution(Every(1, TimeUnit.HOURS))

@@ -1,9 +1,9 @@
 package wotw.server.util
 
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
-import wotw.server.main.WotwBackendServer
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
@@ -21,7 +21,7 @@ class Scheduler(private val name: String, private val task: suspend () -> Unit) 
     fun scheduleExecution(every: Every, fixedRate: Boolean = false) {
         val taskWrapper = Runnable {
             try {
-                runBlocking(WotwBackendServer.serverCoroutineContext) {
+                runBlocking(Dispatchers.Default) {
                     task()
                 }
             } catch (e: Throwable) {
