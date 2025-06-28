@@ -63,6 +63,7 @@ import wotw.server.sync.StateSynchronization
 import wotw.server.util.*
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 class WotwBackendServer {
@@ -110,6 +111,8 @@ class WotwBackendServer {
 
         val udpPort: Int get() = System.getenv("UDP_PORT").toIntOrNull() ?: 31415
         val announcedUdpPort: Int get() = System.getenv().getOrElse("ANNOUNCED_UDP_PORT", { null })?.toInt() ?: udpPort
+
+        var serverCoroutineContext: CoroutineContext = Dispatchers.Default
     }
 
     val logger: org.slf4j.Logger = logger()
@@ -297,6 +300,125 @@ class WotwBackendServer {
     }
 
     private fun startServer(args: Array<String>) {
+        val server = embeddedServer(
+            factory = Netty,
+            environment = applicationEnvironment(),
+            configure = {
+                connectors.add(EngineConnectorBuilder().apply {
+                    host = "0.0.0.0"
+                    port = System.getenv("PORT")?.toIntOrNull() ?: 8081
+                })
+            },
+            module = {
+                install(WebSockets) {
+                    pingPeriod = 10.seconds
+                    timeout = 10.seconds
+                    maxFrameSize = Long.MAX_VALUE
+                }
+
+                if (!System.getenv("ENABLE_HTTPS").isNullOrBlank()) {
+                    install(HttpsRedirect)
+                }
+
+                install(CallLogging) {
+                    level = Level.INFO
+                }
+
+                install(CORS) {
+                    methods.add(HttpMethod.Options)
+                    methods.add(HttpMethod.Put)
+                    headers.add(HttpHeaders.Authorization)
+                    headers.add(HttpHeaders.AccessControlAllowOrigin)
+                    headers.add(HttpHeaders.Origin)
+                    allowNonSimpleContentTypes = true
+                    allowXHttpMethodOverride()
+                    anyHost()
+                }
+
+                install(ContentNegotiation) {
+                    json(wotw.io.messages.json)
+                }
+
+                install(AutoHeadResponse)
+
+                install(StatusPages) {
+                    exception<Throwable> { call, exception ->
+                        exception.printStackTrace()
+                        call.respond(HttpStatusCode.InternalServerError)
+                    }
+                    exception<ConflictException> { call, exception ->
+                        call.respond(HttpStatusCode.Conflict, exception.message ?: "")
+                    }
+                    exception<UnauthorizedException> { call, exception ->
+                        call.respond(HttpStatusCode.Unauthorized, exception.message ?: "")
+                    }
+                    exception<BadRequestException> { call, exception ->
+                        call.respond(HttpStatusCode.BadRequest, exception.message ?: "")
+                    }
+                    exception<NotFoundException> { call, exception ->
+                        call.respond(HttpStatusCode.NotFound, exception.message ?: "")
+                    }
+                    exception<MissingScopeException> { call, exception ->
+                        call.respond(HttpStatusCode.Forbidden, exception.message ?: "")
+                    }
+                    exception<ForbiddenException> { call, exception ->
+                        call.respond(HttpStatusCode.Forbidden, exception.message ?: "")
+                    }
+                }
+
+                val discordOauthProvider = OAuthServerSettings.OAuth2ServerSettings(
+                    name = "discord",
+                    clientId = System.getenv("DISCORD_CLIENT_ID"),
+                    clientSecret = System.getenv("DISCORD_SECRET"),
+                    authorizeUrl = "https://discord.com/api/oauth2/authorize",
+                    accessTokenUrl = "https://discord.com/api/oauth2/token",
+                    defaultScopes = listOf("identify"),
+                    requestMethod = HttpMethod.Post,
+                )
+
+                install(Authentication) {
+                    oauth(DISCORD_OAUTH) {
+                        client = HttpClient(Java) {
+                            engine {
+                                protocolVersion = java.net.http.HttpClient.Version.HTTP_2
+                            }
+                        }
+                        providerLookup = { discordOauthProvider }
+                        urlProvider = { redirectUrl("/api/auth/handle-login") }
+                    }
+
+                    jwt(JWT_AUTH) {
+                        realm = "wotw-backend-server"
+                        verifier(getJwtVerifier())
+                        validate { jwtCredential ->
+                            validateJwt(jwtCredential)
+                        }
+                    }
+                }
+
+                routing {
+                    route("api") {
+                        bingoEndpoint.init(this)
+                        multiverseEndpoint.init(this)
+                        authEndpoint.init(this)
+                        userEndpoint.init(this)
+                        remoteTrackerEndpoint.init(this)
+                        seedGenEndpoint.init(this)
+                        developerEndpoint.init(this)
+                        bingothonEndpoint.init(this)
+                        serverEndpoint.init(this)
+                        leagueEndpoint.init(this)
+
+                        get("/ping") {
+                            call.respondText("pong")
+                        }
+                    }
+                }
+            }
+        )
+
+        serverCoroutineContext = server.application.coroutineContext
+
         cacheScheduler.scheduleExecution(Every(60, TimeUnit.SECONDS))
         bingothonEndpointCleanupScheduler.scheduleExecution(Every(1, TimeUnit.HOURS))
 
@@ -329,121 +451,7 @@ class WotwBackendServer {
             }
 
             launch {
-                embeddedServer(
-                    factory = Netty,
-                    environment = applicationEnvironment(),
-                    configure = {
-                        connectors.add(EngineConnectorBuilder().apply {
-                            host = "0.0.0.0"
-                            port = System.getenv("PORT")?.toIntOrNull() ?: 8081
-                        })
-                    },
-                    module = {
-                        install(WebSockets) {
-                            pingPeriod = 10.seconds
-                            timeout = 10.seconds
-                            maxFrameSize = Long.MAX_VALUE
-                        }
-
-                        if (!System.getenv("ENABLE_HTTPS").isNullOrBlank()) {
-                            install(HttpsRedirect)
-                        }
-
-                        install(CallLogging) {
-                            level = Level.INFO
-                        }
-
-                        install(CORS) {
-                            methods.add(HttpMethod.Options)
-                            methods.add(HttpMethod.Put)
-                            headers.add(HttpHeaders.Authorization)
-                            headers.add(HttpHeaders.AccessControlAllowOrigin)
-                            headers.add(HttpHeaders.Origin)
-                            allowNonSimpleContentTypes = true
-                            allowXHttpMethodOverride()
-                            anyHost()
-                        }
-
-                        install(ContentNegotiation) {
-                            json(wotw.io.messages.json)
-                        }
-
-                        install(AutoHeadResponse)
-
-                        install(StatusPages) {
-                            exception<Throwable> { call, exception ->
-                                exception.printStackTrace()
-                                call.respond(HttpStatusCode.InternalServerError)
-                            }
-                            exception<ConflictException> { call, exception ->
-                                call.respond(HttpStatusCode.Conflict, exception.message ?: "")
-                            }
-                            exception<UnauthorizedException> { call, exception ->
-                                call.respond(HttpStatusCode.Unauthorized, exception.message ?: "")
-                            }
-                            exception<BadRequestException> { call, exception ->
-                                call.respond(HttpStatusCode.BadRequest, exception.message ?: "")
-                            }
-                            exception<NotFoundException> { call, exception ->
-                                call.respond(HttpStatusCode.NotFound, exception.message ?: "")
-                            }
-                            exception<MissingScopeException> { call, exception ->
-                                call.respond(HttpStatusCode.Forbidden, exception.message ?: "")
-                            }
-                            exception<ForbiddenException> { call, exception ->
-                                call.respond(HttpStatusCode.Forbidden, exception.message ?: "")
-                            }
-                        }
-
-                        val discordOauthProvider = OAuthServerSettings.OAuth2ServerSettings(
-                            name = "discord",
-                            clientId = System.getenv("DISCORD_CLIENT_ID"),
-                            clientSecret = System.getenv("DISCORD_SECRET"),
-                            authorizeUrl = "https://discord.com/api/oauth2/authorize",
-                            accessTokenUrl = "https://discord.com/api/oauth2/token",
-                            defaultScopes = listOf("identify"),
-                            requestMethod = HttpMethod.Post,
-                        )
-
-                        install(Authentication) {
-                            oauth(DISCORD_OAUTH) {
-                                client = HttpClient(Java) {
-                                    engine {
-                                        protocolVersion = java.net.http.HttpClient.Version.HTTP_2
-                                    }
-                                }
-                                providerLookup = { discordOauthProvider }
-                                urlProvider = { redirectUrl("/api/auth/handle-login") }
-                            }
-
-                            jwt(JWT_AUTH) {
-                                realm = "wotw-backend-server"
-                                verifier(getJwtVerifier())
-                                validate { jwtCredential ->
-                                    validateJwt(jwtCredential)
-                                }
-                            }
-                        }
-
-                        routing {
-                            route("api") {
-                                bingoEndpoint.init(this)
-                                multiverseEndpoint.init(this)
-                                authEndpoint.init(this)
-                                userEndpoint.init(this)
-                                remoteTrackerEndpoint.init(this)
-                                seedGenEndpoint.init(this)
-                                developerEndpoint.init(this)
-                                bingothonEndpoint.init(this)
-                                serverEndpoint.init(this)
-                                leagueEndpoint.init(this)
-
-                                get("/ping") {
-                                    call.respondText("pong")
-                                }
-                            }
-                        }
-                    }).start(wait = true)
+                server.start(wait = true)
             }
 
             launch(Dispatchers.Default) {

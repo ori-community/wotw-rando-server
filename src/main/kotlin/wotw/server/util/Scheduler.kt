@@ -1,23 +1,22 @@
 package wotw.server.util
 
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
+import wotw.server.main.WotwBackendServer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class Scheduler(private val task: suspend () -> Unit) {
     companion object {
-        private val executor = Executors.newScheduledThreadPool(1)
+        private val executor = Executors.newSingleThreadScheduledExecutor()
     }
 
     @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun scheduleExecution(every: Every, fixedRate: Boolean = false) {
         val taskWrapper = Runnable {
-            runBlocking(Dispatchers.IO) {
-                task.invoke()
+            runBlocking(WotwBackendServer.serverCoroutineContext) {
+                task()
             }
         }
 

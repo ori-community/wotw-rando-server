@@ -48,7 +48,28 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
     private var lazilyNotifyClientInfoChanged = false
 
+    private var debugCountEnabled = false
+    private var debugCount = 0
     private val scheduler = Scheduler {
+        if (debugCountEnabled) {
+            val message = PrintTextMessage(
+                "Count: $debugCount",
+                Vector2(0f, 0f),
+                3,
+                2f,
+                screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+                horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
+                alignment = PrintTextMessage.ALIGNMENT_CENTER,
+                withBox = true,
+                withSound = true,
+                queue = "cnt",
+            )
+            server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
+                server.connections.toPlayers(worldMembershipIds, message)
+            }
+            debugCount += 1
+        }
+
         if (!state.raceModeEnabled) {
             return@Scheduler
         }
@@ -243,6 +264,14 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                             }
                         }
                     }
+                }
+
+                "enableDebugCount" -> {
+                    debugCountEnabled = true
+                }
+
+                "disableDebugCount" -> {
+                    debugCountEnabled = false
                 }
             }
         }
