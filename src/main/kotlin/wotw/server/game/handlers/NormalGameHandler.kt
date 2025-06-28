@@ -24,6 +24,7 @@ import wotw.server.sync.normalWorldSyncAggregationStrategy
 import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.assertTransaction
+import wotw.server.util.logger
 import wotw.server.util.makeServerTextMessage
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -52,6 +53,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
     private var debugCount = 0
     private val scheduler = Scheduler {
         if (debugCountEnabled) {
+            logger().debug("Hi")
+
             val message = PrintTextMessage(
                 "Count: $debugCount",
                 Vector2(0f, 0f),
