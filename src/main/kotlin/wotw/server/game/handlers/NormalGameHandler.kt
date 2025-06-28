@@ -52,9 +52,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
     private var debugCountEnabled = false
     private var debugCount = 0
     private val scheduler = Scheduler {
-        if (debugCountEnabled) {
-            logger().debug("Hi")
+        logger().debug("This is the scheduler for {}", multiverseId)
 
+        if (debugCountEnabled) {
             val message = PrintTextMessage(
                 "Count: $debugCount",
                 Vector2(0f, 0f),

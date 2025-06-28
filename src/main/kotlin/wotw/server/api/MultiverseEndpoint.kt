@@ -336,7 +336,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     )
 
                     connectionHandler = GameConnectionHandler(playerId, multiverseId, socketConnection, server)
-                    val setupResult = connectionHandler!!.setup()
+                    val setupResult = connectionHandler.setup()
 
                     if (setupResult == null) {
                         socketConnection.sendMessage(
