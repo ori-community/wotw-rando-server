@@ -5,7 +5,9 @@ import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.server.database.model.Multiverses
 import wotw.server.main.WotwBackendServer
 
 class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
@@ -33,9 +35,12 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                                 name = it
                                 isCustomName = true
 
-                                this.multiverses.forEach { multiverse ->
-                                    multiverse.updateAutomaticWorldNames()
-                                }
+                                this.multiverses
+                                    .orderBy(Multiverses.id to SortOrder.DESC)
+                                    .limit(10)
+                                    .forEach { multiverse ->
+                                        multiverse.updateAutomaticWorldNames()
+                                    }
                             }
                         )
                     }
