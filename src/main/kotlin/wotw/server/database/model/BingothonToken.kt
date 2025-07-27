@@ -9,9 +9,13 @@ import wotw.server.database.StringEntityClass
 import wotw.server.database.StringIdTable
 
 object BingothonTokens : StringIdTable("bingothon_tokens") {
-    val owner = reference("owner_id", Users, ReferenceOption.CASCADE, ReferenceOption.CASCADE).uniqueIndex()
+    val owner = reference("owner_id", Users, ReferenceOption.CASCADE, ReferenceOption.CASCADE)
     val multiverseId = reference("multiverse_id", Multiverses, ReferenceOption.CASCADE)
     val created = datetime("created_at").defaultExpression(CurrentDateTime)
+
+    init {
+        uniqueIndex(owner, multiverseId)
+    }
 }
 
 class BingothonToken(id: EntityID<String>): StringEntity(id){
