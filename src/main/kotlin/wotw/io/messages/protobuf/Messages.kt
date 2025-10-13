@@ -270,7 +270,6 @@ data class PrintPickupMessage(
 @Serializable
 data class SyncBoardMessage(
     @ProtoNumber(1) val board: BingoBoardMessage,
-    @ProtoNumber(2) val replace: Boolean = false
 )
 
 @Serializable

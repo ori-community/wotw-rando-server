@@ -182,19 +182,13 @@ class StateSynchronization(private val server: WotwBackendServer) {
                             bingoPlayerData.rank.toDouble()
                         ),
                     ),
-                    SyncBoardMessage(
-                        multiverse.createBingoBoardMessage(world.universe),
-                        true
-                    ),
+                    SyncBoardMessage(multiverse.createBingoBoardMessage(world.universe)),
                 )
             }
 
             Triple(
                 syncBingoUniversesMessage,
-                SyncBoardMessage(
-                    multiverse.createBingoBoardMessage(null, true),
-                    true
-                ),
+                SyncBoardMessage(multiverse.createBingoBoardMessage(null, true)),
                 worldUpdates,
             )
         } ?: return
