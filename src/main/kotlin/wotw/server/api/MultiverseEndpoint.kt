@@ -1,7 +1,6 @@
 package wotw.server.api
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*
@@ -313,6 +312,56 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             }
         }
 
+        webSocket(path = "multiverses/{multiverse_id}/subscribe") {
+            val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: return@webSocket this.close(
+                CloseReason(
+                    CloseReason.Codes.VIOLATED_POLICY,
+                    "multiverse_id is required"
+                )
+            )
+
+            handleClientSocket {
+                afterAuthenticated {
+                    if (!principal.hasScope(Scope.MULTIVERSE_VIEW)) return@afterAuthenticated this@webSocket.close(
+                        CloseReason(CloseReason.Codes.VIOLATED_POLICY, "You are not allowed to view this multiverse")
+                    )
+
+                    val playerId = principal.userId
+
+                    val (multiverseExists, playerIsSpectator) = newSuspendedTransaction {
+                        val multiverse = Multiverse.findById(multiverseId)
+                        val player = User.findById(playerId)
+
+                        (multiverse != null) to (multiverse?.spectators?.contains(player) ?: false)
+                    }
+
+                    if (!multiverseExists)
+                        return@afterAuthenticated this@webSocket.close(
+                            CloseReason(
+                                CloseReason.Codes.NORMAL,
+                                "Requested Multiverse does not exist"
+                            )
+                        )
+
+                    server.connections.registerObserverConnection(
+                        socketConnection,
+                        multiverseId,
+                        playerId,
+                        playerIsSpectator
+                    )
+                }
+                onClose {
+                    server.connections.unregisterAllObserverConnections(socketConnection, multiverseId)
+                }
+                onError {
+                    server.connections.unregisterAllObserverConnections(socketConnection, multiverseId)
+                }
+                onMessage(Any::class) {
+                    println("Incoming Message: $this")
+                }
+            }
+        }
+
         webSocket("client-websocket/{multiverse_id}/{game_type}") {
             val oriType = when (call.parameters["game_type"]) {
                 "wotw" -> ConnectionRegistry.Companion.OriType.WillOfTheWisps
@@ -329,7 +378,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 afterAuthenticated {
                     val playerId = principal.userId
 
-                    principalOrNull?.hasScope(Scope.MULTIVERSE_CONNECT) ?: this@webSocket.close(
+                    principalOrNull?.hasScope(Scope.MULTIVERSE_CLIENT_CONNECT) ?: this@webSocket.close(
                         CloseReason(
                             CloseReason.Codes.VIOLATED_POLICY, "You are not allowed to connect with these credentials!"
                         )

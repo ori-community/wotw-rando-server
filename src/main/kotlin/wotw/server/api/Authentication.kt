@@ -177,16 +177,16 @@ fun createJWTToken(
 
 object Scope {
     const val BINGOTHON_TOKEN_CREATE = "bingothon.tokens.create"
-    const val MULTIVERSE_CONNECT = "multiverses.connect"
+    const val MULTIVERSE_VIEW = "multiverses.view"
+    const val MULTIVERSE_CLIENT_CONNECT = "multiverses.client_connect"
     const val MULTIVERSE_CREATE = "multiverses.create"
     const val MULTIVERSE_SPECTATE = "multiverses.spectate"
     const val MULTIVERSE_LOCK = "multiverses.lock"
     const val WORLD_CREATE = "worlds.create"
     const val WORLD_JOIN = "worlds.join"
-    const val USER_INFO_READ = "user.info.read"
-    const val USER_INFO_WRITE = "user.info.write"
+    const val USER_INFO_VIEW = "user.info.view"
+    const val USER_INFO_UPDATE = "user.info.update"
     const val TOKEN_CREATE = "tokens.create"
-    const val BOARDS_READ = "boards.read"
     const val REMOTE_TRACKER_CREATE = "remote_tracker.create"
     const val ALL = "*"
 }

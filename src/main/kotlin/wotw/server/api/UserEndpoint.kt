@@ -1,6 +1,5 @@
 package wotw.server.api
 
-import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.response.*
@@ -17,7 +16,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 get("/me/info") {
                     val userInfo =
                         newSuspendedTransaction { server.infoMessagesService.generateUserInfo(authenticatedUser()) }
-                    wotwPrincipal().require(Scope.USER_INFO_READ)
+                    wotwPrincipal().require(Scope.USER_INFO_VIEW)
 
                     call.respond(userInfo)
                 }
@@ -28,7 +27,7 @@ class UserEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     if (it.length > 32)
                         throw BadRequestException("Nickname too long!")
 
-                    wotwPrincipal().require(Scope.USER_INFO_WRITE)
+                    wotwPrincipal().require(Scope.USER_INFO_UPDATE)
                     val userInfo = newSuspendedTransaction {
                         server.infoMessagesService.generateUserInfo(
                             authenticatedUser().apply {
