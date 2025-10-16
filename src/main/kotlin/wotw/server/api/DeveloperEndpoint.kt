@@ -141,6 +141,22 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     call.respond(HttpStatusCode.Created)
                 }
 
+                post("/league/season/{season_id}/recalculate-points") {
+                    requireDeveloper()
+
+                    val seasonId = call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Invalid season ID")
+
+                    newSuspendedTransaction {
+                        val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season $seasonId not found")
+                        season.games.forEach { game ->
+                            game.recalculateSubmissionPointsAndRanks()
+                        }
+                        season.recalculateMembershipPointsAndRanks()
+                    }
+
+                    call.respond(HttpStatusCode.OK)
+                }
+
                 post("/league/season/recalculate-points") {
                     requireDeveloper()
 
