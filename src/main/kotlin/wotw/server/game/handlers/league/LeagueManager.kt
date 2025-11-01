@@ -305,11 +305,14 @@ class LeagueManager(val server: WotwBackendServer) {
                 kord.rest.channel.createMessage(getDiscordChannel()) {
                     val memberSnowflakes = season.memberships.map { Snowflake(it.user.id.value) }
 
-                    val gameNumberOrdinal = when (game.gameNumber.toString().last()) {
-                        '1' -> "${game.gameNumber}st"
-                        '2' -> "${game.gameNumber}nd"
-                        '3' -> "${game.gameNumber}rd"
-                        else -> "${game.gameNumber}th"
+                    val gameNumberOrdinal = when (game.gameNumber) {
+                        in 11..13 -> "${game.gameNumber}th"
+                        else -> when (game.gameNumber.toString().last()) {
+                            '1' -> "${game.gameNumber}st"
+                            '2' -> "${game.gameNumber}nd"
+                            '3' -> "${game.gameNumber}rd"
+                            else -> "${game.gameNumber}th"
+                        }
                     }
 
                     this.content = """
