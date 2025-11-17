@@ -188,5 +188,8 @@ object Scope {
     const val USER_INFO_UPDATE = "user.info.update"
     const val TOKEN_CREATE = "tokens.create"
     const val REMOTE_TRACKER_CREATE = "remote_tracker.create"
+    const val LEAGUE_SEASON_JOIN = "league.seasons.join"
+    const val LEAGUE_SUBMISSION_CREATE = "league.submissions.create"
+    const val LEAGUE_VIDEO_MODIFY = "league.submissions.video.modify"
     const val ALL = "*"
 }

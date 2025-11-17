@@ -225,6 +225,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val seasonId =
                     call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 
+                wotwPrincipal().require(Scope.LEAGUE_SEASON_JOIN)
+
                 val seasonInfo = newSuspendedTransaction {
                     val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
                     val user = authenticatedUser()
@@ -254,6 +256,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             post("league/{multiverse_id}/submission") {
                 val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull()
                     ?: throw BadRequestException("Unparsable MultiverseID")
+
+                wotwPrincipal().require(Scope.LEAGUE_SUBMISSION_CREATE)
 
                 val (handler, canSubmit, expectedSaveGuid, playerDisconnectedTime, minimumInGameTimeToAllowBreaks) = newSuspendedTransaction {
                     val user = authenticatedUser()
@@ -347,6 +351,8 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
             post<SetSubmissionVideoUrlRequest>("league/submissions/{submission_id}/video-url") { request ->
                 val submissionId = call.parameters["submission_id"]?.toLongOrNull()
                     ?: throw BadRequestException("Unparsable Submission ID")
+
+                wotwPrincipal().require(Scope.LEAGUE_VIDEO_MODIFY)
 
                 newSuspendedTransaction {
                     val submission =
