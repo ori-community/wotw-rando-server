@@ -257,7 +257,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull()
                     ?: throw BadRequestException("Unparsable MultiverseID")
 
-                wotwPrincipal().require(Scope.LEAGUE_SUBMISSION_CREATE)
+                // wotwPrincipal().require(Scope.LEAGUE_SUBMISSION_CREATE)
 
                 val (handler, canSubmit, expectedSaveGuid, playerDisconnectedTime, minimumInGameTimeToAllowBreaks) = newSuspendedTransaction {
                     val user = authenticatedUser()
