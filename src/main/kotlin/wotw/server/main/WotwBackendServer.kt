@@ -32,7 +32,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.util.network.*
-import io.ktor.utils.io.core.*
 import io.sentry.Sentry
 import kotlinx.coroutines.*
 import kotlinx.io.readByteArray
@@ -56,14 +55,13 @@ import wotw.server.game.GameHandlerRegistry
 import wotw.server.game.handlers.league.LeagueManager
 import wotw.server.io.ClientConnectionUDPRegistry
 import wotw.server.opher.OpherAutobanController
-import wotw.server.seedgen.SeedGeneratorService
+import wotw.server.seedgen.SeedgenApiService
 import wotw.server.services.DiscordService
 import wotw.server.services.InfoMessagesService
 import wotw.server.sync.StateSynchronization
 import wotw.server.util.*
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 class WotwBackendServer {
@@ -179,7 +177,7 @@ class WotwBackendServer {
 
     val connections = ConnectionRegistry(this)
     val sync = StateSynchronization(this)
-    val seedGeneratorService = SeedGeneratorService(this)
+    val seedgenApiService = SeedgenApiService()
 
     val worldMembershipEnvironmentCache = WorldMembershipEnvironmentCache()
     val multiverseMemberCache = MultiverseMemberCache()

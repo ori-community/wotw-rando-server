@@ -4,6 +4,7 @@ import com.cronutils.model.CronType
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.model.time.ExecutionTime
 import com.cronutils.parser.CronParser
+import kotlinx.serialization.json.JsonObject
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -11,12 +12,10 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.timestamp
 import org.jetbrains.exposed.sql.json.jsonb
-import wotw.io.messages.UniversePreset
-import wotw.io.messages.WorldPreset
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.GameDifficulty
 import wotw.server.game.handlers.GameHandlerType
-import wotw.server.seedgen.SeedGeneratorService
+import wotw.server.seedgen.SeedgenApiService
 import wotw.server.util.assertTransaction
 import wotw.server.util.inverseLerp
 import java.math.RoundingMode
@@ -105,17 +104,7 @@ object LeagueSeasons : LongIdTable("league_seasons") {
     val shortDescription = text("short_description").default("")
     val longDescriptionMarkdown = text("long_description_markdown").default("")
     val rulesMarkdown = text("rules_markdown").default("")
-    val universePreset = jsonb<UniversePreset>("universe_preset", json).default(
-        UniversePreset(
-            worldSettings = listOf(
-                WorldPreset(
-                    includes = setOf("gorlek"),
-                    spawn = "Random",
-                    goals = setOf("Trees"),
-                )
-            ),
-        )
-    )
+    val universePreset = jsonb<JsonObject>("universe_preset", json)
 
     val nextContinuationAtCache = timestamp("next_continuation_at_cache").nullable()
     val backgroundImageUrl = varchar("background_image_url", 256).nullable()
@@ -338,14 +327,14 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
         this.recalculateMembershipPointsAndRanks()
     }
 
-    suspend fun createScheduledGame(seedGeneratorService: SeedGeneratorService): LeagueGame {
+    suspend fun createScheduledGame(seedgenApiService: SeedgenApiService): LeagueGame {
         assertTransaction()
 
         if (this.currentGame != null) {
             throw RuntimeException("Cannot create scheduled game. Please finish the current game first.")
         }
 
-        val seedGeneratorResult = seedGeneratorService.generateSeed(this.universePreset)
+        val seedGeneratorResult = seedgenApiService.generateSeed(this.universePreset)
 
         if (seedGeneratorResult.seed == null) {
             throw RuntimeException("Failed to generate seed for League game")

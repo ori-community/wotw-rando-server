@@ -27,7 +27,6 @@ import wotw.server.util.Every
 import wotw.server.util.Scheduler
 import wotw.server.util.assertTransaction
 import wotw.server.util.logger
-import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -218,7 +217,7 @@ class LeagueManager(val server: WotwBackendServer) {
                     trySendSeasonFinishedDiscordMessage(season)
                 }
             } else {
-                val game = season.createScheduledGame(server.seedGeneratorService)
+                val game = season.createScheduledGame(server.seedgenApiService)
                 logger().info("LeagueManager: Created game ${game.id} (Multiverse ${game.multiverse.id.value}) for season ${season.id.value}")
 
                 trySendNewGameCreatedDiscordMessage(season, game, previousGame)

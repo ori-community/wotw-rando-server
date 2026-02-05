@@ -49,7 +49,7 @@ data class Packet(
             3 to typeOf<UberStateUpdateMessage>(),
             4 to typeOf<SyncBingoUniversesMessage>(),
             5 to typeOf<InitGameSyncMessage>(),
-         // 6    Legacy PrintTextMessage, deprecated
+            6 to typeOf<InitGameSyncMessage>(),
             7 to typeOf<UberStateBatchUpdateMessage>(),
             8 to typeOf<MultiverseInfoMessage>(),
             9 to typeOf<AuthenticateMessage>(),

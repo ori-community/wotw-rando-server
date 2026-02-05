@@ -190,6 +190,11 @@ data class InitGameSyncMessage(
 )
 
 @Serializable
+data class ProtocolErrorMessage(
+    @ProtoNumber(1) val errorCode: Int,
+)
+
+@Serializable
 data class SetPlayerSaveGuidMessage(
     @ProtoNumber(1) val playerSaveGuid: MoodGuid,
 )
@@ -464,8 +469,21 @@ data class RequestSeedMessage(
 
 @Serializable
 data class SetSeedMessage(
-    @ProtoNumber(1) val seedContent: String,
-)
+    @ProtoNumber(1) val seedContent: ByteArray,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SetSeedMessage
+
+        return seedContent.contentEquals(other.seedContent)
+    }
+
+    override fun hashCode(): Int {
+        return seedContent.contentHashCode()
+    }
+}
 
 @Serializable
 class PlayerUseCatchingAbilityMessage()

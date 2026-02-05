@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package wotw.server.util
 
 import io.ktor.http.*
@@ -7,7 +9,6 @@ import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.statements.StatementInterceptor
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -17,6 +18,8 @@ import wotw.io.messages.protobuf.Vector2
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 inline fun <reified T : Any> T.logger() = LoggerFactory.getLogger(T::class.java)
 

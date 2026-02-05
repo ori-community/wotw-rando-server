@@ -1,9 +1,12 @@
+@file:OptIn(ExperimentalTime::class)
+
 package wotw.util
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 class ExpiringCache<K, V>(val ttl: Duration) {
     private data class CacheEntry<V> (

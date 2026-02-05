@@ -1,6 +1,10 @@
 package wotw.server.database.model
 
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -8,13 +12,11 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.datetime
 import org.jetbrains.exposed.sql.json.jsonb
-import wotw.io.messages.UniversePreset
 import wotw.io.messages.json
 import wotw.io.messages.protobuf.GameDifficultySettingsOverrides
 
 object Seeds : LongIdTable("seeds") {
-    // TODO: Make seedgen return the used UniverseSettings and save them here instead of the preset
-    val seedgenConfig = jsonb<UniversePreset>("seedgen_config", json)
+    val seedgenConfig = jsonb<JsonObject>("seedgen_config", json)
     val spoiler = jsonb<JsonElement>("spoiler", json)
     val spoilerText = text("spoiler_text")
     val creator = optReference("creator_id", Users)
@@ -38,7 +40,7 @@ class Seed(id: EntityID<Long>): LongEntity(id){
 object WorldSeeds : LongIdTable("world_seeds") {
     val seed = reference("seed_id", Seeds)
     val worldIndex = integer("world_index")
-    val content = text("content")
+    val content = binary("content", 1024 * 1024)
 }
 
 class WorldSeed(id: EntityID<Long>): LongEntity(id){
@@ -52,7 +54,9 @@ class WorldSeed(id: EntityID<Long>): LongEntity(id){
         // TODO: Temporary.
         //       Replace this with something that doesn't rely on the seedgen config at some point
 
-        if (seed.seedgenConfig.worldSettings[worldIndex].hard) {
+        val worldSettings = (seed.seedgenConfig["worldSettings"] as? JsonArray)?.get(worldIndex) as? JsonObject
+
+        if (worldSettings?.get("hard")?.jsonPrimitive?.boolean == true) {
             return GameDifficultySettingsOverrides(
                 GameDifficultySettingsOverrides.Setting.Deny,
                 GameDifficultySettingsOverrides.Setting.Deny,
