@@ -7,13 +7,13 @@ buildscript {
     }
 }
 
-val ktorVersion = "3.2.0"
-val logbackVersion = "1.5.18"
+val ktorVersion = "3.4.0"
+val logbackVersion = "1.5.27"
 val exposedVersion = "0.61.0"
-val serializationVersion = "1.8.1"
+val serializationVersion = "1.10.0"
 val cronutilsVersion = "9.2.1"
 val semverVersion = "3.0.0"
-val kordVersion = "0.15.0"
+val kordVersion = "0.17.0"
 
 plugins {
     kotlin("jvm") version "2.2.0"
@@ -67,6 +67,8 @@ dependencies {
     implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-client-core-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-network-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-java:$ktorVersion")
 
