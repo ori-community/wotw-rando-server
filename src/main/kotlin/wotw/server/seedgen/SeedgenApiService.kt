@@ -8,6 +8,7 @@ import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.accept
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -19,6 +20,8 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.cbor.ByteString
+import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.json.JsonObject
 import wotw.io.messages.json
 import wotw.server.database.model.Seed
@@ -49,7 +52,9 @@ class SeedgenApiService {
 
         install(ContentNegotiation) {
             json()
-            cbor()
+            cbor(Cbor {
+                alwaysUseByteString = true
+            })
         }
     }
 
@@ -62,6 +67,7 @@ class SeedgenApiService {
                 parameters.append("text_spoiler", "true")
             }
             contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Cbor)
             setBody(config)
         }
 
