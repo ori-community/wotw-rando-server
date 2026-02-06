@@ -1,6 +1,7 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package wotw.server.seedgen
 
-import dev.kord.rest.request.errorString
 import dev.kord.rest.request.isError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -13,16 +14,16 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.cbor.cbor
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromStream
 import wotw.io.messages.json
 import wotw.server.database.model.Seed
 import wotw.server.database.model.User
 import wotw.server.database.model.WorldSeed
-import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
 
 data class SeedgenApiGenerateResult(
@@ -46,7 +47,10 @@ class SeedgenApiService {
             url("https://seedgen-api.wotw.orirando.com")
         }
 
-        install(ContentNegotiation)
+        install(ContentNegotiation) {
+            json()
+            cbor()
+        }
     }
 
     suspend fun generateSeed(config: JsonObject, creator: User? = null): SeedgenApiGenerateResult {
