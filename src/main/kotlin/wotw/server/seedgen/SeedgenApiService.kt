@@ -94,6 +94,6 @@ class SeedgenApiService {
 
         seed.refresh(true)
 
-        return SeedgenApiGenerateResult(null)
+        return SeedgenApiGenerateResult(seed)
     }
 }
