@@ -18,7 +18,6 @@ WORKDIR /app
 
 VOLUME /app/seeds
 
-ENV SEEDGEN_PATH=/app/seedgen/seedgen
 ENV WOTW_DB_HOST=db
 ENV WOTW_DB=postgres
 ENV WOTW_DB_PORT=5432
