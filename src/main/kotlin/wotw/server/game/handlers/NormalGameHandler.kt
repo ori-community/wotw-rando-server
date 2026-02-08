@@ -532,6 +532,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         val worldMembership = server.multiverseUtil.movePlayerToWorld(user, world)
         state.playerSaveGuids.remove(worldMembership.id.value)
         getMultiverse().updateAutomaticWorldNames()
+        server.sync.syncMultiverseProgress(multiverseId)
         return worldMembership
     }
 
