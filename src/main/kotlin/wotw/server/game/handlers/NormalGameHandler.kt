@@ -55,10 +55,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         if (debugCountEnabled) {
             val message = PrintTextMessage(
                 "Count: $debugCount",
-                Vector2(0f, 0f),
+                Vector2(0.5f, 0.5f),
                 3,
                 2f,
-                screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
                 horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
                 alignment = PrintTextMessage.ALIGNMENT_CENTER,
                 withBox = true,
@@ -83,11 +82,11 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
                 val message = PrintTextMessage(
                     if (secondsUntilStart <= 0) "<s_4>Go!</>" else "<s_2>Race starting in $secondsUntilStart</>",
-                    Vector2(0f, -2.2f),
+                    Vector2(0.5f, 0.3f),
                     0,
                     if (secondsUntilStart <= 0) 1f else 3f,
-                    screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
                     horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
+                    verticalAnchor = PrintTextMessage.VERTICAL_ANCHOR_TOP,
                     alignment = PrintTextMessage.ALIGNMENT_CENTER,
                     withBox = true,
                     withSound = true,
@@ -319,11 +318,11 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
             val message = PrintTextMessage(
                 "Countdown cancelled",
-                Vector2(0f, -2.2f),
+                Vector2(0.5f, 0.3f),
                 0,
                 4f,
-                screenPosition = PrintTextMessage.SCREEN_POSITION_TOP_CENTER,
                 horizontalAnchor = PrintTextMessage.HORIZONTAL_ANCHOR_CENTER,
+                verticalAnchor = PrintTextMessage.VERTICAL_ANCHOR_TOP,
                 alignment = PrintTextMessage.ALIGNMENT_CENTER,
                 withBox = true,
                 withSound = true,

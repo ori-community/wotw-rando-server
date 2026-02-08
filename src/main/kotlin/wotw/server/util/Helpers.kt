@@ -16,22 +16,10 @@ import org.slf4j.LoggerFactory
 import wotw.io.messages.protobuf.PrintTextMessage
 import wotw.io.messages.protobuf.Vector2
 import java.security.MessageDigest
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executor
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 inline fun <reified T : Any> T.logger() = LoggerFactory.getLogger(T::class.java)
-
-
-
-object CompletableFuture {
-    fun <T> supplyAsync(executor: Executor? = null, block: () -> T) =
-        if (executor == null) CompletableFuture.supplyAsync { block() } else CompletableFuture.supplyAsync(
-            { block() },
-            executor
-        )
-}
 
 fun randomString(length: Int): String {
     val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
@@ -44,8 +32,8 @@ fun makeServerTextMessage(text: String, time: Float = 3.0f): PrintTextMessage =
     PrintTextMessage(
         time = time,
         text = text,
-        position = Vector2(0f, -2f),
-        screenPosition = PrintTextMessage.SCREEN_POSITION_MIDDLE_CENTER,
+        position = Vector2(0.25f, 0.5f),
+        coordinateSystem = PrintTextMessage.COORDINATE_SYSTEM_RELATIVE,
         queue = "server",
         id = 0,
     )

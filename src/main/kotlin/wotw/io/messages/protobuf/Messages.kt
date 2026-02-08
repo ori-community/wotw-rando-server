@@ -227,28 +227,21 @@ data class PrintTextMessage(
     @ProtoNumber(2) val position: Vector2,
     @ProtoNumber(3) @Required val id: Int? = null,
     @ProtoNumber(4) @Required val time: Float? = null,
-    @ProtoNumber(5) val screenPosition: Int = SCREEN_POSITION_TOP_CENTER,
-    @ProtoNumber(6) val useInGameCoordinates: Boolean = false,
-    @ProtoNumber(7) val fadeInLength: Float = 0.5f,
-    @ProtoNumber(8) val fadeOutLength: Float = 0.5f,
-    @ProtoNumber(9) val alignment: Int = ALIGNMENT_CENTER,
-    @ProtoNumber(10) val horizontalAnchor: Int = HORIZONTAL_ANCHOR_CENTER,
-    @ProtoNumber(11) val verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
-    @ProtoNumber(12) val withSound: Boolean = true,
-    @ProtoNumber(13) val withBox: Boolean = true,
-    @ProtoNumber(14) @Required var queue: String? = null,
-    @ProtoNumber(15) val prioritized: Boolean = false,
+    @ProtoNumber(5) val coordinateSystem: Int = COORDINATE_SYSTEM_RELATIVE,
+    @ProtoNumber(6) val fadeInLength: Float = 0.5f,
+    @ProtoNumber(7) val fadeOutLength: Float = 0.5f,
+    @ProtoNumber(8) val alignment: Int = ALIGNMENT_CENTER,
+    @ProtoNumber(9) val horizontalAnchor: Int = HORIZONTAL_ANCHOR_CENTER,
+    @ProtoNumber(10) val verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
+    @ProtoNumber(11) val withSound: Boolean = true,
+    @ProtoNumber(12) val withBox: Boolean = true,
+    @ProtoNumber(13) @Required var queue: String? = null,
+    @ProtoNumber(14) val prioritized: Boolean = false,
 ) {
     companion object {
-        const val SCREEN_POSITION_TOP_LEFT = 0
-        const val SCREEN_POSITION_TOP_CENTER = 1
-        const val SCREEN_POSITION_TOP_RIGHT = 2
-        const val SCREEN_POSITION_MIDDLE_LEFT = 3
-        const val SCREEN_POSITION_MIDDLE_CENTER = 4
-        const val SCREEN_POSITION_MIDDLE_RIGHT = 5
-        const val SCREEN_POSITION_BOTTOM_LEFT = 6
-        const val SCREEN_POSITION_BOTTOM_CENTER = 7
-        const val SCREEN_POSITION_BOTTOM_RIGHT = 8
+        const val COORDINATE_SYSTEM_ABSOLUTE = 0;
+        const val COORDINATE_SYSTEM_RELATIVE = 1;
+        const val COORDINATE_SYSTEM_WORLD = 2;
 
         const val HORIZONTAL_ANCHOR_LEFT = 0
         const val HORIZONTAL_ANCHOR_CENTER = 1
