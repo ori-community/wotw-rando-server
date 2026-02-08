@@ -14,6 +14,7 @@ import wotw.server.database.model.World
 import wotw.server.database.model.WorldMembership
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.assertTransaction
+import wotw.server.util.doAfterTransaction
 import java.lang.System.currentTimeMillis
 import java.util.concurrent.ConcurrentHashMap
 
@@ -157,50 +158,54 @@ class StateSynchronization(private val server: WotwBackendServer) {
         }
     }
 
-    suspend fun syncMultiverseProgress(multiverseId: Long) {
-        val (syncBingoUniversesMessage, spectatorBoard, stateUpdates) = newSuspendedTransaction {
-            val multiverse = Multiverse.findById(multiverseId) ?: return@newSuspendedTransaction null
-            multiverse.cachedBoard ?: return@newSuspendedTransaction null
+    suspend fun syncMultiverseProgress(multiverse: Multiverse) {
+        assertTransaction()
 
-            val info = multiverse.bingoUniverseInfo()
-            val syncBingoUniversesMessage = SyncBingoUniversesMessage(info)
-            val worldUpdates = multiverse.worlds.map { world ->
-                val bingoPlayerData = multiverse.bingoUniverseInfo(world.universe)
-                Triple(
-                    world.memberships.map { it.id.value } to world.members.map { it.id.value },
-                    UberStateBatchUpdateMessage(
-                        UberStateUpdateMessage(
-                            UberId(10, 0),
-                            bingoPlayerData.squares.toDouble()
-                        ),
-                        UberStateUpdateMessage(
-                            UberId(10, 1),
-                            bingoPlayerData.lines.toDouble()
-                        ),
-                        UberStateUpdateMessage(
-                            UberId(10, 2),
-                            bingoPlayerData.rank.toDouble()
-                        ),
-                    ),
-                    SyncBoardMessage(multiverse.createBingoBoardMessage(world.universe)),
-                )
-            }
+        multiverse.cachedBoard ?: return
 
+        val info = multiverse.bingoUniverseInfo()
+        val syncBingoUniversesMessage = SyncBingoUniversesMessage(info)
+        val worldUpdates = multiverse.worlds.map { world ->
+            val bingoPlayerData = multiverse.bingoUniverseInfo(world.universe)
             Triple(
-                syncBingoUniversesMessage,
-                SyncBoardMessage(multiverse.createBingoBoardMessage(null, true)),
-                worldUpdates,
+                world.memberships.map { it.id.value } to world.members.map { it.id.value },
+                UberStateBatchUpdateMessage(
+                    UberStateUpdateMessage(
+                        UberId(10, 0),
+                        bingoPlayerData.squares.toDouble()
+                    ),
+                    UberStateUpdateMessage(
+                        UberId(10, 1),
+                        bingoPlayerData.lines.toDouble()
+                    ),
+                    UberStateUpdateMessage(
+                        UberId(10, 2),
+                        bingoPlayerData.rank.toDouble()
+                    ),
+                ),
+                SyncBoardMessage(multiverse.createBingoBoardMessage(world.universe)),
             )
-        } ?: return
+        }
 
-        server.connections.toObservers(multiverseId, message = syncBingoUniversesMessage)
-        server.connections.toObservers(multiverseId, true, spectatorBoard)
-        stateUpdates.forEach { (playerAndWorldMembershipIds, goalStateUpdate, board) ->
-            server.connections.toPlayers(playerAndWorldMembershipIds.first, goalStateUpdate)
+        val multiverseId = multiverse.id.value
+        val spectatorBoardMessage = SyncBoardMessage(multiverse.createBingoBoardMessage(null, true))
 
-            playerAndWorldMembershipIds.second.forEach { playerId ->
-                server.connections.toObservers(multiverseId, playerId, board)
+        doAfterTransaction {
+            server.connections.toObservers(multiverseId, message = syncBingoUniversesMessage)
+            server.connections.toObservers(multiverseId, true, spectatorBoardMessage)
+            worldUpdates.forEach { (playerAndWorldMembershipIds, goalStateUpdate, board) ->
+                server.connections.toPlayers(playerAndWorldMembershipIds.first, goalStateUpdate)
+
+                playerAndWorldMembershipIds.second.forEach { playerId ->
+                    server.connections.toObservers(multiverseId, playerId, board)
+                }
             }
+        }
+    }
+
+    suspend fun syncMultiverseProgress(multiverseId: Long) {
+        newSuspendedTransaction {
+            syncMultiverseProgress(Multiverse.findById(multiverseId) ?: return@newSuspendedTransaction)
         }
     }
 

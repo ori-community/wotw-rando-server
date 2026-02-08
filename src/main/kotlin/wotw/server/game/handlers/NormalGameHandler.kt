@@ -445,12 +445,13 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             val world = worldMembership.world
 
             val results = server.sync.aggregateStates(worldMembership, uberStates)
+            val multiverse = getMultiverse()
 
-            getMultiverse().cachedBoard?.let { board ->
+            multiverse.cachedBoard?.let { board ->
                 val newBingoCardClaims = world.universe.multiverse.getNewBingoCardClaims(world.universe)
 
                 if (board.config.lockout) {
-                    newBingoCardClaims.filter { claim -> getMultiverse().getLockoutGoalOwnerMap()[claim.x to claim.y]?.id?.value == world.universe.id.value }.forEach { claim ->
+                    newBingoCardClaims.filter { claim -> multiverse.getLockoutGoalOwnerMap()[claim.x to claim.y]?.id?.value == world.universe.id.value }.forEach { claim ->
                             board.goals[Point(claim.x, claim.y)]?.let { goal ->
                                 server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
                                     val playerEnvironmentCache = server.worldMembershipEnvironmentCache.get(worldMembershipId)
@@ -471,6 +472,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                 }
             }
 
+            server.sync.syncMultiverseProgress(multiverse)
+
             results
         }
 
@@ -481,7 +484,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         //     server.connections.registerMultiverseConnection(pc.clientConnection, playerId, multiverseId)
         // }
 
-        server.sync.syncMultiverseProgress(multiverseId)
         server.sync.sendUberStateUpdates(worldMembershipId, results)
     }
 
@@ -531,8 +533,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
     private suspend fun movePlayerToWorld(user: User, world: World): WorldMembership {
         val worldMembership = server.multiverseUtil.movePlayerToWorld(user, world)
         state.playerSaveGuids.remove(worldMembership.id.value)
-        getMultiverse().updateAutomaticWorldNames()
-        server.sync.syncMultiverseProgress(multiverseId)
+        val multiverse = getMultiverse()
+        multiverse.updateAutomaticWorldNames()
+        server.sync.syncMultiverseProgress(multiverse)
         return worldMembership
     }
 
