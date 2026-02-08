@@ -6,7 +6,7 @@ COPY . /app
 RUN gradle jar
 
 
-FROM amazoncorretto:21
+FROM amazoncorretto:21-alpine
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ ENV WOTW_DB_USER=postgres
 COPY --from=build-jar /app/build/libs/wotw-server.jar /app/server/wotw-server.jar
 COPY ./entrypoint /app/entrypoint
 
-RUN yum -y install shadow-utils nc && \
+RUN apk add --no-cache shadow netcat-openbsd && \
     useradd --uid 1010 wotw && \
     chown -R wotw /app
 
