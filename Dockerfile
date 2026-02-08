@@ -1,15 +1,9 @@
-ARG SEEDGEN_TAG=latest
-ARG SEEDGEN_IMAGE=ghcr.io/ori-community/wotw-seedgen:$SEEDGEN_TAG
-
 FROM gradle:8-jdk21-corretto AS build-jar
 
 WORKDIR /app
 COPY . /app
 
 RUN gradle jar
-
-
-FROM $SEEDGEN_IMAGE AS seedgen
 
 
 FROM amazoncorretto:21
@@ -24,7 +18,6 @@ ENV WOTW_DB_PORT=5432
 ENV WOTW_DB_USER=postgres
 
 COPY --from=build-jar /app/build/libs/wotw-server.jar /app/server/wotw-server.jar
-COPY --from=seedgen /app/ /app/seedgen/
 COPY ./entrypoint /app/entrypoint
 
 RUN yum -y install shadow-utils nc && \
