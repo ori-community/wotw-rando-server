@@ -1338,7 +1338,6 @@ class BingoBoardGenerator {
                 discovery = discoverySquares,
                 revealFirstNCompletedGoals = props?.bingoConfig?.revealFirstNCompletedGoals ?: 0,
                 lockout = props?.bingoConfig?.lockout ?: false,
-                manualSquareCompletion = props?.bingoConfig?.manualGoalCompletion ?: false,
                 boardSize = boardSize,
             ),
         )

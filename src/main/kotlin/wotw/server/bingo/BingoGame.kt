@@ -150,7 +150,6 @@ data class BingoBoard(val goals: MutableMap<Point, BingoGoal> = hashMapOf(), val
 @Serializable
 data class BingoConfig(
     val lockout: Boolean = false,
-    val manualSquareCompletion: Boolean = false,
     val discovery: Set<Point>? = null,
     val revealFirstNCompletedGoals: Int = 0,
     val boardSize: Int = 5,
