@@ -23,48 +23,48 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
     private val logger = logger()
 
     override fun Route.initRouting() {
-        get("seeds/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
-            val seedInfo = newSuspendedTransaction {
-                val seed = Seed.findById(id) ?: throw NotFoundException()
+        authenticate(JWT_AUTH) {
+            get("seeds/{id}") {
+                val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
+                val seedInfo = newSuspendedTransaction {
+                    val seed = Seed.findById(id) ?: throw NotFoundException()
 
-                if (!seed.allowDownload) {
-                    throw ForbiddenException("You cannot download this seed")
+                    if (!seed.allowDownload) {
+                        throw ForbiddenException("You cannot download this seed")
+                    }
+
+                    SeedInfo(
+                        seed.id.value,
+                        seed.worldSeeds.map { it.id.value },
+                        seed.creator?.let { server.infoMessagesService.generateUserInfo(it) },
+                    )
                 }
-
-                SeedInfo(
-                    seed.id.value,
-                    seed.worldSeeds.map { it.id.value },
-                    seed.creator?.let { server.infoMessagesService.generateUserInfo(it) },
-                )
-            }
-            call.respond(seedInfo)
-        }
-
-        get("world-seeds/{id}/file") {
-            val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
-
-            val worldSeedContent = newSuspendedTransaction {
-                val worldSeed = WorldSeed.findById(id) ?: throw NotFoundException("World seed not found")
-
-                if (!worldSeed.seed.allowDownload) {
-                    throw ForbiddenException("You cannot download this seed")
-                }
-
-                worldSeed.content
+                call.respond(seedInfo)
             }
 
-            call.respond(worldSeedContent)
-        }
+            get("world-seeds/{id}/file") {
+                val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
 
-        authenticate(JWT_AUTH, optional = true) {
+                val worldSeedContent = newSuspendedTransaction {
+                    val worldSeed = WorldSeed.findById(id) ?: throw NotFoundException("World seed not found")
+
+                    if (!worldSeed.seed.allowDownload) {
+                        throw ForbiddenException("You cannot download this seed")
+                    }
+
+                    worldSeed.content
+                }
+
+                call.respond(worldSeedContent)
+            }
+
             post<JsonObject>("seeds") { config ->
                 try {
                     val (seedId, worldSeedIds) = newSuspendedTransaction {
-                        val result = server.seedgenApiService.generateSeed(config, authenticatedUserOrNull())
+                        val result = server.seedgenApiService.generateSeed(config, authenticatedUser())
 
                         (result.seed?.id?.value ?: 0L) then
-                            (result.seed?.worldSeeds?.map { it.id.value } ?: listOf())
+                                (result.seed?.worldSeeds?.map { it.id.value } ?: listOf())
                     }
 
                     call.respond(
@@ -81,9 +81,7 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     )
                 }
             }
-        }
 
-        authenticate(JWT_AUTH) {
             get("seeds/{id}/spoiler") {
                 val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequestException("No Seed ID found")
 
