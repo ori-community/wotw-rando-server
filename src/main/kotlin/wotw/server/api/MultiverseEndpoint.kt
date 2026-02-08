@@ -28,6 +28,7 @@ import wotw.server.io.handleClientSocket
 import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.makeServerTextMessage
+import wotw.server.util.then
 
 class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
     val logger = logger()
@@ -88,7 +89,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             post("multiverses/{multiverse_id}/{universe_id?}/worlds") {
                 val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
                 val universeId = call.parameters["universe_id"]?.toLongOrNull()
-                val multiverseInfo = newSuspendedTransaction {
+                val (multiverseInfo, syncBingoUniversesMessage) = newSuspendedTransaction {
                     val player = authenticatedUser()
                     wotwPrincipal().require(Scope.WORLD_CREATE)
 
@@ -113,10 +114,17 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     }
 
                     multiverse.refresh(true)
-                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+
+                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse) then if (multiverse.board != null) {
+                        val info = multiverse.bingoUniverseInfo()
+                        SyncBingoUniversesMessage(info)
+                    } else null
                 }
 
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
+                if (syncBingoUniversesMessage != null) {
+                    server.connections.toObservers(multiverseId, message = syncBingoUniversesMessage)
+                }
 
                 call.respond(HttpStatusCode.Created)
             }
@@ -125,7 +133,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                 val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
                 val worldId = call.parameters["world_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable WorldID")
 
-                val multiverseInfo = newSuspendedTransaction {
+                val (multiverseInfo, syncBingoUniversesMessage) = newSuspendedTransaction {
                     val player = authenticatedUser()
                     wotwPrincipal().require(Scope.WORLD_JOIN)
 
@@ -145,11 +153,18 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     handler.onPlayerJoinWorldRequest(player, world)
 
                     multiverse.refresh()
-                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse)
+
+                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse) then if (multiverse.board != null) {
+                        val info = multiverse.bingoUniverseInfo()
+                        SyncBingoUniversesMessage(info)
+                    } else null
                 }
 
                 server.sync.aggregationStrategiesCache.remove(worldId)
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
+                if (syncBingoUniversesMessage != null) {
+                    server.connections.toObservers(multiverseId, message = syncBingoUniversesMessage)
+                }
 
                 call.respond(HttpStatusCode.OK)
             }
@@ -157,7 +172,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
             post("multiverses/{multiverse_id}/spectators") {
                 val multiverseId = call.parameters["multiverse_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable MultiverseID")
 
-                val (multiverseInfo, playerId) = newSuspendedTransaction {
+                val (multiverseInfo, playerId, syncBingoUniversesMessage) = newSuspendedTransaction {
                     val player = authenticatedUser()
                     wotwPrincipal().require(Scope.MULTIVERSE_SPECTATE)
 
@@ -183,11 +198,19 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         }
                     }
 
-                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse) to player.id.value
+                    server.infoMessagesService.generateMultiverseInfoMessage(multiverse) then
+                            player.id.value then
+                            if (multiverse.board != null) {
+                                val info = multiverse.bingoUniverseInfo()
+                                SyncBingoUniversesMessage(info)
+                            } else null
                 }
 
                 server.connections.setSpectating(multiverseInfo.id, playerId, true)
                 server.connections.toObservers(multiverseId, message = multiverseInfo)
+                if (syncBingoUniversesMessage != null) {
+                    server.connections.toObservers(multiverseId, message = syncBingoUniversesMessage)
+                }
 
                 call.respond(HttpStatusCode.Created)
             }
