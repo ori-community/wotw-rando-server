@@ -230,29 +230,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
         multiverseEventBus.register(this, MultiverseEvent::class) { message ->
             when (message.event) {
-                "enableRaceMode" -> {
-                    state.raceModeEnabled = true
-
-                    newSuspendedTransaction {
-                        val worlds = getMultiverse().worlds
-
-                        worlds.forEach { world ->
-                            world.seed?.let { worldSeed ->
-                                server.connections.toPlayers(
-                                    world.memberships.map { it.id.value },
-                                    SetGameDifficultySettingsOverridesMessage(
-                                        worldSeed.inferGameDifficultySettingsOverrides()
-                                    ),
-                                )
-                            }
-                        }
-                    }
-
-                    notifyMultiverseOrClientInfoChanged()
-                    checkRaceStartCondition()
-                    notifyShouldBlockStartingGameChanged()
-                }
-
                 "forfeit" -> {
                     if (state.raceStarted) {
                         newSuspendedTransaction {
@@ -313,6 +290,10 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         serializedState?.let {
             state = json.decodeFromString(NormalGameHandlerState.serializer(), it)
         }
+    }
+
+    fun enableRaceMode() {
+        state.raceModeEnabled = true
     }
 
     /**

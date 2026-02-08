@@ -24,6 +24,7 @@ data class BingoCreationConfig(
 @Serializable
 data class MultiverseCreationConfig(
     val seedId: Long? = null,
+    val raceMode: Boolean = false,
     val bingoConfig: BingoCreationConfig? = null,
 )
 
