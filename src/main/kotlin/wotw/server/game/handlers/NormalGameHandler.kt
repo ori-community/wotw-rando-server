@@ -602,12 +602,14 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         val world = multiverse.seed?.let { seed ->
             var first: World? = null
 
-            seed.worldSeeds.forEach { worldSeed ->
-                val world = World.new(universe, worldSeed.id.value.toString(), worldSeed)
-                if (first == null) {
-                    first = world
+            seed.worldSeeds
+                .sortedBy { it.worldIndex }
+                .forEach { worldSeed ->
+                    val world = World.new(universe, worldSeed.id.value.toString(), worldSeed)
+                    if (first == null) {
+                        first = world
+                    }
                 }
-            }
 
             first ?: throw RuntimeException("Seed group does not contain any world")
         } ?: World.new(universe, "${user.name}'s World")
