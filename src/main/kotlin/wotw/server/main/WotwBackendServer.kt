@@ -54,7 +54,6 @@ import wotw.server.exception.UnauthorizedException
 import wotw.server.game.GameHandlerRegistry
 import wotw.server.game.handlers.league.LeagueManager
 import wotw.server.io.ClientConnectionUDPRegistry
-import wotw.server.opher.OpherAutobanController
 import wotw.server.seedgen.SeedgenApiService
 import wotw.server.services.DiscordService
 import wotw.server.services.InfoMessagesService
@@ -172,7 +171,6 @@ class WotwBackendServer {
     val infoMessagesService = InfoMessagesService(this)
     val multiverseUtil = MultiverseUtil(this)
     val discordService = DiscordService(this)
-    val opherAutobanController = OpherAutobanController(this)
     private var kord: Kord? = null  // Use ifKord if you want to use it
 
     val connections = ConnectionRegistry(this)
@@ -470,18 +468,6 @@ class WotwBackendServer {
                 }
 
                 kord?.login()
-            }
-
-            launch(Dispatchers.Default) {
-                val token = System.getenv("DISCORD_OPHER_BOT_TOKEN")
-
-                if (token.isNullOrBlank()) {
-                    logger.warn("DISCORD_OPHER_BOT_TOKEN not set, continuing without Opher Autoban Bot integration")
-                    return@launch
-                }
-
-                logger.info("Setting up Opher Autoban Bot...")
-                opherAutobanController.start(token)
             }
         }
     }
