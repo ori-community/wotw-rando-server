@@ -6,10 +6,12 @@ import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.json.jsonObject
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import wotw.io.messages.ClaimBingoCardRequest
 import wotw.io.messages.CreateLeagueSeasonRequest
 import wotw.io.messages.admin.RemoteTrackerEndpointDescriptor
+import wotw.io.messages.json
 import wotw.server.database.model.BingoCardClaim
 import wotw.server.database.model.LeagueSeason
 import wotw.server.database.model.User
@@ -117,6 +119,7 @@ class DeveloperEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             shortDescription = request.shortDescription
                             longDescriptionMarkdown = request.longDescriptionMarkdown
                             rulesMarkdown = request.rulesMarkdown
+                            universePreset = json.parseToJsonElement (request.universePreset).jsonObject
                             backgroundImageUrl = request.backgroundImageUrl?.ifBlank { null }
                         }.id.value
                     }

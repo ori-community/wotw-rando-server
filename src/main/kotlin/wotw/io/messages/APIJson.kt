@@ -45,6 +45,7 @@ data class CreateLeagueSeasonRequest(
     val shortDescription: String,
     val longDescriptionMarkdown: String,
     val rulesMarkdown: String,
+    val universePreset: String,
     val backgroundImageUrl: String?,
 )
 
