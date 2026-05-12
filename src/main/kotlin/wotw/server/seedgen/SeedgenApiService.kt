@@ -9,6 +9,7 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.accept
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -28,6 +29,8 @@ import wotw.server.database.model.Seed
 import wotw.server.database.model.User
 import wotw.server.database.model.WorldSeed
 import wotw.server.util.assertTransaction
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 data class SeedgenApiGenerateResult(
     val seed: Seed?,
@@ -58,18 +61,33 @@ class SeedgenApiService {
         }
     }
 
-    suspend fun generateSeedFromPreset(preset: JsonObject, creator: User? = null): SeedgenApiGenerateResult {
-        val httpResponse: HttpResponse = seedgenHttpClient.post("/presets/universe/apply") {
+    @OptIn(ExperimentalUuidApi::class)
+    suspend fun generateSeedFromPreset(preset: JsonObject, seed: String = Uuid.random().toHexString(), creator: User? = null): SeedgenApiGenerateResult {
+        val defaultUniverseSettingsResponse: HttpResponse = seedgenHttpClient.get("/settings/universe/new") {
+            url {
+                parameters.append("seed", seed)
+            }
+            accept(ContentType.Application.Json)
+        }
+
+        if (defaultUniverseSettingsResponse.isError) {
+            throw SeedgenException(defaultUniverseSettingsResponse.bodyAsText())
+        }
+
+        val mergedUniverseSettingsResponse: HttpResponse = seedgenHttpClient.post("/presets/universe/apply") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
-            setBody(JsonObject(mapOf("presets" to JsonArray(listOf(preset)))))
+            setBody(JsonObject(mapOf(
+                "settings" to defaultUniverseSettingsResponse.body<JsonObject>(),
+                "presets" to JsonArray(listOf(preset))
+            )))
         }
 
-        if (httpResponse.isError) {
-            throw SeedgenException(httpResponse.bodyAsText())
+        if (mergedUniverseSettingsResponse.isError) {
+            throw SeedgenException(mergedUniverseSettingsResponse.bodyAsText())
         }
 
-        val settings = httpResponse.body<JsonObject>()
+        val settings = mergedUniverseSettingsResponse.body<JsonObject>()
 
         return generateSeed(settings, creator)
     }
