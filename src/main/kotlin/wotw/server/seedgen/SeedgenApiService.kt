@@ -21,6 +21,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import wotw.io.messages.json
 import wotw.server.database.model.Seed
@@ -61,7 +62,7 @@ class SeedgenApiService {
         val httpResponse: HttpResponse = seedgenHttpClient.post("/presets/world/apply") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
-            setBody(JsonObject(mapOf("presets" to preset)))
+            setBody(JsonObject(mapOf("presets" to JsonArray(listOf(preset)))))
         }
 
         if (httpResponse.isError) {
