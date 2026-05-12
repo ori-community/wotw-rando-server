@@ -20,7 +20,6 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.json.JsonObject
 import wotw.io.messages.json
@@ -58,7 +57,23 @@ class SeedgenApiService {
         }
     }
 
-    suspend fun generateSeed(config: JsonObject, creator: User? = null): SeedgenApiGenerateResult {
+    suspend fun generateSeedFromPreset(preset: JsonObject, creator: User? = null): SeedgenApiGenerateResult {
+        val httpResponse: HttpResponse = seedgenHttpClient.post("/presets/world/apply") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            setBody(JsonObject(mapOf("presets" to preset)))
+        }
+
+        if (httpResponse.isError) {
+            throw SeedgenException(httpResponse.bodyAsText())
+        }
+
+        val settings = httpResponse.body<JsonObject>()
+
+        return generateSeed(settings, creator)
+    }
+
+    suspend fun generateSeed(settings: JsonObject, creator: User? = null): SeedgenApiGenerateResult {
         assertTransaction()
 
         val httpResponse: HttpResponse = seedgenHttpClient.post("/generate") {
@@ -68,7 +83,7 @@ class SeedgenApiService {
             }
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Cbor)
-            setBody(config)
+            setBody(settings)
         }
 
         if (httpResponse.isError) {
@@ -78,7 +93,7 @@ class SeedgenApiService {
         val response = httpResponse.body<SeedgenApiGenerateResponse>()
 
         val seed = Seed.new {
-            this.seedgenConfig = config
+            this.seedgenConfig = settings
             this.creator = creator
             this.spoiler = json.decodeFromString(response.jsonSpoiler)
             this.spoilerText = response.textSpoiler

@@ -334,7 +334,7 @@ class LeagueSeason(id: EntityID<Long>) : LongEntity(id) {
             throw RuntimeException("Cannot create scheduled game. Please finish the current game first.")
         }
 
-        val seedGeneratorResult = seedgenApiService.generateSeed(this.universePreset)
+        val seedGeneratorResult = seedgenApiService.generateSeedFromPreset(this.universePreset)
 
         if (seedGeneratorResult.seed == null) {
             throw RuntimeException("Failed to generate seed for League game")

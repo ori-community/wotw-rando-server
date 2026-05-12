@@ -118,14 +118,13 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
 
                 try {
-                    val (result, seedId, worldSeedIds) = newSuspendedTransaction {
+                    val (seedId, worldSeedIds) = newSuspendedTransaction {
                         val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
 
                         val result =
-                            server.seedgenApiService.generateSeed(season.universePreset, authenticatedUserOrNull())
+                            server.seedgenApiService.generateSeedFromPreset(season.universePreset, authenticatedUserOrNull())
 
-                        result then
-                                (result.seed?.id?.value ?: 0L) then
+                        (result.seed?.id?.value ?: 0L) then
                                 (result.seed?.worldSeeds?.map { it.id.value } ?: listOf())
                     }
 
