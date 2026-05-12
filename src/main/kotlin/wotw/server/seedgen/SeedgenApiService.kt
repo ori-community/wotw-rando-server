@@ -59,7 +59,7 @@ class SeedgenApiService {
     }
 
     suspend fun generateSeedFromPreset(preset: JsonObject, creator: User? = null): SeedgenApiGenerateResult {
-        val httpResponse: HttpResponse = seedgenHttpClient.post("/presets/world/apply") {
+        val httpResponse: HttpResponse = seedgenHttpClient.post("/presets/universe/apply") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             setBody(JsonObject(mapOf("presets" to JsonArray(listOf(preset)))))
