@@ -24,6 +24,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import wotw.io.messages.json
 import wotw.server.database.model.Seed
 import wotw.server.database.model.User
@@ -63,22 +64,11 @@ class SeedgenApiService {
 
     @OptIn(ExperimentalUuidApi::class)
     suspend fun generateSeedFromPreset(preset: JsonObject, seed: String = Uuid.random().toHexString(), creator: User? = null): SeedgenApiGenerateResult {
-        val defaultUniverseSettingsResponse: HttpResponse = seedgenHttpClient.get("/settings/universe/new") {
-            url {
-                parameters.append("seed", seed)
-            }
-            accept(ContentType.Application.Json)
-        }
-
-        if (defaultUniverseSettingsResponse.isError) {
-            throw SeedgenException(defaultUniverseSettingsResponse.bodyAsText())
-        }
-
         val mergedUniverseSettingsResponse: HttpResponse = seedgenHttpClient.post("/presets/universe/apply") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             setBody(JsonObject(mapOf(
-                "settings" to defaultUniverseSettingsResponse.body<JsonObject>(),
+                "seed" to JsonPrimitive(seed),
                 "presets" to JsonArray(listOf(preset))
             )))
         }
