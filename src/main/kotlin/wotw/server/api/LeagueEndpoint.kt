@@ -9,6 +9,7 @@ import io.ktor.server.routing.*
 import io.ktor.utils.io.readRemaining
 import kotlinx.io.readByteArray
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.notExists
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -47,7 +48,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                             LeagueGames
                                 .selectAll()
                                 .where {
-                                    (LeagueGames.seasonId eq LeagueSeasons.id) and (LeagueGames.gameNumber greater 1)
+                                    (LeagueGames.seasonId eq LeagueSeasons.id)
                                 }
                         )
                     }
@@ -55,7 +56,21 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         .map { server.infoMessagesService.generateLeagueSeasonInfo(it) }
                 })
             }
-
+            get("league/seasons/active"){
+                call.respond(newSuspendedTransaction {
+                    LeagueSeason.find {
+                        exists(
+                            LeagueGames
+                                .selectAll()
+                                .where {
+                                    (LeagueGames.seasonId eq LeagueSeasons.id)
+                                }
+                        ) and (LeagueSeasons.currentGameId neq null)
+                    }
+                        .sortedBy { it.nextContinuationAt }
+                        .map { server.infoMessagesService.generateLeagueSeasonInfo(it) }
+                })
+            }
             get("league/seasons/{season_id}") {
                 val seasonId =
                     call.parameters["season_id"]?.toLongOrNull() ?: throw BadRequestException("Unparsable season_id")
