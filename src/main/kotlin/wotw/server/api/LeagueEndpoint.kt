@@ -137,7 +137,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
 
                         val result =
-                            server.seedgenApiService.generateSeedFromPreset(season.universePreset, authenticatedUserOrNull())
+                            server.seedgenApiService.generateSeedFromPreset(season.universePreset, creator = authenticatedUserOrNull())
 
                         (result.seed?.id?.value ?: 0L) then
                                 (result.seed?.worldSeeds?.map { it.id.value } ?: listOf())
