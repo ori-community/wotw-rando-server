@@ -62,7 +62,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                 alignment = PrintTextMessage.ALIGNMENT_CENTER,
                 withBox = true,
                 withSound = true,
-                queue = "cnt",
             )
             server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
                 server.connections.toPlayers(worldMembershipIds, message)
@@ -90,7 +89,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                     alignment = PrintTextMessage.ALIGNMENT_CENTER,
                     withBox = true,
                     withSound = true,
-                    queue = "race_timer",
                 )
 
                 server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
@@ -326,7 +324,6 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
                 alignment = PrintTextMessage.ALIGNMENT_CENTER,
                 withBox = true,
                 withSound = true,
-                queue = "race_timer",
             )
 
             server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->

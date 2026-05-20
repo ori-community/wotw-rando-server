@@ -34,7 +34,6 @@ fun makeServerTextMessage(text: String, time: Float = 3.0f): PrintTextMessage =
         text = text,
         position = Vector2(0.25f, 0.5f),
         coordinateSystem = PrintTextMessage.COORDINATE_SYSTEM_RELATIVE,
-        queue = "server",
         id = 0,
     )
 

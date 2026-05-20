@@ -235,8 +235,6 @@ data class PrintTextMessage(
     @ProtoNumber(10) val verticalAnchor: Int = VERTICAL_ANCHOR_MIDDLE,
     @ProtoNumber(11) val withSound: Boolean = true,
     @ProtoNumber(12) val withBox: Boolean = true,
-    @ProtoNumber(13) @Required var queue: String? = null,
-    @ProtoNumber(14) val prioritized: Boolean = false,
 ) {
     companion object {
         const val COORDINATE_SYSTEM_ABSOLUTE = 0;
