@@ -30,6 +30,7 @@ import wotw.server.main.WotwBackendServer
 import wotw.server.util.logger
 import wotw.server.util.makeServerTextMessage
 import wotw.server.util.then
+import kotlin.math.min
 
 class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
     val logger = logger()
@@ -317,7 +318,7 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                         recentMultiverses
                             .orderBy(Multiverses.createdAt to SortOrder.DESC)
-                            .limit(16)
+                            .limit(min(16, call.queryParameters["limit"]?.toInt() ?: 16))
                             .map(server.infoMessagesService::generateMultiverseMetadataInfoMessage)
                     }
                 )
