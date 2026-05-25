@@ -305,21 +305,18 @@ class MultiverseEndpoint(server: WotwBackendServer) : Endpoint(server) {
                     newSuspendedTransaction {
                         val user = authenticatedUser()
 
-                        val recentMultiverses = Multiverse.wrapRows(
+                        Multiverse.wrapRows(
                             Multiverses
                                 .innerJoin(WorldMemberships)
                                 .selectAll()
+                                .orderBy(Multiverses.createdAt to SortOrder.DESC)
                                 .where {
                                     (WorldMemberships.multiverseId eq Multiverses.id) and
                                             (Multiverses.gameHandlerType eq GameHandlerType.NORMAL) and
                                             (WorldMemberships.userId eq user.id)
                                 }
-                        )
-
-                        recentMultiverses
-                            .orderBy(Multiverses.createdAt to SortOrder.DESC)
-                            .limit(min(16, call.queryParameters["limit"]?.toInt() ?: 16))
-                            .map(server.infoMessagesService::generateMultiverseMetadataInfoMessage)
+                                .limit(min(16, call.queryParameters["limit"]?.toUIntOrNull()?.toInt() ?: 16))
+                        ).map(server.infoMessagesService::generateMultiverseMetadataInfoMessage)
                     }
                 )
             }
