@@ -195,9 +195,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
             if (message.isFinished) {
                 if (!state.playerFinishedTimes.containsKey(worldMembershipId)) {
-                    lazilyNotifyClientInfoChangedIf {
-                        state.playerFinishedTimes.put(worldMembershipId, message.inGameTime) != message.inGameTime
-                    }
+                    lazilyNotifyClientInfoChanged = true
 
                     newSuspendedTransaction {
                         val worldMembership = WorldMembership.findById(worldMembershipId) ?: error("Error: Reported time for unknown world membership $worldMembershipId")
