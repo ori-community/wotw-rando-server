@@ -195,6 +195,7 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
             if (message.isFinished) {
                 if (!state.playerFinishedTimes.containsKey(worldMembershipId)) {
+                    state.playerFinishedTimes[worldMembershipId] = message.inGameTime
                     lazilyNotifyClientInfoChanged = true
 
                     newSuspendedTransaction {
