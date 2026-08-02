@@ -52,6 +52,7 @@ class SeedgenApiService {
         install(ContentNegotiation) {
             json()
             cbor(Cbor {
+                ignoreUnknownKeys = true
                 alwaysUseByteString = true
             })
         }
