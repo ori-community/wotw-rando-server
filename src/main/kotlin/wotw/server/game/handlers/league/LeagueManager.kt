@@ -44,14 +44,16 @@ class LeagueManager(val server: WotwBackendServer) {
     private var upcomingSeasonProcessingTimes = ConcurrentHashMap<Instant, MutableList<Long>>()
     private var upcomingSeasonReminderTimes = ConcurrentHashMap<Instant, MutableList<Long>>()
 
-    fun getDiscordChannel(): Snowflake {
-        val channelId = System.getenv("LEAGUE_DISCORD_CHANNEL_ID")
+    companion object {
+        fun getDiscordChannel(): Snowflake {
+            val channelId = System.getenv("LEAGUE_DISCORD_CHANNEL_ID")
 
-        if (channelId.isNullOrBlank()) {
-            throw RuntimeException("LEAGUE_DISCORD_CHANNEL_ID is not set")
+            if (channelId.isNullOrBlank()) {
+                throw RuntimeException("LEAGUE_DISCORD_CHANNEL_ID is not set")
+            }
+
+            return Snowflake(channelId)
         }
-
-        return Snowflake(channelId)
     }
 
     fun getLeaguePlayersRoleId(): Snowflake? {

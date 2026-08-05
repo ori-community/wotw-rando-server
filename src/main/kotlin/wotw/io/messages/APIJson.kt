@@ -4,6 +4,7 @@ package wotw.io.messages
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import wotw.io.messages.protobuf.LeagueSeasonInfo
 import wotw.io.messages.protobuf.UserInfo
 
 @Serializable
@@ -62,4 +63,11 @@ data class BingothonTokenRequest(val multiverseId: Long)
 data class GeneratedSeedResponse(
     val seedId: Long,
     val worldSeedIds: List<Long>,
+)
+
+
+@Serializable
+data class JoinLeagueSeasonResponse(
+    val seasonInfo: LeagueSeasonInfo,
+    val promptToJoinLeagueDiscord: Boolean,
 )

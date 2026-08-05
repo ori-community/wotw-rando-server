@@ -1,5 +1,8 @@
 package wotw.server.api
 
+import dev.kord.common.entity.Snowflake
+import dev.kord.rest.json.JsonErrorCode
+import dev.kord.rest.request.KtorRequestException
 import io.ktor.http.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
@@ -13,6 +16,7 @@ import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.notExists
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.JoinLeagueSeasonResponse
 import wotw.io.messages.GeneratedSeedResponse
 import wotw.io.messages.SetSubmissionVideoUrlRequest
 import wotw.server.constants.LEAGUE_MAX_DISCONNECTED_TIME
@@ -20,6 +24,7 @@ import wotw.server.database.model.*
 import wotw.server.exception.ForbiddenException
 import wotw.server.game.WotwSaveFileReader
 import wotw.server.game.handlers.league.LeagueGameHandler
+import wotw.server.game.handlers.league.LeagueManager
 import wotw.server.main.WotwBackendServer
 import wotw.server.seedgen.SeedgenException
 import wotw.server.util.NTuple5
@@ -235,7 +240,7 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                 wotwPrincipal().require(Scope.LEAGUE_SEASON_JOIN)
 
-                val seasonInfo = newSuspendedTransaction {
+                val (seasonInfo, promptToJoinLeagueDiscord) = newSuspendedTransaction {
                     val season = LeagueSeason.findById(seasonId) ?: throw NotFoundException("Season not found")
                     val user = authenticatedUser()
 
@@ -254,10 +259,26 @@ class LeagueEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
                     season.refresh()
 
-                    server.infoMessagesService.generateLeagueSeasonInfo(season, user)
+                    val promptToJoinLeagueDiscord = server.ifKord {
+                        it.rest.channel.getChannel(LeagueManager.getDiscordChannel()).guildId.value?.let { guildId ->
+                            try {
+                                it.rest.guild.getGuildMember(guildId, Snowflake(user.id.value))
+                            } catch (e: KtorRequestException) {
+                                if (e.error?.code == JsonErrorCode.UnknownUser) {
+                                    return@ifKord true
+                                }
+
+                                e.printStackTrace()
+                            }
+                        }
+
+                        return@ifKord false
+                    } ?: false
+
+                    server.infoMessagesService.generateLeagueSeasonInfo(season, user) then promptToJoinLeagueDiscord
                 }
 
-                call.respond(HttpStatusCode.Created, seasonInfo)
+                call.respond(HttpStatusCode.Created, JoinLeagueSeasonResponse(seasonInfo, promptToJoinLeagueDiscord))
                 return@post
             }
 
