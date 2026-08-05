@@ -41,7 +41,7 @@ data class NormalGameHandlerState(
     @ProtoNumber(6) var universeFinishedTimes: MutableMap<Long, Float> = mutableMapOf(),
     @ProtoNumber(7) var raceModeEnabled: Boolean = false,
     @ProtoNumber(8) var raceStarted: Boolean = false,
-    @ProtoNumber(9) var playerSaveGuids: MutableMap<WorldMembershipId, MoodGuid> = mutableMapOf(),
+    @ProtoNumber(9) var playerSaveGuids: MutableMap<PlayerId, MutableMap<WorldId, MoodGuid>> = mutableMapOf(),
 )
 
 class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHandler<NormalGameHandlerState>(multiverseId, server) {
@@ -144,14 +144,18 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         }
 
         messageEventBus.register(this, SetPlayerSaveGuidMessage::class) { message, worldMembershipId ->
-            state.playerSaveGuids[worldMembershipId] = message.playerSaveGuid
+            val cacheEntry = server.worldMembershipEnvironmentCache.get(worldMembershipId)
 
-            server.connections.toPlayers(
-                listOf(worldMembershipId), SetSaveGuidRestrictionsMessage(
-                    message.playerSaveGuid,
-                    true,
+            cacheEntry.worldId?.let { worldId ->
+                state.playerSaveGuids.getOrPut(cacheEntry.playerId) { mutableMapOf() }[worldId] = message.playerSaveGuid
+
+                server.connections.toPlayers(
+                    listOf(worldMembershipId), SetSaveGuidRestrictionsMessage(
+                        message.playerSaveGuid,
+                        true,
+                    )
                 )
-            )
+            }
         }
 
         // TODO: Implement in client
@@ -178,7 +182,9 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
         }
 
         messageEventBus.register(this, ReportInGameTimeMessage::class) { message, worldMembershipId ->
-            if (!state.playerSaveGuids.containsKey(worldMembershipId)) {
+            val cacheEntry = server.worldMembershipEnvironmentCache.get(worldMembershipId)
+
+            if (cacheEntry.worldId?.let { worldId -> state.playerSaveGuids[cacheEntry.playerId]?.containsKey(worldId) } != true) {
                 return@register
             }
 
@@ -448,23 +454,23 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
 
                 if (board.config.lockout) {
                     newBingoCardClaims.filter { claim -> multiverse.getLockoutGoalOwnerMap()[claim.x to claim.y]?.id?.value == world.universe.id.value }.forEach { claim ->
-                            board.goals[Point(claim.x, claim.y)]?.let { goal ->
-                                server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
-                                    val playerEnvironmentCache = server.worldMembershipEnvironmentCache.get(worldMembershipId)
-                                    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                        board.goals[Point(claim.x, claim.y)]?.let { goal ->
+                            server.multiverseMemberCache.getOrNull(multiverseId)?.worldMembershipIds?.let { worldMembershipIds ->
+                                val playerEnvironmentCache = server.worldMembershipEnvironmentCache.get(worldMembershipId)
+                                val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-                                    server.connections.toPlayers(
-                                        worldMembershipIds - playerEnvironmentCache.universeWorldMembershipIds,
-                                        PrintTextMessage(
-                                            "<s_0.8>${world.universe.name} completed ${alphabet[claim.x - 1]}${claim.y}:</>\n${goal.title}",
-                                            Vector2(0f, -1.3f),
-                                            null,
-                                            3f,
-                                        ),
-                                    )
-                                }
+                                server.connections.toPlayers(
+                                    worldMembershipIds - playerEnvironmentCache.universeWorldMembershipIds,
+                                    PrintTextMessage(
+                                        "<s_0.8>${world.universe.name} completed ${alphabet[claim.x - 1]}${claim.y}:</>\n${goal.title}",
+                                        Vector2(0f, -1.3f),
+                                        null,
+                                        3f,
+                                    ),
+                                )
                             }
                         }
+                    }
                 }
             }
 
@@ -523,12 +529,11 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
     }
 
     override suspend fun getPlayerSaveGuid(worldMembership: WorldMembership): MoodGuid? {
-        return state.playerSaveGuids[worldMembership.id.value]
+        return state.playerSaveGuids[worldMembership.user.id.value]?.get(worldMembership.world.id.value)
     }
 
     private suspend fun movePlayerToWorld(user: User, world: World): WorldMembership {
         val worldMembership = server.multiverseUtil.movePlayerToWorld(user, world)
-        state.playerSaveGuids.remove(worldMembership.id.value)
         val multiverse = getMultiverse()
         multiverse.updateAutomaticWorldNames()
         server.sync.syncMultiverseProgress(multiverse)
@@ -625,8 +630,8 @@ class NormalGameHandler(multiverseId: Long, server: WotwBackendServer) : GameHan
             val world = World.findById(setupResult.worldId)
 
             (
-                world?.universe?.multiverse?.memberships?.map { it.id.value } ?: emptyList()
-            ) to world?.seed?.content
+                    world?.universe?.multiverse?.memberships?.map { it.id.value } ?: emptyList()
+                    ) to world?.seed?.content
         }
 
         // Send the seed

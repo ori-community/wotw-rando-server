@@ -22,6 +22,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.createType
 
 typealias PlayerId = String
+typealias WorldId = Long
 typealias WorldMembershipId = Long
 
 object GameHandlerType {
