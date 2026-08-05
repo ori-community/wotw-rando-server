@@ -6,6 +6,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.JsonObject
+import wotw.io.messages.protobuf.LeagueSeasonInfo
 import wotw.io.messages.protobuf.UserInfo
 
 @Serializable
@@ -165,4 +166,11 @@ data class BingothonTokenRequest(val multiverseId: Long)
 @Serializable
 data class CreateLeagueSubmissionRequest(
     val saveFileBase64: String,
+)
+
+
+@Serializable
+data class JoinLeagueSeasonResponse(
+    val seasonInfo: LeagueSeasonInfo,
+    val promptToJoinLeagueDiscord: Boolean,
 )

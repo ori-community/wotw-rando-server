@@ -281,11 +281,13 @@ class WotwBackendServer {
     /**
      * Run [block] if there's an active Kord (Discord API) instance
      */
-    suspend fun ifKord(block: suspend (Kord) -> Unit) {
-        kord?.let {
+    suspend fun<T> ifKord(block: suspend (Kord) -> T): T? {
+        return kord?.let {
             if (it.isActive) {
-                block(it)
+                return block(it)
             }
+
+            return null
         }
     }
 
