@@ -60,17 +60,19 @@ class SeedGenEndpoint(server: WotwBackendServer) : Endpoint(server) {
 
             post<JsonObject>("seeds") { config ->
                 try {
-                    val (seedId, worldSeedIds) = newSuspendedTransaction {
+                    val (seedId, worldSeedIds, logs) = newSuspendedTransaction {
                         val result = server.seedgenApiService.generateSeed(config, authenticatedUser())
 
                         (result.seed?.id?.value ?: 0L) then
-                                (result.seed?.worldSeeds?.map { it.id.value } ?: listOf())
+                                (result.seed?.worldSeeds?.map { it.id.value } ?: listOf()) then
+                                result.logs
                     }
 
                     call.respond(
                         HttpStatusCode.Created, GeneratedSeedResponse(
                             seedId,
                             worldSeedIds,
+                            logs,
                         )
                     )
                 } catch (e: SeedgenException) {

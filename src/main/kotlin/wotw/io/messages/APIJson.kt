@@ -6,6 +6,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import wotw.io.messages.protobuf.LeagueSeasonInfo
 import wotw.io.messages.protobuf.UserInfo
+import wotw.server.seedgen.SeedgenApiLogRecord
 
 @Serializable
 data class SeedInfo(
@@ -63,6 +64,7 @@ data class BingothonTokenRequest(val multiverseId: Long)
 data class GeneratedSeedResponse(
     val seedId: Long,
     val worldSeedIds: List<Long>,
+    val logs: List<SeedgenApiLogRecord>,
 )
 
 

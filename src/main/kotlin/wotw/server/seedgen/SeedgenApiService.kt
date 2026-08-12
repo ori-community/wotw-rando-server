@@ -30,6 +30,13 @@ import kotlin.uuid.Uuid
 
 data class SeedgenApiGenerateResult(
     val seed: Seed?,
+    val logs: List<SeedgenApiLogRecord>,
+)
+
+@Serializable
+data class SeedgenApiLogRecord(
+    @SerialName("level") val level: String,
+    @SerialName("message") val message: String,
 )
 
 @Serializable
@@ -37,6 +44,7 @@ data class SeedgenApiGenerateResponse(
     @SerialName("worlds") val worlds: List<ByteArray>,
     @SerialName("json_spoiler") val jsonSpoiler: String,
     @SerialName("text_spoiler") val textSpoiler: String,
+    @SerialName("logs") val logs: List<SeedgenApiLogRecord>,
 )
 
 class SeedgenException(message: String) : Exception(message)
@@ -85,6 +93,7 @@ class SeedgenApiService {
             url {
                 parameters.append("json_spoiler", "true")
                 parameters.append("text_spoiler", "true")
+                parameters.append("max_log_level", "WARN")
             }
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Cbor)
@@ -114,6 +123,6 @@ class SeedgenApiService {
 
         seed.refresh(true)
 
-        return SeedgenApiGenerateResult(seed)
+        return SeedgenApiGenerateResult(seed, response.logs)
     }
 }
