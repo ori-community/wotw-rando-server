@@ -2,6 +2,7 @@ package wotw.server.util
 
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import wotw.io.messages.protobuf.SetSaveGuidRestrictionsMessage
 import wotw.io.messages.protobuf.SetSeedMessage
 import wotw.io.messages.protobuf.UberId
 import wotw.io.messages.protobuf.UberStateBatchUpdateMessage
@@ -78,6 +79,14 @@ class MultiverseUtil(val server: WotwBackendServer) {
             server.multiverseUtil.sendWorldStateAfterMovedToAnotherWorld(worldMembershipId)
 
             newSuspendedTransaction {
+                server.connections.toPlayers(
+                    listOf(worldMembershipId),
+                    SetSaveGuidRestrictionsMessage(
+                        server.gameHandlerRegistry.getHandler(newMultiverseId).getPlayerSaveGuid(worldMembership),
+                        true,
+                    )
+                )
+
                 if (isJoiningMultiverse) {
                     server.gameHandlerRegistry.getHandler(newMultiverseId).onMultiverseEvent(PlayerJoinedEvent(player))
                 } else {
