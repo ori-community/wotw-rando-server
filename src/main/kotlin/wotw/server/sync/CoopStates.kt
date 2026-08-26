@@ -478,6 +478,12 @@ val pickupIds = mapOf(
     "LupoShop.HCMapIcon" to UberId(15, 41666),
     "LupoShop.ECMapIcon" to UberId(15, 19396),
     "LupoShop.ShardMapIcon" to UberId(15, 57987),
+    "TuleyShop.Lightcatchers" to UberId(20, 47651),
+    "TuleyShop.SelaFlowers" to UberId(20, 16254),
+    "TuleyShop.BlueMoon" to UberId(20, 33011),
+    "TuleyShop.StickyGrass" to UberId(20, 64583),
+    "TuleyShop.SpringPlants" to UberId(20, 38393),
+    "TuleyShop.LastTree" to UberId(20, 40006),
 )
 
 val safeMaxLevers = listOf(
