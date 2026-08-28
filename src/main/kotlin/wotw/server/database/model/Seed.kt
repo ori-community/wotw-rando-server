@@ -16,7 +16,6 @@ import wotw.io.messages.json
 import wotw.io.messages.protobuf.GameDifficultySettingsOverrides
 
 object Seeds : LongIdTable("seeds") {
-    val seedgenConfig = jsonb<JsonObject>("seedgen_config", json)
     val spoiler = jsonb<JsonElement>("spoiler", json)
     val spoilerText = text("spoiler_text")
     val creator = optReference("creator_id", Users)
@@ -27,7 +26,6 @@ object Seeds : LongIdTable("seeds") {
 class Seed(id: EntityID<Long>): LongEntity(id){
     companion object : LongEntityClass<Seed>(Seeds)
 
-    var seedgenConfig by Seeds.seedgenConfig
     var spoiler by Seeds.spoiler
     var spoilerText by Seeds.spoilerText
     var creator by User optionalReferencedOn Seeds.creator
@@ -40,7 +38,7 @@ class Seed(id: EntityID<Long>): LongEntity(id){
 object WorldSeeds : LongIdTable("world_seeds") {
     val seed = reference("seed_id", Seeds)
     val worldIndex = integer("world_index")
-    val content = binary("content", 1024 * 1024)
+    val content = binary("content", 4 * 1024 * 1024)
 }
 
 class WorldSeed(id: EntityID<Long>): LongEntity(id){
@@ -51,18 +49,7 @@ class WorldSeed(id: EntityID<Long>): LongEntity(id){
     var content by WorldSeeds.content
 
     fun inferGameDifficultySettingsOverrides(): GameDifficultySettingsOverrides {
-        // TODO: Temporary.
-        //       Replace this with something that doesn't rely on the seedgen config at some point
-
-        val worldSettings = (seed.seedgenConfig["worldSettings"] as? JsonArray)?.get(worldIndex) as? JsonObject
-
-        if (worldSettings?.get("hard")?.jsonPrimitive?.boolean == true) {
-            return GameDifficultySettingsOverrides(
-                GameDifficultySettingsOverrides.Setting.Deny,
-                GameDifficultySettingsOverrides.Setting.Deny,
-                GameDifficultySettingsOverrides.Setting.Allow,
-            )
-        }
+        // TODO: Hard mode races don't work currently; use preload.json later
 
         return GameDifficultySettingsOverrides(
             GameDifficultySettingsOverrides.Setting.Deny,

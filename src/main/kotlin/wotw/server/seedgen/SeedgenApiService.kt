@@ -75,6 +75,10 @@ class SeedgenApiService {
                 "seed" to JsonPrimitive(seed),
                 "presets" to JsonArray(listOf(preset))
             )))
+
+            timeout {
+                requestTimeoutMillis = 30000
+            }
         }
 
         if (mergedUniverseSettingsResponse.isError) {
@@ -86,7 +90,7 @@ class SeedgenApiService {
         return generateSeed(settings, creator)
     }
 
-    suspend fun generateSeed(settings: JsonObject, creator: User? = null): SeedgenApiGenerateResult {
+    suspend inline fun <reified T> generateSeed(settings: T, creator: User? = null): SeedgenApiGenerateResult {
         assertTransaction()
 
         val httpResponse: HttpResponse = seedgenHttpClient.post("/generate") {
@@ -97,6 +101,10 @@ class SeedgenApiService {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Cbor)
             setBody(settings)
+
+            timeout {
+                requestTimeoutMillis = 30000
+            }
         }
 
         if (httpResponse.isError) {
@@ -106,7 +114,6 @@ class SeedgenApiService {
         val response = httpResponse.body<SeedgenApiGenerateResponse>()
 
         val seed = Seed.new {
-            this.seedgenConfig = settings
             this.creator = creator
             this.spoiler = JsonObject(mapOf())  // TODO
             this.spoilerText = response.textSpoiler
