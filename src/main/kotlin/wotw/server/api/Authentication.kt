@@ -50,8 +50,12 @@ class AuthenticationEndpoint(server: WotwBackendServer) : Endpoint(server) {
                         try {
                             val url = Url(redir)
                             val validHosts = System.getenv("VALID_REDIRECT_URLS")?.split(",") ?: emptyList()
-                            //                         ↓ Electron
-                            if (url.protocol.name != "ori-rando" && !validHosts.any { url.hostWithPort.startsWith(it) }) {
+                            if (
+                                //                   ↓ Electron and v5
+                                url.protocol.name != "ori-rando" &&
+                                url.protocol.name != "ori-rando-v5" &&
+                                !validHosts.any { url.hostWithPort.startsWith(it) }
+                            ) {
                                 throw BadRequestException("$url is not a valid redirect URL")
                             }
                         } catch (e: BadRequestException) {
