@@ -18,6 +18,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import wotw.io.messages.json
@@ -42,7 +43,6 @@ data class SeedgenApiLogRecord(
 @Serializable
 data class SeedgenApiGenerateResponse(
     @SerialName("worlds") val worlds: List<ByteArray>,
-    @SerialName("json_spoiler") val jsonSpoiler: String,
     @SerialName("text_spoiler") val textSpoiler: String,
     @SerialName("logs") val logs: List<SeedgenApiLogRecord>,
 )
@@ -91,7 +91,6 @@ class SeedgenApiService {
 
         val httpResponse: HttpResponse = seedgenHttpClient.post("/generate") {
             url {
-                parameters.append("json_spoiler", "true")
                 parameters.append("text_spoiler", "true")
                 parameters.append("max_log_level", "WARN")
             }
@@ -109,7 +108,7 @@ class SeedgenApiService {
         val seed = Seed.new {
             this.seedgenConfig = settings
             this.creator = creator
-            this.spoiler = json.decodeFromString(response.jsonSpoiler)
+            this.spoiler = JsonObject(mapOf())  // TODO
             this.spoilerText = response.textSpoiler
         }
 
