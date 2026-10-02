@@ -168,11 +168,12 @@ data class GameDifficultySettingsOverrides(
     @ProtoNumber(2) val normal: Setting,
     @ProtoNumber(3) val hard: Setting,
 ) {
-    enum class Setting {
-        Allow,
-        Warn,
-        Deny,
-    }
+    @Serializable
+    data class Setting(
+        @ProtoNumber(1) @Required val visible: Boolean,
+        @ProtoNumber(2) @Required val label: String? = null,
+        @ProtoNumber(3) @Required val confirmationMessage: String? = null,
+    )
 }
 
 @Serializable

@@ -52,9 +52,9 @@ class WorldSeed(id: EntityID<Long>): LongEntity(id){
         // TODO: Hard mode races don't work currently; use preload.json later
 
         return GameDifficultySettingsOverrides(
-            GameDifficultySettingsOverrides.Setting.Deny,
-            GameDifficultySettingsOverrides.Setting.Allow,
-            GameDifficultySettingsOverrides.Setting.Deny,
+            GameDifficultySettingsOverrides.Setting(false),
+            GameDifficultySettingsOverrides.Setting(true),
+            GameDifficultySettingsOverrides.Setting(false),
         )
     }
 }

@@ -42,7 +42,9 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
     private var gameDifficultyCache: GameDifficulty? = null
 
     private suspend fun getGameDifficulty(): GameDifficulty = gameDifficultyCache ?: newSuspendedTransaction {
-        getLeagueGame().season.gameDifficulty
+        val difficulty = getLeagueGame().season.gameDifficulty
+        gameDifficultyCache = difficulty
+        difficulty
     }
 
     private suspend fun getSeasonMinimumInGameTimeToAllowBreaks(): Float {
@@ -283,9 +285,9 @@ class LeagueGameHandler(multiverseId: Long, server: WotwBackendServer) :
         val difficulty = getGameDifficulty()
 
         return GameDifficultySettingsOverrides(
-            if (difficulty == GameDifficulty.Easy) GameDifficultySettingsOverrides.Setting.Allow else GameDifficultySettingsOverrides.Setting.Deny,
-            if (difficulty == GameDifficulty.Normal) GameDifficultySettingsOverrides.Setting.Allow else GameDifficultySettingsOverrides.Setting.Deny,
-            if (difficulty == GameDifficulty.Hard) GameDifficultySettingsOverrides.Setting.Allow else GameDifficultySettingsOverrides.Setting.Deny,
+            GameDifficultySettingsOverrides.Setting(difficulty == GameDifficulty.Easy),
+            GameDifficultySettingsOverrides.Setting(difficulty == GameDifficulty.Normal),
+            GameDifficultySettingsOverrides.Setting(difficulty == GameDifficulty.Hard),
         )
     }
 
