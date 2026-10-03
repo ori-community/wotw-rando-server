@@ -3,7 +3,7 @@ package wotw.server.sync
 import wotw.io.messages.protobuf.UberId
 import wotw.server.api.*
 
-fun multiStates() = (0..2000).map { UberId(12, it) }
+fun multiStates() = (0..<2000).map { UberId(12, it) }
 
 val tpIds = mapOf(
     "savePedestalMidnightBurrows" to UberId(24922, 42531),
