@@ -171,15 +171,15 @@ class StateSynchronization(private val server: WotwBackendServer) {
                 world.memberships.map { it.id.value } to world.members.map { it.id.value },
                 UberStateBatchUpdateMessage(
                     UberStateUpdateMessage(
-                        UberId(10, 0),
+                        UberId(/* bingoState */ 11, 0),
                         bingoPlayerData.squares.toDouble()
                     ),
                     UberStateUpdateMessage(
-                        UberId(10, 1),
+                        UberId(/* bingoState */ 11, 1),
                         bingoPlayerData.lines.toDouble()
                     ),
                     UberStateUpdateMessage(
-                        UberId(10, 2),
+                        UberId(/* bingoState */ 11, 2),
                         bingoPlayerData.rank.toDouble()
                     ),
                 ),
