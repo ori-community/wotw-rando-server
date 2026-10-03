@@ -173,11 +173,11 @@ fun generatePool() = mutableListOf(
             bool("Clean Water", 6, 2000),
             maxRepeats = 1
         ),
-        threshold("Kill enemies with Sword", 10, 11, triag(3, 10, 5)),
-        threshold("Kill enemies with Hammer", 10, 12, triag(3, 10, 5)),
-        threshold("Kill enemies with Bow", 10, 13, triag(3, 10, 5)),
-        threshold("Kill enemies with Spear", 10, 14, triag(3, 10, 5)),
-        threshold("Kill enemies with Light Burst", 10, 17, triag(3, 10, 5)),
+        threshold("Kill enemies with Sword", 14, 11, triag(3, 10, 5)),
+        threshold("Kill enemies with Hammer", 14, 12, triag(3, 10, 5)),
+        threshold("Kill enemies with Bow", 14, 13, triag(3, 10, 5)),
+        threshold("Kill enemies with Spear", 14, 14, triag(3, 10, 5)),
+        threshold("Kill enemies with Light Burst", 14, 17, triag(3, 10, 5)),
     ),
     group(
         "Collect # Wisp[s]",
@@ -219,14 +219,14 @@ fun generatePool() = mutableListOf(
 
     nof(
         3,
-        threshold("Kill enemies", 10, 10, triag(25, 100, 50)),
-        threshold("Drown Enemies", 10, 23, triag(2, 8, 4)),
-        threshold("Kill Gorlek", 10, 40, triag(3, 15, 5)),
-        threshold("Kill flying enemies", 10, 41, triag(5, 20, 10)),
-        threshold("Kill Tentacles", 10, 42, triag(3, 15, 5)),
-        threshold("Kill Slimes", 10, 43, triag(5, 20, 10)),
-        threshold("Kill swimming enemies", 10, 44, triag(3, 15, 5)),
-        threshold("Kill exploding enemies", 10, 45, triag(3, 15, 5)),
+        threshold("Kill enemies", 14, 10, triag(25, 100, 50)),
+        threshold("Drown Enemies", 14, 23, triag(2, 8, 4)),
+        threshold("Kill Gorlek", 14, 40, triag(3, 15, 5)),
+        threshold("Kill flying enemies", 14, 41, triag(5, 20, 10)),
+        threshold("Kill Tentacles", 14, 42, triag(3, 15, 5)),
+        threshold("Kill Slimes", 14, 43, triag(5, 20, 10)),
+        threshold("Kill swimming enemies", 14, 44, triag(3, 15, 5)),
+        threshold("Kill exploding enemies", 14, 45, triag(3, 15, 5)),
     ),
 
     group(
