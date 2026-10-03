@@ -93,8 +93,8 @@ val questIds = mapOf(
     "Regrowing the Glades" to UberId(14019, 26394),
     "FindToad" to UberId(14019, 48794),
     "The Silent Teeth" to UberId(937, 34641),
+    // Into the Darkness has special treatment at the bottom
 )
-//    "Into The Darkness" to UberId(14019, 33776), bad to sync for reasons
 
 
 val pickupIds = mapOf(
@@ -1803,8 +1803,7 @@ val normalWorldSyncAggregationStrategy by lazy {
             sync(37858, 10720).on(threshold = 2), // Wellspring escape
             sync(937, 34641).with(UberStateSyncStrategy.MIN).on(threshold = 4), // Prevent Silent Teeth quest from syncing value=5
 
-            /// Quests
-            // TODO: Add all quests here
+            /// Into the Darkness quest
             sync(14019, 33776).with(UberStateSyncStrategy.maxThreshold(3.0)), // Acorn Quest
         )
     }
