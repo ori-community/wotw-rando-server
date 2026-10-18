@@ -44,6 +44,7 @@ data class SeedgenApiLogRecord(
 data class SeedgenApiGenerateResponse(
     @SerialName("worlds") val worlds: List<ByteArray>,
     @SerialName("text_spoiler") val textSpoiler: String,
+    @SerialName("json_spoiler") val jsonSpoiler: JsonElement,
     @SerialName("logs") val logs: List<SeedgenApiLogRecord>,
 )
 
@@ -96,6 +97,7 @@ class SeedgenApiService {
         val httpResponse: HttpResponse = seedgenHttpClient.post("/generate") {
             url {
                 parameters.append("text_spoiler", "true")
+                parameters.append("json_spoiler", "no_commands")
                 parameters.append("max_log_level", "WARN")
             }
             contentType(ContentType.Application.Json)
@@ -115,7 +117,7 @@ class SeedgenApiService {
 
         val seed = Seed.new {
             this.creator = creator
-            this.spoiler = JsonObject(mapOf())  // TODO
+            this.spoiler = response.jsonSpoiler
             this.spoilerText = response.textSpoiler
         }
 
