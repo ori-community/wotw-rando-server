@@ -74,30 +74,7 @@ val spiritTrialIds = mapOf(
     "The Wellspring" to UberId(44964, 11512),
 )
 
-val questIds = mapOf(
-    "The Missing Key" to UberId(48248, 51645),
-    "Into the Burrows" to UberId(48248, 18458),
-    "The Lost Compass" to UberId(14019, 20667),
-    "A Little Braver" to UberId(14019, 15983),
-    "Family Reunion" to UberId(14019, 27804),
-    "The Tree Keeper" to UberId(14019, 59708),
-    "A Diamond in the Rough" to UberId(14019, 61011),
-    "Kwolok's Wisdom" to UberId(14019, 50597),
-    "The Silent Map" to UberId(14019, 24683),
-    "Breaking the Mould" to UberId(14019, 45931),
-    "Lost in Paradise" to UberId(14019, 35087),
-    "The Highest Reach" to UberId(14019, 8973),
-    "Beneath Shifting Sands" to UberId(14019, 35399),
-    "Hand to Hand" to UberId(14019, 26318),
-    "Rebuilding the Glades" to UberId(14019, 44578),
-    "Regrowing the Glades" to UberId(14019, 26394),
-    "FindToad" to UberId(14019, 48794),
-    "The Silent Teeth" to UberId(937, 34641),
-    // Into the Darkness has special treatment at the bottom
-)
-
-
-val pickupIds = mapOf(
+val nonQuestPickupIds = mapOf(
     "NotARealPickup.VoiceOfTheWoods" to UberId(46462, 59806),
     "MarshSpawn.RockHC" to UberId(21786, 60210),
     "MarshSpawn.FirstPickupEX" to UberId(21786, 49485),
@@ -113,18 +90,15 @@ val pickupIds = mapOf(
     "MarshSpawn.LeftTokkEX" to UberId(21786, 59513),
     "MarshSpawn.FightRoomEX" to UberId(9593, 42047),
     "MarshSpawn.CaveKS" to UberId(21786, 64677),
-    "MarshSpawn.TokkKeystoneQuest" to UberId(48248, 51645),
     "MarshSpawn.CaveOre" to UberId(9593, 23858),
     "MarshSpawn.LongSwimEX" to UberId(21786, 23154),
     "MarshSpawn.BurrowOre" to UberId(9593, 20382),
     "MarshSpawn.LifepactShard" to UberId(23987, 50415),
     "MarshSpawn.BurrowsApproachLedgeEX" to UberId(24922, 32076),
     "MarshSpawn.CrusherSwimEX" to UberId(24922, 62138),
-    "MarshSpawn.TokkTabletQuest" to UberId(48248, 18458),
     "MarshSpawn.RecklessShard" to UberId(23987, 9864),
     "MarshSpawn.FangEC" to UberId(21786, 61706),
     "MarshSpawn.FangQI" to UberId(14019, 27539),
-    "MarshSpawn.MokkFangQuest" to UberId(14019, 15983),
     "MarshSpawn.DamageTree" to UberId(0, 121),
     "MidnightBurrows.LeftKS" to UberId(24922, 60358),
     "MidnightBurrows.RightKS" to UberId(24922, 47244),
@@ -173,7 +147,6 @@ val pickupIds = mapOf(
     "WestHollow.DashRightEX" to UberId(937, 37926),
     "WestHollow.CrusherEX" to UberId(937, 50176),
     "WestHollow.DashTree" to UberId(0, 102),
-    "EastHollow.HandToHandMap" to UberId(14019, 26318),
     "EastHollow.GladesApproachOre" to UberId(937, 10729),
     "EastHollow.HornBeetleFightEX" to UberId(937, 13413),
     "EastHollow.SpikeLanternEX" to UberId(937, 5568),
@@ -183,7 +156,6 @@ val pickupIds = mapOf(
     "EastHollow.BashHC" to UberId(13428, 59730),
     "EastHollow.BashEX" to UberId(937, 30182),
     "EastHollow.BashTree" to UberId(0, 0),
-    "EastHollow.KwolokAmuletQuest" to UberId(14019, 50597),
     "EastHollow.RightKwolokEX" to UberId(58674, 20983),
     "EastHollow.SilentSwimEC" to UberId(58674, 9583),
     "EastHollow.SplinterShard" to UberId(23987, 62973),
@@ -191,11 +163,6 @@ val pickupIds = mapOf(
     "EastHollow.KwolokSwimLeftEX" to UberId(46462, 29054),
     "EastHollow.KwolokSwimRightEX" to UberId(46462, 20780),
     "EastHollow.DepthsExteriorEX" to UberId(18793, 42980),
-    "GladesTown.HandToHandPouch" to UberId(14019, 26318),
-    "GladesTown.HandToHandLantern" to UberId(14019, 26318),
-    "GladesTown.HandToHandCanteen" to UberId(14019, 26318),
-    "GladesTown.HandToHandSoup" to UberId(14019, 26318),
-    "GladesTown.FamilyReunionKey" to UberId(14019, 27804),
     "GladesTown.AcornQI" to UberId(14019, 2782),
     "GladesTown.HoleHutEC" to UberId(42178, 52786),
     "GladesTown.AboveGromHC" to UberId(44310, 29043),
@@ -219,9 +186,7 @@ val pickupIds = mapOf(
     "GladesTown.UpdraftCeilingEX" to UberId(42178, 63404),
     "GladesTown.LeafPileEX" to UberId(42178, 44748),
     "GladesTown.DamageTree" to UberId(0, 120),
-    "GladesTown.RebuildTheGlades" to UberId(14019, 44578),
     "GladesTown.TwillenGemQuest" to UberId(23987, 14832),
-    "GladesTown.RegrowTheGlades" to UberId(14019, 26394),
     "WestGlades.GrappleEX" to UberId(53632, 12019),
     "WestGlades.AbovePlantEX" to UberId(937, 31036),
     "WestGlades.LowerPoolEX" to UberId(937, 40657),
@@ -243,7 +208,6 @@ val pickupIds = mapOf(
     "OuterWellspring.LifeHarvestShard" to UberId(23987, 53934),
     "OuterWellspring.SwimEX" to UberId(53632, 62356),
     "OuterWellspring.SwimOre" to UberId(53632, 21124),
-    "OuterWellspring.TheLostCompass" to UberId(14019, 20667),
     "InnerWellspring.ThornShard" to UberId(23987, 31426),
     "InnerWellspring.ThornEX" to UberId(37858, 22107),
     "InnerWellspring.ThreeWheelsEX" to UberId(37858, 45906),
@@ -258,7 +222,6 @@ val pickupIds = mapOf(
     "InnerWellspring.GrappleTreeEX" to UberId(37858, 31136),
     "InnerWellspring.GrappleTree" to UberId(0, 57),
     "InnerWellspring.AboveSpinArenaEX" to UberId(37858, 64086),
-    "InnerWellspring.HandToHandHerbs" to UberId(14019, 26318),
     "InnerWellspring.RotateRoomEX" to UberId(37858, 52110),
     "InnerWellspring.RotateRoomOre" to UberId(37858, 47533),
     "InnerWellspring.NeedleQI" to UberId(53632, 41227),
@@ -281,7 +244,6 @@ val pickupIds = mapOf(
     "EastPools.BelowLeverEX" to UberId(5377, 27204),
     "EastPools.AboveDoorOre" to UberId(5377, 19694),
     "EastPools.PurpleWallHC" to UberId(5377, 63201),
-    "EastPools.HandToHandSpyglass" to UberId(14019, 26318),
     "EastPools.AboveTpEX" to UberId(5377, 7540),
     "EastPools.LupoOre" to UberId(5377, 12235),
     "EastPools.UltraBashShard" to UberId(23987, 25996),
@@ -309,7 +271,6 @@ val pickupIds = mapOf(
     "WestPools.TpEX" to UberId(5377, 25391),
     "WestPools.EscapeRevisitEX" to UberId(5377, 44122),
     "WestPools.ForestsStrength" to UberId(945, 49747),
-    "WoodsEntry.LastTreeBranch" to UberId(14019, 59708),
     "WoodsEntry.DollQI" to UberId(14019, 57399),
     "WoodsEntry.TreeSeed" to UberId(14019, 7470),
     "WoodsEntry.MudPitEX" to UberId(58674, 8487),
@@ -351,7 +312,6 @@ val pickupIds = mapOf(
     "LowerReach.BreakWallEX" to UberId(42178, 40609),
     "LowerReach.WindBottomEX" to UberId(28895, 35045),
     "LowerReach.WindHiddenEX" to UberId(28895, 54373),
-    "LowerReach.HandToHandHat" to UberId(14019, 26318),
     "LowerReach.SnowballHC" to UberId(28895, 40744),
     "LowerReach.RoofLeftEX" to UberId(28895, 53283),
     "LowerReach.RoofRightEX" to UberId(28895, 46711),
@@ -395,7 +355,6 @@ val pickupIds = mapOf(
     "LowerDepths.RaceStartHC" to UberId(18793, 62694),
     "LowerDepths.BelowDoorOre" to UberId(18793, 836),
     "LowerDepths.SpiritSurgeShard" to UberId(23987, 986),
-    "LowerDepths.HandToHandSilk" to UberId(14019, 26318),
     "LowerDepths.CombatShrine" to UberId(18793, 31937),
     "LowerDepths.SwimEC" to UberId(18793, 28175),
     "LowerDepths.LupoMap" to UberId(48248, 48423),
@@ -417,7 +376,6 @@ val pickupIds = mapOf(
     "LowerWastes.LastStandEX" to UberId(20120, 33275),
     "LowerWastes.MuncherClimbEX" to UberId(20120, 57133),
     "LowerWastes.SkeetoHiveEX" to UberId(20120, 8910),
-    "LowerWastes.HandToHandMapstone" to UberId(14019, 26318),
     "LowerWastes.LupoMap" to UberId(48248, 61146),
     "LowerWastes.BurrowTree" to UberId(0, 101),
     "LowerWastes.BurrowTreeEX" to UberId(20120, 19113),
@@ -442,7 +400,6 @@ val pickupIds = mapOf(
     "UpperWastes.WallOre" to UberId(7228, 8370),
     "WindtornRuins.EscapeRevisitEC" to UberId(10289, 44555),
     "WindtornRuins.Seir" to UberId(10289, 22102),
-    "WindtornRuins.HandToHandComplete" to UberId(14019, 26318),
     "WeepingRidge.Ore" to UberId(36153, 3013),
     "WeepingRidge.LaunchTree" to UberId(0, 8),
     "WeepingRidge.SpikeClimbEX" to UberId(36153, 36521),
@@ -1788,8 +1745,7 @@ val normalWorldSyncAggregationStrategy by lazy {
             sync(safeMaxLevers),
             sync(seedQuestStates),
             sync(corruptedHeartIds.values),
-            sync(questIds.values),
-            sync(pickupIds.values),
+            sync(nonQuestPickupIds.values),
             sync(spiritTrialIds.values),
             sync(unsortedCoop),
             sync(mapSegments),
@@ -1801,10 +1757,28 @@ val normalWorldSyncAggregationStrategy by lazy {
             sync(945, 58403).on(threshold = 7),  // kwolok fight
             sync(18793, 26713).on(threshold = 7),  // mora fight
             sync(37858, 10720).on(threshold = 2), // Wellspring escape
-            sync(937, 34641).with(UberStateSyncStrategy.MIN).on(threshold = 4), // Prevent Silent Teeth quest from syncing value=5
 
-            /// Into the Darkness quest
-            sync(14019, 33776).with(UberStateSyncStrategy.maxThreshold(3.0)), // Acorn Quest
+            // Quests, the game will be angry if we try to sync these above their max values
+            sync(48248, 51645).with(UberStateSyncStrategy.maxThreshold(3.0)), // The Missing Key
+            sync(14019, 48794).with(UberStateSyncStrategy.maxThreshold(2.0)), // Guardian of the Marsh
+            sync(937, 34641).with(UberStateSyncStrategy.maxThreshold(4.0)), // The Silent Teeth
+            // Ku? What do you mean, Ku?
+            sync(14019, 8973).with(UberStateSyncStrategy.maxThreshold(3.0)), // The Highest Reach
+            sync(14019, 35087).with(UberStateSyncStrategy.maxThreshold(3.0)), // Lost in Paradise
+            sync(14019, 45931).with(UberStateSyncStrategy.maxThreshold(3.0)), // Breaking the Mould
+            sync(14019, 35399).with(UberStateSyncStrategy.maxThreshold(3.0)), // Beneath Shifting Sands
+            sync(14019, 15983).with(UberStateSyncStrategy.maxThreshold(3.0)), // A Little Braver
+            sync(48248, 18458).with(UberStateSyncStrategy.maxThreshold(4.0)), // Into the Burrows
+            sync(14019, 20667).with(UberStateSyncStrategy.maxThreshold(3.0)), // The Lost Compass
+            sync(14019, 33776).with(UberStateSyncStrategy.maxThreshold(3.0)), // Into the Darkness
+            sync(14019, 27804).with(UberStateSyncStrategy.maxThreshold(4.0)), // Family Reunion
+            sync(14019, 59708).with(UberStateSyncStrategy.maxThreshold(3.0)), // The Tree Keeper
+            sync(14019, 24683).with(UberStateSyncStrategy.maxThreshold(3.0)), // The Silent Map
+            sync(14019, 50597).with(UberStateSyncStrategy.maxThreshold(4.0)), // Kwolok's Wisdom
+            sync(14019, 61011).with(UberStateSyncStrategy.maxThreshold(5.0)), // A Diamond in the Rough
+            sync(14019, 26318).with(UberStateSyncStrategy.maxThreshold(11.0)), // Hand to Hand
+            sync(14019, 44578).with(UberStateSyncStrategy.maxThreshold(2.0)), // Rebuilding the Glades
+            sync(14019, 26394).with(UberStateSyncStrategy.maxThreshold(2.0)), // Regrowing the Glades
         )
     }
 }
