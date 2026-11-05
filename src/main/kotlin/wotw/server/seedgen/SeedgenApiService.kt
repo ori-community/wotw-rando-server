@@ -44,7 +44,7 @@ data class SeedgenApiLogRecord(
 data class SeedgenApiGenerateResponse(
     @SerialName("worlds") val worlds: List<ByteArray>,
     @SerialName("text_spoiler") val textSpoiler: String,
-    @SerialName("json_spoiler") val jsonSpoiler: JsonElement,
+    @SerialName("json_spoiler") val jsonSpoiler: String,
     @SerialName("logs") val logs: List<SeedgenApiLogRecord>,
 )
 
@@ -117,7 +117,7 @@ class SeedgenApiService {
 
         val seed = Seed.new {
             this.creator = creator
-            this.spoiler = response.jsonSpoiler
+            this.spoiler = json.parseToJsonElement(response.jsonSpoiler)
             this.spoilerText = response.textSpoiler
         }
 
